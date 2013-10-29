@@ -1,4 +1,4 @@
-module UnderVert
+module WunderBoss
   module Rack
     class ResponseHandler
       def self.handle(rack_response, servlet_response)

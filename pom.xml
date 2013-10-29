@@ -12,21 +12,17 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.undervert</groupId>
-  <artifactId>undervert</artifactId>
+  <groupId>io.wunderboss</groupId>
+  <artifactId>wunderboss</artifactId>
   <version>0.1.0-SNAPSHOT</version>
-  <name>UnderVert</name>
+  <name>WunderBoss</name>
 
   <packaging>jar</packaging>
 
-  <description>
-    Undertow and Vert.x
-  </description>
-
   <developers>
     <developer>
-      <id>undervert-team</id>
-      <name>The UnderVert Team</name>
+      <id>wunderboss-team</id>
+      <name>The WunderBoss Team</name>
     </developer>
   </developers>
 
@@ -74,7 +70,7 @@
 
       <dependency>
         <groupId>org.projectodd.restafari</groupId>
-        <artifactId>restafari</artifactId>
+        <artifactId>restafari-container</artifactId>
         <version>${version.restafari}</version>
       </dependency>
 
@@ -106,7 +102,7 @@
 
     <dependency>
       <groupId>org.projectodd.restafari</groupId>
-      <artifactId>restafari</artifactId>
+      <artifactId>restafari-container</artifactId>
     </dependency>
 
     <dependency>
@@ -185,8 +181,8 @@
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedArtifactId>undervert-all</shadedArtifactId>
-              <finalName>undervert-all</finalName>
+              <shadedArtifactId>wunderboss-all</shadedArtifactId>
+              <finalName>wunderboss-all</finalName>
             </configuration>
           </execution>
         </executions>

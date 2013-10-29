@@ -1,4 +1,4 @@
-package io.undervert.rack;
+package io.wunderboss.rack;
 
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;

@@ -1,6 +1,6 @@
-package io.undervert.rack;
+package io.wunderboss.rack;
 
-import io.undervert.RuntimeHelper;
+import io.wunderboss.RuntimeHelper;
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.exceptions.RaiseException;

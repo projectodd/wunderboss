@@ -1,14 +1,12 @@
-package io.undervert;
+package io.wunderboss;
 
 import io.undertow.Undertow;
 import io.undertow.predicate.Predicate;
-import io.undertow.predicate.PredicatesHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
-import io.undertow.server.handlers.builder.PredicatedHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
@@ -16,16 +14,16 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
-import io.undervert.rack.RackServlet;
+import io.wunderboss.rack.RackServlet;
 import org.jboss.logging.Logger;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import java.io.File;
 import java.io.IOException;
 
-public class UnderVert {
+public class WunderBoss {
 
-    public UnderVert() {
+    public WunderBoss() {
         pathHandler = new PathHandler();
     }
 
@@ -34,7 +32,7 @@ public class UnderVert {
                 .addMapping("/*");
 
         final DeploymentInfo servletBuilder = Servlets.deployment()
-                .setClassLoader(UnderVert.class.getClassLoader())
+                .setClassLoader(WunderBoss.class.getClassLoader())
                 .setContextPath(context)
                 .setDeploymentName(context)
                 .addServlet(servlet)
@@ -71,7 +69,7 @@ public class UnderVert {
 
     public void start(String host, int port) {
         if (undertow != null) {
-            throw new RuntimeException("UnderVert already started");
+            throw new RuntimeException("WunderBoss already started");
         }
 
         undertow = Undertow.builder()
@@ -81,18 +79,18 @@ public class UnderVert {
         
         undertow.start();
         
-        log.info("UnderVert listening on " + host + ":" + port);
+        log.info("WunderBoss listening on " + host + ":" + port);
     }
 
     public void stop() {
         if (undertow != null) {
             undertow.stop();
-            log.info("UnderVert stopped");
+            log.info("WunderBoss stopped");
         }
     }
 
     private Undertow undertow;
     private PathHandler pathHandler;
 
-    private static final Logger log = Logger.getLogger(UnderVert.class);
+    private static final Logger log = Logger.getLogger(WunderBoss.class);
 }
