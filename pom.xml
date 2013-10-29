@@ -38,6 +38,7 @@
   </modules>
 
   <properties>
+    <version.jboss.modules>1.3.0.Beta2</version.jboss.modules>
     <version.jruby>1.7.6</version.jruby>
     <version.restafari>1.0.0-SNAPSHOT</version.restafari>
     <version.undertow>1.0.0.Beta19</version.undertow>
@@ -63,9 +64,21 @@
       </dependency>
 
       <dependency>
+        <groupId>org.jboss.modules</groupId>
+        <artifactId>jboss-modules</artifactId>
+        <version>${version.jboss.modules}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.jruby</groupId>
         <artifactId>jruby-complete</artifactId>
         <version>${version.jruby}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.projectodd.restafari</groupId>
+        <artifactId>restafari-bootstrap</artifactId>
+        <version>${version.restafari}</version>
       </dependency>
 
       <dependency>
@@ -95,9 +108,19 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jboss.modules</groupId>
+      <artifactId>jboss-modules</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectodd.restafari</groupId>
+      <artifactId>restafari-bootstrap</artifactId>
     </dependency>
 
     <dependency>
