@@ -1,8 +1,5 @@
 require 'target/wunderboss-all.jar'
 
-require 'rack'
-app, _ = Rack::Builder.parse_file "config.ru"
-
-wunderboss = Java::IoWunderboss::WunderBoss.new
-wunderboss.deploy_rack_application("/", app)
-wunderboss.start('localhost', 8080)
+config = {'web_host' => 'localhost', 'web_port' => '8080'}
+wunderboss = Java::IoWunderboss::WunderBoss.new(config)
+wunderboss.deploy_ruby_application('.', {'web_context' => '/'})
