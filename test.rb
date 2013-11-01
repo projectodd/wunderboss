@@ -27,4 +27,4 @@ app, _ = Rack::Builder.parse_file "config.ru"
 
 wunderboss = Java::IoWunderboss::WunderBoss.new
 wunderboss.deploy_rack_application("/foo", app)
-wunderboss.start('localhost', 8081)
+wunderboss.start('localhost', 8080)

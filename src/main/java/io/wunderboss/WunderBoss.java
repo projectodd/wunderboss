@@ -16,64 +16,14 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.wunderboss.rack.RackServlet;
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleNotFoundException;
-import org.jboss.modules.log.JDKModuleLogger;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.security.Policy;
-import java.util.Iterator;
-import java.util.logging.LogManager;
 
 public class WunderBoss {
 
-    public WunderBoss() throws Throwable {
-        System.setProperty("module.path", "../restafari/dist/target/dist/modules");
-
-        // Bootstrap JBoss Modules
-        final ModuleLoader loader;
-        final ModuleLoader environmentLoader;
-        environmentLoader = DefaultBootModuleLoaderHolder.INSTANCE;
-        final ModuleIdentifier moduleIdentifier;
-        loader = environmentLoader;
-        moduleIdentifier = ModuleIdentifier.fromString("org.projectodd.restafari.bootstrap:main");
-        Method initBootModuleLoaderMethod = Module.class.getDeclaredMethod("initBootModuleLoader", ModuleLoader.class);
-        initBootModuleLoaderMethod.setAccessible(true);
-        initBootModuleLoaderMethod.invoke(Module.class, loader);
-        final Module module;
-        try {
-            module = loader.loadModule(moduleIdentifier);
-        } catch (ModuleNotFoundException e) {
-            e.printStackTrace(System.err);
-            System.exit(1);
-            return;
-        }
-        Class modularURLStreamHandlerFactory = Class.forName("org.jboss.modules.ModularURLStreamHandlerFactory");
-        Method addHandlerModuleMethod1 = modularURLStreamHandlerFactory.getDeclaredMethod("addHandlerModule", Module.class);
-        addHandlerModuleMethod1.setAccessible(true);
-        addHandlerModuleMethod1.invoke(modularURLStreamHandlerFactory, module);
-        Class modularContentHandlerFactory = Class.forName("org.jboss.modules.ModularContentHandlerFactory");
-        Method addhandlerModuleMethod2 = modularContentHandlerFactory.getDeclaredMethod("addHandlerModule", Module.class);
-        addhandlerModuleMethod2.setAccessible(true);
-        addhandlerModuleMethod2.invoke(modularContentHandlerFactory, module);
-        Method getClassLoaderPrivateMethod = module.getClass().getDeclaredMethod("getClassLoaderPrivate");
-        getClassLoaderPrivateMethod.setAccessible(true);
-        final ModuleClassLoader bootClassLoader = (ModuleClassLoader) getClassLoaderPrivateMethod.invoke(module);
-        // ModuleLoader.installMBeanServer();
-        try {
-            module.run(new String[] {});
-        } catch (InvocationTargetException e) {
-            throw e.getCause();
-        }
-
-
+    public WunderBoss() {
         pathHandler = new PathHandler();
     }
 
