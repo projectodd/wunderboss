@@ -14,5 +14,4 @@ Make sure you have a recent JRuby installed.
 
     jruby test.rb
 
-This boots up a hello world Rack application on http://localhost:8081,
-with Restafari's HTTP interface listening on http://localhost:8080.
+This boots up a hello world Rack application on http://localhost:8080/

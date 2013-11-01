@@ -39,7 +39,6 @@
 
   <properties>
     <version.jruby>1.7.6</version.jruby>
-    <version.restafari>1.0.0-SNAPSHOT</version.restafari>
     <version.undertow>1.0.0.Beta19</version.undertow>
 
     <version.junit>4.11</version.junit>
@@ -69,12 +68,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.projectodd.restafari</groupId>
-        <artifactId>restafari-container</artifactId>
-        <version>${version.restafari}</version>
-      </dependency>
-
-      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${version.junit}</version>
@@ -98,11 +91,6 @@
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.projectodd.restafari</groupId>
-      <artifactId>restafari-container</artifactId>
     </dependency>
 
     <dependency>
