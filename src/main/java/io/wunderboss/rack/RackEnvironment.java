@@ -58,24 +58,26 @@ public class RackEnvironment {
         env.put(RubyString.newString(this.ruby, "SCRIPT_NAME"), RubyString.newString(this.ruby,
                 request.getContextPath() + request.getServletPath()));
         env.put(RubyString.newString(this.ruby, "PATH_INFO"), RubyString.newString(this.ruby, pathInfo));
-        env.put(RubyString.newString(this.ruby, "QUERY_STRING"), request.getQueryString() == null ? "" : request.getQueryString());
-        env.put(RubyString.newString(this.ruby, "SERVER_NAME"), request.getServerName());
-        env.put(RubyString.newString(this.ruby, "SERVER_PORT"), request.getServerPort() + "");
-        env.put(RubyString.newString(this.ruby, "CONTENT_TYPE"), request.getContentType());
-        env.put(RubyString.newString(this.ruby, "REQUEST_URI"), request.getContextPath() + request.getServletPath() + pathInfo);
-        env.put(RubyString.newString(this.ruby, "REMOTE_ADDR"), request.getRemoteAddr());
-        env.put(RubyString.newString(this.ruby, "rack.url_scheme"), request.getScheme());
+        env.put(RubyString.newString(this.ruby, "QUERY_STRING"), RubyString.newString(this.ruby,
+                request.getQueryString() == null ? "" : request.getQueryString()));
+        env.put(RubyString.newString(this.ruby, "SERVER_NAME"), RubyString.newString(this.ruby, request.getServerName()));
+        env.put(RubyString.newString(this.ruby, "SERVER_PORT"), RubyString.newString(this.ruby, request.getServerPort() + ""));
+        env.put(RubyString.newString(this.ruby, "CONTENT_TYPE"), RubyString.newString(this.ruby, request.getContentType() + ""));
+        env.put(RubyString.newString(this.ruby, "REQUEST_URI"), RubyString.newString(this.ruby,
+                request.getContextPath() + request.getServletPath() + pathInfo));
+        env.put(RubyString.newString(this.ruby, "REMOTE_ADDR"), RubyString.newString(this.ruby, request.getRemoteAddr()));
+        env.put(RubyString.newString(this.ruby, "rack.url_scheme"), RubyString.newString(this.ruby, request.getScheme()));
         env.put(RubyString.newString(this.ruby, "rack.version"), this.rackVersion);
         env.put(RubyString.newString(this.ruby, "rack.multithread"), RubyBoolean.newBoolean(this.ruby, true));
         env.put(RubyString.newString(this.ruby, "rack.multiprocess"), RubyBoolean.newBoolean(this.ruby, true));
         env.put(RubyString.newString(this.ruby, "rack.run_once"), RubyBoolean.newBoolean(this.ruby, false));
 
         if (request.getContentLength() >= 0) {
-            env.put(RubyString.newString(this.ruby, "CONTENT_LENGTH"), request.getContentLength());
+            env.put(RubyString.newString(this.ruby, "CONTENT_LENGTH"), RubyFixnum.newFixnum(this.ruby, request.getContentLength()));
         }
 
         if ("https".equals(request.getScheme())) {
-            env.put(RubyString.newString(this.ruby, "HTTPS"), "on");
+            env.put(RubyString.newString(this.ruby, "HTTPS"), RubyString.newString(this.ruby, "on"));
         }
 
         if (request.getHeaderNames() != null) {
@@ -89,8 +91,8 @@ public class RackEnvironment {
             }
         }
 
-        env.put(RubyString.newString(this.ruby, "servlet_request"), request);
-        env.put(RubyString.newString(this.ruby, "java.servlet_request"), request);
+        //env.put(RubyString.newString(this.ruby, "servlet_request"), request);
+        //env.put(RubyString.newString(this.ruby, "java.servlet_request"), request);
 
         if (log.isTraceEnabled()) {
             log.trace("Created: " + env.inspect());
