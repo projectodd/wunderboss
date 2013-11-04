@@ -70,9 +70,12 @@ public class RuntimeHelper {
         return (Boolean) JavaEmbedUtils.invokeMethod( ruby, target, "respond_to?", new Object[] { name }, Boolean.class );
     }
 
+    public static RubyModule getClass(final Ruby ruby, final String className) {
+        return ruby.getClassFromPath(className);
+    }
+
     public static Object invokeClassMethod(Ruby ruby, String className, String name, Object[] parameters) {
-        RubyModule module = ruby.getClassFromPath( className );
-        return call( ruby, module, name, parameters );
+        return call(ruby, getClass(ruby, className), name, parameters);
     }
 
     public static void require(Ruby ruby, String requirement) {
