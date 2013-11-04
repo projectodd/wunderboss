@@ -31,7 +31,8 @@ public class WunderBoss {
 
     public void deployRubyApplication(String applicationRoot, Map<String, String> config) throws Exception {
         Ruby ruby = null;
-        if (applicationRoot.equals(".")) {
+        if (applicationRoot.equals(".") && Ruby.getGlobalRuntime() != null) {
+            // We're running embedded and the user is deploying the current app
             ruby = Ruby.getGlobalRuntime();
         } else {
             ruby = Ruby.newInstance();
