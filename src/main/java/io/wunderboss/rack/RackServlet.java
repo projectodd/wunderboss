@@ -1,5 +1,7 @@
 package io.wunderboss.rack;
 
+import io.undertow.servlet.spec.HttpServletRequestImpl;
+import io.undertow.servlet.spec.HttpServletResponseImpl;
 import io.wunderboss.RuntimeHelper;
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;
@@ -7,7 +9,11 @@ import org.jruby.RubyModule;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import javax.servlet.*;
+import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -32,12 +38,12 @@ public class RackServlet implements Servlet {
 
     @Override
     public final void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
-        if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            service((HttpServletRequest) request, (HttpServletResponse) response);
+        if (request instanceof HttpServletRequestImpl && response instanceof HttpServletResponseImpl) {
+            service((HttpServletRequestImpl) request, (HttpServletResponseImpl) response);
         }
     }
 
-    public final void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public final void service(HttpServletRequestImpl request, HttpServletResponseImpl response) throws ServletException, IOException {
         if (((request.getPathInfo() == null) || (request.getPathInfo().equals("/"))) && !(request.getRequestURI().endsWith("/"))) {
             redirectToTrailingSlash(request, response);
             return;

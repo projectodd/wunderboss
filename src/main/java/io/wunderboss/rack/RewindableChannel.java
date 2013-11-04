@@ -1,12 +1,12 @@
 package io.wunderboss.rack;
 
+import org.xnio.channels.StreamSourceChannel;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
@@ -15,13 +15,13 @@ import java.nio.file.Files;
 
 public class RewindableChannel extends FileChannel {
 
-    private InputStream inputStream;
+    private StreamSourceChannel inputChannel;
     private File tempFile;
     private RandomAccessFile tempFileRandom;
     private FileChannel tempFileChannel;
 
-    public RewindableChannel(InputStream inputStream) {
-        this.inputStream = inputStream;
+    public RewindableChannel(StreamSourceChannel inputChannel) {
+        this.inputChannel = inputChannel;
     }
 
     protected FileChannel getTempFileChannel() throws java.io.IOException {
@@ -31,7 +31,6 @@ public class RewindableChannel extends FileChannel {
             tempFileChannel = tempFileRandom.getChannel();
 
             // Transfer all the input data to the temporary file
-            ReadableByteChannel inputChannel = Channels.newChannel(this.inputStream);
             long bytesRead = 0;
             long transferPosition = 0;
             while ((bytesRead = tempFileChannel.transferFrom(inputChannel, transferPosition, 1024 * 4)) > 0) {
@@ -133,8 +132,8 @@ public class RewindableChannel extends FileChannel {
         if (tempFile != null) {
             tempFile.delete();
         }
-        if (inputStream != null) {
-            inputStream.close();
+        if (inputChannel != null) {
+            inputChannel.close();
         }
     }
 }

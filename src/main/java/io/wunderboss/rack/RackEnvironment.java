@@ -1,5 +1,6 @@
 package io.wunderboss.rack;
 
+import io.undertow.servlet.spec.HttpServletRequestImpl;
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
@@ -7,23 +8,31 @@ import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyIO;
 import org.jruby.RubyString;
+import org.xnio.channels.EmptyStreamSourceChannel;
+import org.xnio.channels.StreamSourceChannel;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Enumeration;
 
 public class RackEnvironment {
 
-    public RackEnvironment(Ruby ruby, HttpServletRequest request) throws IOException {
+    public RackEnvironment(Ruby ruby, HttpServletRequestImpl request) throws IOException {
         initializeEnv(ruby, request);
     }
 
-    private void initializeEnv(Ruby ruby, HttpServletRequest request) throws IOException {
+    private void initializeEnv(Ruby ruby, HttpServletRequestImpl request) throws IOException {
         this.env = new RubyHash(ruby);
+
+        StreamSourceChannel inputChannel;
+        if(request.getExchange().isRequestChannelAvailable()) {
+            inputChannel = request.getExchange().getRequestChannel();
+        } else {
+            inputChannel = new EmptyStreamSourceChannel(request.getExchange().getIoThread());
+        }
 
         // Wrap the input stream in a RewindableChannel because Rack expects
         // 'rack.input' to be rewindable and a ServletInputStream is not
-        RewindableChannel rewindableChannel = new RewindableChannel(request.getInputStream());
+        RewindableChannel rewindableChannel = new RewindableChannel(inputChannel);
         this.input = new RubyIO(ruby, rewindableChannel);
         this.input.binmode();
         this.input.setAutoclose(false);
