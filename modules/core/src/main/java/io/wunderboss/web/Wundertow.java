@@ -74,7 +74,10 @@ public class Wundertow {
                     @Override
                     public boolean resolve(HttpServerExchange value) {
                         try {
-                            return servletBuilder.getResourceManager().getResource(value.getRelativePath()) != null;
+                            if (value.getRelativePath().length() > 0 && !value.getRelativePath().equals("/")) {
+                                return servletBuilder.getResourceManager().getResource(value.getRelativePath()) != null;
+                            }
+                            return false;
                         } catch (IOException ex) {
                             return false;
                         }
