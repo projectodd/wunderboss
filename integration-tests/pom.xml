@@ -1,0 +1,238 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>io.wunderboss</groupId>
+    <artifactId>wunderboss</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.wunderboss</groupId>
+  <artifactId>wunderboss-integration-tests</artifactId>
+  <packaging>jar</packaging>
+  <name>WunderBoss Integration Tests</name>
+  <description />
+
+  <properties>
+    <rspec.max.heap>768m</rspec.max.heap>
+    <spec.dir>spec</spec.dir>
+
+    <version.rspec>2.7.0</version.rspec>
+    <version.selenium>2.37.0</version.selenium>
+    <version.capybara>2.1.0</version.capybara>
+    <version.bundler>1.3.5</version.bundler>
+
+    <!-- Rails 4 dependencies -->
+    <version.rails>4.0.1</version.rails>
+    <version.sassrails>4.0.1</version.sassrails>
+    <version.coffeerails>4.0.1</version.coffeerails>
+    <version.jqueryrails>3.0.4</version.jqueryrails>
+    <version.uglifier>2.3.0</version.uglifier>
+    <version.turbolinks>1.3.0</version.turbolinks>
+    <version.jbuilder>1.5.2</version.jbuilder>
+    <version.therubyrhino>2.0.2</version.therubyrhino>
+    <version.arjdbc>1.3.2</version.arjdbc>
+    <version.jdbcsqlite3>3.7.2.1</version.jdbcsqlite3>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>rubygems-proxy</id>
+      <name>Rubygems Proxy</name>
+      <url>http://rubygems-proxy.torquebox.org/releases</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+        <updatePolicy>never</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>io.wunderboss</groupId>
+      <artifactId>wunderboss-ruby</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jruby</groupId>
+      <artifactId>jruby-complete</artifactId>
+      <version>${version.jruby}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>rspec</artifactId>
+      <version>${version.rspec}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>selenium-webdriver</artifactId>
+      <version>${version.selenium}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>capybara</artifactId>
+      <version>${version.capybara}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>bundler</artifactId>
+      <version>${version.bundler}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Rails 4 dependencies -->
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>rails</artifactId>
+      <version>${version.rails}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>sass-rails</artifactId>
+      <version>${version.sassrails}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>coffee-rails</artifactId>
+      <version>${version.coffeerails}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>jquery-rails</artifactId>
+      <version>${version.jqueryrails}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>uglifier</artifactId>
+      <version>${version.uglifier}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>turbolinks</artifactId>
+      <version>${version.turbolinks}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>jbuilder</artifactId>
+      <version>${version.jbuilder}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>therubyrhino</artifactId>
+      <version>${version.therubyrhino}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>activerecord-jdbc-adapter</artifactId>
+      <version>${version.arjdbc}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>rubygems</groupId>
+      <artifactId>jdbc-sqlite3</artifactId>
+      <version>${version.jdbcsqlite3}</version>
+      <type>gem</type>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>surgical testing</id>
+      <activation>
+        <property>
+          <name>test</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>de.saumya.mojo</groupId>
+            <artifactId>rspec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>run-specs</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${project.basedir}/apps</directory>
+              <includes>
+                <include>**/Gemfile.lock</include>
+              </includes>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.saumya.mojo</groupId>
+        <artifactId>rspec-maven-plugin</artifactId>
+        <version>0.28.4</version>
+        <executions>
+          <execution>
+            <id>run-specs</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <args>${spec}</args>
+              <jrubyJvmArgs>-Xms64m -Xmx${rspec.max.heap}</jrubyJvmArgs>
+              <specSourceDirectory>${spec.dir}</specSourceDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+
+</project>

@@ -25,6 +25,10 @@ public class WunderBoss {
         languages.put(language, klass);
     }
 
+    public void stop() {
+        this.wundertow.stop();
+    }
+
     public Wundertow getWundertow() {
         return this.wundertow;
     }

@@ -33,6 +33,14 @@ public class Wundertow {
                 .build();
     }
 
+    public synchronized void stop() {
+        if (this.started) {
+            this.undertow.stop();
+            log.info("Wundertop stopped");
+            this.started = false;
+        }
+    }
+
     public synchronized void deploy(Class<? extends Servlet> servletClass,
                                     Map<String, Object> servletContextAttributes,
                                     Map<String, String> config) throws Exception {
