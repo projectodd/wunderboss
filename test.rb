@@ -1,4 +1,4 @@
-require 'target/wunderboss-all.jar'
+require 'modules/ruby/target/wunderboss-all.jar'
 
 # TODO: This should all be wrapped in a Ruby API vs calling
 # the Java API directly
