@@ -11,6 +11,7 @@ import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaUtil;
 import org.jruby.runtime.builtin.IRubyObject;
 
+import javax.servlet.GenericServlet;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -20,13 +21,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class RackServlet implements Servlet {
-    public static final String RESPONSE_HANDLER_RB = "io/wunderboss/ruby/rack/response_handler";
-    public static final String RESPONSE_HANDLER_CLASS_NAME = "WunderBoss::Rack::ResponseHandler";
-    public static final String RESPONSE_HANDLER_METHOD_NAME = "handle";
+public class RackServlet extends GenericServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
+        super.init(config);
         this.rackApplication = (IRubyObject) config.getServletContext().getAttribute("rack_application");
         this.runtime = this.rackApplication.getRuntime();
         RuntimeHelper.requireUnlessDefined(this.runtime, RESPONSE_HANDLER_RB, RESPONSE_HANDLER_CLASS_NAME);
@@ -36,11 +35,6 @@ public class RackServlet implements Servlet {
         } catch (IOException e) {
             throw new ServletException(e);
         }
-    }
-
-    @Override
-    public ServletConfig getServletConfig() {
-        return null;
     }
 
     @Override
@@ -94,19 +88,14 @@ public class RackServlet implements Servlet {
         response.sendRedirect(redirectUri);
     }
 
-    @Override
-    public String getServletInfo() {
-        return null;
-    }
-
-    @Override
-    public void destroy() {
-    }
-
     private Ruby runtime;
     private IRubyObject rackApplication;
     private RubyModule responseModule;
     private RackEnvironment rackEnvironment;
+
+    public static final String RESPONSE_HANDLER_RB = "io/wunderboss/ruby/rack/response_handler";
+    public static final String RESPONSE_HANDLER_CLASS_NAME = "WunderBoss::Rack::ResponseHandler";
+    public static final String RESPONSE_HANDLER_METHOD_NAME = "handle";
 
     private static final Logger log = Logger.getLogger(RackServlet.class);
 
