@@ -52,8 +52,13 @@ public class Wundertow {
                 .setClassLoader(WunderBoss.class.getClassLoader())
                 .setContextPath(context)
                 .setDeploymentName(context)
-                .addServlet(servlet)
-                .setResourceManager(new CachingResourceManager(1000, 1L, null, new FileResourceManager(new File("public/"), 1 * 1024 * 1024), 250));
+                .addServlet(servlet);
+
+        if (config.containsKey("static_dir")) {
+            servletBuilder.setResourceManager(new CachingResourceManager(1000, 1L, null,
+                    new FileResourceManager(new File(config.get("static_dir")), 1 * 1024 * 1024), 250));
+        }
+        
         for (Map.Entry<String, Object> entry : servletContextAttributes.entrySet()) {
             servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());
         }
