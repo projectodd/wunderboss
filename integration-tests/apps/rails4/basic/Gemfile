@@ -1,4 +1,4 @@
-source "file://#{File.dirname(__FILE__)}/../../../../build/assembly/target/stage/gem-repo"
+source :rubygems
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.0.1'
