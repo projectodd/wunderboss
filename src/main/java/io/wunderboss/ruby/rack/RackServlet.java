@@ -1,12 +1,11 @@
-package io.wunderboss.rack;
+package io.wunderboss.ruby.rack;
 
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.servlet.spec.HttpServletResponseImpl;
-import io.wunderboss.RuntimeHelper;
+import io.wunderboss.ruby.RuntimeHelper;
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
-import org.jruby.RubyIO;
 import org.jruby.RubyModule;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaUtil;
@@ -22,7 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class RackServlet implements Servlet {
-    public static final String RESPONSE_HANDLER_RB = "io/wunderboss/rack/response_handler";
+    public static final String RESPONSE_HANDLER_RB = "io/wunderboss/ruby/rack/response_handler";
     public static final String RESPONSE_HANDLER_CLASS_NAME = "WunderBoss::Rack::ResponseHandler";
     public static final String RESPONSE_HANDLER_METHOD_NAME = "handle";
 

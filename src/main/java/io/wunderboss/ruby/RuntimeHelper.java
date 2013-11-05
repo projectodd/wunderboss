@@ -1,4 +1,4 @@
-package io.wunderboss;
+package io.wunderboss.ruby;
 
 import java.io.File;
 import java.util.Map;

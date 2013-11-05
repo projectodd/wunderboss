@@ -1,4 +1,4 @@
-package io.wunderboss.rack;
+package io.wunderboss.ruby.rack;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;

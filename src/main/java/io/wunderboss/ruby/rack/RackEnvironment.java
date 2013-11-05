@@ -1,4 +1,4 @@
-package io.wunderboss.rack;
+package io.wunderboss.ruby.rack;
 
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import org.jboss.logging.Logger;
@@ -9,8 +9,6 @@ import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyIO;
 import org.jruby.RubyString;
-import org.xnio.channels.EmptyStreamSourceChannel;
-import org.xnio.channels.StreamSourceChannel;
 
 import java.io.IOException;
 import java.util.Enumeration;

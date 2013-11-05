@@ -1,4 +1,4 @@
-package io.wunderboss;
+package io.wunderboss.web;
 
 import io.undertow.Undertow;
 import io.undertow.predicate.Predicate;
@@ -14,11 +14,10 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
-import io.wunderboss.rack.RackServlet;
+import io.wunderboss.WunderBoss;
 import org.jboss.logging.Logger;
-import org.jruby.Ruby;
-import org.jruby.runtime.builtin.IRubyObject;
 
+import javax.servlet.Servlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -34,15 +33,11 @@ public class Wundertow {
                 .build();
     }
 
-    public synchronized void deployRackApplication(String applicationRoot, Ruby ruby, Map<String, String> config) throws Exception {
-        StringBuilder rackScript = new StringBuilder()
-                .append("require 'rack'\n")
-                .append("app, _ = Rack::Builder.parse_file(File.join('" + applicationRoot + "', 'config.ru'))\n")
-                .append("app\n");
-        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(ruby, rackScript.toString(), false);
-        String context = config.get("web_context");
-
-        final ServletInfo servlet = Servlets.servlet("RackServlet", RackServlet.class)
+    public synchronized void deploy(Class<? extends Servlet> servletClass,
+                                    Map<String, Object> servletContextAttributes,
+                                    Map<String, String> config) throws Exception {
+        String context = config.get("context");
+        final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
                 .addMapping("/*");
 
         final DeploymentInfo servletBuilder = Servlets.deployment()
@@ -50,8 +45,10 @@ public class Wundertow {
                 .setContextPath(context)
                 .setDeploymentName(context)
                 .addServlet(servlet)
-                .addServletContextAttribute("rack_application", rackApplication)
                 .setResourceManager(new CachingResourceManager(1000, 1L, null, new FileResourceManager(new File("public/"), 1 * 1024 * 1024), 250));
+        for (Map.Entry<String, Object> entry : servletContextAttributes.entrySet()) {
+            servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());
+        }
 
         servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
             @Override
