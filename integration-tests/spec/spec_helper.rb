@@ -10,6 +10,31 @@ RSpec.configure do |config|
   config.before(:suite) do
     Java::IoWunderboss::WunderBoss.register_language('ruby', 'io.wunderboss.ruby.RubyApplication')
     WUNDERBOSS = Java::IoWunderboss::WunderBoss.new('web_host' => 'localhost', 'web_port' => '8080')
+    begin
+      Capybara.visit "/"
+    rescue Exception => ex
+      if ex.message.include?('phantomjs')
+        $stderr.puts <<-EOF
+
+
+
+========================================================================
+
+It looks like phantomjs was not found. Ensure it is installed and
+available in your $PATH. See http://phantomjs.org/download.html for
+details.
+
+========================================================================
+
+
+
+EOF
+        $stderr.puts ex.message
+        exit 1
+      else
+        raise ex
+      end
+    end
   end
 
   config.after(:suite) do
