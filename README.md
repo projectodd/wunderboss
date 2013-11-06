@@ -4,11 +4,20 @@ This is a prototype of the next-generation TorqueBox platform
 
 ## Building
 
-Make sure you're using Java 8.
+Make sure you're using Java 7 or above.
 
     mvn install
 
-## Running
+## Running integration tests
+
+Make sure `phantomjs` is available on your $PATH -
+http://phantomjs.org/download.html
+
+    cd integration-tests/
+    mvn test
+
+
+## Hello World example
 
 Make sure you have a recent JRuby installed.
 

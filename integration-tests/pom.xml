@@ -19,7 +19,7 @@
     <spec.dir>spec</spec.dir>
 
     <version.rspec>2.7.0</version.rspec>
-    <version.selenium>2.37.0</version.selenium>
+    <version.poltergeist>1.4.1</version.poltergeist>
     <version.capybara>2.1.0</version.capybara>
     <version.bundler>1.3.5</version.bundler>
 
@@ -80,8 +80,8 @@
 
     <dependency>
       <groupId>rubygems</groupId>
-      <artifactId>selenium-webdriver</artifactId>
-      <version>${version.selenium}</version>
+      <artifactId>poltergeist</artifactId>
+      <version>${version.poltergeist}</version>
       <type>gem</type>
       <scope>test</scope>
     </dependency>
