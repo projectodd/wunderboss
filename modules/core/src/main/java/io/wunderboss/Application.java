@@ -2,6 +2,8 @@ package io.wunderboss;
 
 import io.wunderboss.web.Wundertow;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public abstract class Application {
@@ -20,5 +22,15 @@ public abstract class Application {
 
     private WunderBoss wunderBoss;
 
-    public abstract void deployWeb(Map<String, String> config) throws Exception;
+    public void deployWeb(String context, Map<String, String> config) throws Exception {
+        webContexts.add(context);
+    }
+
+    public void undeploy() throws Exception {
+        for (String context : webContexts) {
+            getWundertow().undeploy(context);
+        }
+    }
+
+    private List<String> webContexts = new ArrayList<>();
 }

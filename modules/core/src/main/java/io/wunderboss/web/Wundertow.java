@@ -18,33 +18,35 @@ import io.wunderboss.WunderBoss;
 import org.jboss.logging.Logger;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Wundertow {
 
     public Wundertow(Map<String, String> config) {
-        this.port = Integer.parseInt(config.get("web_port"));
-        this.host = config.get("web_host");
-        this.undertow = Undertow.builder()
-                .addListener(this.port, this.host)
-                .setHandler(this.pathHandler)
+        port = Integer.parseInt(config.get("web_port"));
+        host = config.get("web_host");
+        undertow = Undertow.builder()
+                .addListener(port, host)
+                .setHandler(pathHandler)
                 .build();
     }
 
     public synchronized void stop() {
-        if (this.started) {
-            this.undertow.stop();
+        if (started) {
+            undertow.stop();
             log.info("Wundertop stopped");
-            this.started = false;
+            started = false;
         }
     }
 
-    public synchronized void deploy(Class<? extends Servlet> servletClass,
-                                    Map<String, Object> servletContextAttributes,
-                                    Map<String, String> config) throws Exception {
-        String context = config.get("context");
+    public synchronized void deployServlet(String context, Class<? extends Servlet> servletClass,
+                                           Map<String, Object> servletContextAttributes,
+                                           Map<String, String> config) throws Exception {
         final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
                 .addMapping("/*");
 
@@ -90,14 +92,25 @@ public class Wundertow {
 
 
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
+        deploymentManagers.put(context, manager);
         manager.deploy();
-        this.pathHandler.addPath(context, manager.start());
+        pathHandler.addPath(context, manager.start());
 
-        if (!this.started) {
-            this.undertow.start();
+        if (!started) {
+            undertow.start();
             log.info("Wundertow listening on " + host + ":" + port);
-            this.started = true;
+            started = true;
         }
+    }
+
+    public synchronized void undeploy(String context) throws ServletException {
+        DeploymentManager manager = deploymentManagers.remove(context);
+        if (manager != null) {
+            manager.stop();
+            manager.undeploy();
+            Servlets.defaultContainer().removeDeployment(manager.getDeployment().getDeploymentInfo());
+        }
+        pathHandler.removePath(context);
     }
 
     private static final Logger log = Logger.getLogger(Wundertow.class);
@@ -105,6 +118,7 @@ public class Wundertow {
     private Undertow undertow;
     private boolean started = false;
     private PathHandler pathHandler = new PathHandler();
+    private Map<String, DeploymentManager> deploymentManagers = new HashMap<>();
     private int port;
     private String host;
 }

@@ -5,11 +5,11 @@ feature 'basic rails4 test' do
   before(:all) do
     app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/rails4/basic",
                                         'language' => 'ruby')
-    app.deploy_web('context' => '/basic-rails4')
+    app.deploy_web('/basic-rails4', {})
   end
 
   after(:all) do
-    WUNDERBOSS.stop
+    app.undeploy
   end
 
   it 'should do a basic get' do
@@ -28,7 +28,7 @@ feature 'basic rails4 test' do
     end
 
     def verify_streaming(url)
-      uri = URI.parse(Capybara.app_host + url)
+      uri = URI.parse("#{Capybara.app_host}#{url}")
       Net::HTTP.get_response(uri) do |response|
         response.should be_chunked
         response.header['transfer-encoding'].should == 'chunked'

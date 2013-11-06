@@ -5,11 +5,11 @@ feature "basic sinatra test" do
   before(:all) do
     app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/sinatra/basic",
                                         'language' => 'ruby')
-    app.deploy_web('context' => '/basic-sinatra')
+    app.deploy_web('/basic-sinatra', {})
   end
 
   after(:all) do
-    WUNDERBOSS.stop
+    app.undeploy
   end
 
   it "should work" do
@@ -31,11 +31,12 @@ feature "basic sinatra test" do
 
   it "should return 304 for unmodified static assets" do
     uri = URI.parse("#{Capybara.app_host}/basic-sinatra/some_page.html")
-    http = Net::HTTP.new(uri.host, uri.port)
-    request = Net::HTTP::Get.new(uri.request_uri)
-    request.add_field('If-Modified-Since', 'Sat, 31 Dec 2050 00:00:00 GMT')
-    response = http.request(request)
-    response.code.should == "304"
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      request = Net::HTTP::Get.new(uri.request_uri)
+      request.add_field('If-Modified-Since', 'Sat, 31 Dec 2050 00:00:00 GMT')
+      response = http.request(request)
+      response.code.should == "304"
+    end
   end
 
   it "should post something" do
@@ -48,30 +49,32 @@ feature "basic sinatra test" do
 
   it "should allow headers through" do
     uri = URI.parse("#{Capybara.app_host}/basic-sinatra/")
-    http = Net::HTTP.new(uri.host, uri.port)
-    request = Net::HTTP::Get.new(uri.request_uri)
-    response = http.request(request)
+    response = Net::HTTP.get_response(uri)
     response['Biscuit'].should == 'Gravy'
   end
 
   it "should allow OPTIONS requests" do
     uri = URI.parse("#{Capybara.app_host}/basic-sinatra/")
-    http = Net::HTTP.new(uri.host, uri.port)
-    request = Net::HTTP::Options.new(uri.request_uri)
-    response = http.request(request)
-    response['access-control-allow-origin'].should == '*'
-    response['access-control-allow-methods'].should == 'POST'
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      request = Net::HTTP::Options.new(uri.request_uri)
+      response = http.request(request)
+      response['access-control-allow-origin'].should == '*'
+      response['access-control-allow-methods'].should == 'POST'
+    end
 
   end
 
   it "should test Sir Postalot" do
-    500.times do |i|
-      print '.' if (i % 10 == 0)
-      visit "/basic-sinatra/poster"
-      click_button 'submit'
-      find('#success').text.should == "you posted nothing"
+    uri = URI.parse("#{Capybara.app_host}/basic-sinatra/poster")
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      100.times do |i|
+        http.request(Net::HTTP::Get.new(uri.request_uri))
+        request = Net::HTTP::Post.new(uri.request_uri)
+        request.form_data = {'field' => 'nothing'}
+        response = http.request(request)
+        response.body.should include("<div id='success'>you posted nothing</div>")
+      end
     end
-    puts " complete!"
   end
 
 end

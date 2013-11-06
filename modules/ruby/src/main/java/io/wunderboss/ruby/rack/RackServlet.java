@@ -12,7 +12,6 @@ import org.jruby.javasupport.JavaUtil;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import javax.servlet.GenericServlet;
-import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -68,12 +67,10 @@ public class RackServlet extends GenericServlet {
             throw new ServletException(e);
         } finally {
             if (rackEnvHash != null) {
-//                RubyIO input = (RubyIO) rackEnvHash.get("rack.input");
-//                //explicitly close the inputstream, but leave the err stream open,
-//                //as closing that detaches it from the log forever!
-//                if (input != null && !input.isClosed()) {
-//                    input.close();
-//                }
+                RackChannel input = (RackChannel) rackEnvHash.get("rack.input");
+                if (input != null) {
+                    input.close();
+                }
             }
         }
     }

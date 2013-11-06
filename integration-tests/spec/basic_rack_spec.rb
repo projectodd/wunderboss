@@ -5,11 +5,11 @@ feature "basic rack" do
   before(:all) do
     app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/rack/basic",
                                          'language' => 'ruby')
-    app.deploy_web('context' => '/basic-rack')
+    app.deploy_web('/basic-rack', {})
   end
 
   after(:all) do
-    WUNDERBOSS.stop
+    app.undeploy
   end
 
   before(:each) do

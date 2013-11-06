@@ -27,20 +27,7 @@ public class RackEnvironment {
     public RubyHash getEnv(HttpServletRequestImpl request) throws IOException {
         RubyHash env = new RubyHash(this.ruby);
 
-//        StreamSourceChannel inputChannel;
-//        if(request.getExchange().isRequestChannelAvailable()) {
-//            inputChannel = request.getExchange().getRequestChannel();
-//        } else {
-//            inputChannel = new EmptyStreamSourceChannel(request.getExchange().getIoThread());
-//        }
-
-        // Wrap the input stream in a RewindableChannel because Rack expects
-        // 'rack.input' to be rewindable and a ServletInputStream is not
-//        RewindableChannel rewindableChannel = new RewindableChannel(inputChannel);
-//        RubyIO input = new RubyIO(this.ruby, rewindableChannel);
-//        input.binmode();
-//        input.setAutoclose(false);
-        env.put(RubyString.newString(this.ruby, "rack.input"), new RackChannel(this.ruby));
+        env.put(RubyString.newString(this.ruby, "rack.input"), new RackChannel(this.ruby, request.getInputStream()));
         env.put(RubyString.newString(this.ruby, "rack.errors"), this.errors);
 
         // Don't use request.getPathInfo because that gets decoded by the container

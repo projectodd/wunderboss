@@ -15,31 +15,45 @@ public class RubyApplication extends Application {
 
     public RubyApplication(WunderBoss wunderBoss, Map<String, String> config) {
         super(wunderBoss, config);
-        this.root = config.get("root");
-        if (this.root.equals(".") && Ruby.getGlobalRuntime() != null) {
+        root = config.get("root");
+        if (root.equals(".") && Ruby.getGlobalRuntime() != null) {
             // We're running embedded and the user is deploying the current app
-            this.runtime = Ruby.getGlobalRuntime();
+            runtime = Ruby.getGlobalRuntime();
         } else {
             RubyInstanceConfig rubyConfig = new RubyInstanceConfig();
             rubyConfig.setLoadPaths(Arrays.asList(root));
-            this.runtime = Ruby.newInstance(rubyConfig);
-            this.runtime.setCurrentDirectory(root);
+            runtime = Ruby.newInstance(rubyConfig);
+            runtime.setCurrentDirectory(root);
         }
     }
 
     @Override
-    public void deployWeb(Map<String, String> config) throws Exception {
+    public void deployWeb(String context, Map<String, String> config) throws Exception {
+        super.deployWeb(context, config);
         if (!config.containsKey("static_dir")) {
-            config.put("static_dir", this.root + "/public");
+            config.put("static_dir", root + "/public");
         }
         StringBuilder rackScript = new StringBuilder()
                 .append("require 'rack'\n")
-                .append("app, _ = Rack::Builder.parse_file(File.join('" + this.root + "', 'config.ru'))\n")
+                .append("app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n")
                 .append("app\n");
-        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(this.runtime, rackScript.toString(), false);
+        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(runtime, rackScript.toString(), false);
         Map<String, Object> servletContextAttributes = new HashMap<>();
         servletContextAttributes.put("rack_application", rackApplication);
-        getWundertow().deploy(RackServlet.class, servletContextAttributes, config);
+        getWundertow().deployServlet(context, RackServlet.class, servletContextAttributes, config);
+    }
+
+    @Override
+    public void undeploy() throws Exception {
+        try {
+            super.undeploy();
+        }
+        finally {
+            if (runtime != null) {
+                runtime.tearDown(false);
+                runtime = null;
+            }
+        }
     }
 
     private Ruby runtime;
