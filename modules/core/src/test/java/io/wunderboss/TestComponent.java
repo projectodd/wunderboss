@@ -18,7 +18,7 @@ public class TestComponent extends Component {
     }
 
     @Override
-    public ComponentInstance start(Options options) {
+    public ComponentInstance start(Application application, Options options) {
         started = true;
         startOptions = options;
         return new ComponentInstance(this, new Options());

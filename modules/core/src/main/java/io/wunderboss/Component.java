@@ -22,7 +22,7 @@ public abstract class Component {
 
     public abstract void configure(Options options);
 
-    public abstract ComponentInstance start(Options options);
+    public abstract ComponentInstance start(Application application, Options options);
 
     public abstract void stop(ComponentInstance instance);
 
@@ -31,4 +31,5 @@ public abstract class Component {
     }
 
     private WunderBoss container;
+    private Application application;
 }

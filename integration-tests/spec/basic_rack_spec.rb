@@ -3,12 +3,12 @@ require 'spec_helper'
 feature "basic rack" do
 
   before(:all) do
-    rack = CONTAINER.start('rack', 'root' => "#{apps_dir}/rack/basic",
-                           'context' => '/basic-rack')
+    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rack/basic")
+    @app.start('rack', 'context' => '/basic-rack')
   end
 
   after(:all) do
-    rack.stop
+    @app.stop
   end
 
   before(:each) do

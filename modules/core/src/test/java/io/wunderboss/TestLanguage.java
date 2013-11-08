@@ -9,9 +9,15 @@ public class TestLanguage implements Language {
     }
 
     @Override
-    public Object getRuntime() {
-        return null;
+    public String getRuntime(Options options) {
+        return "runtime";
+    }
+
+    @Override
+    public void destroyRuntime(Object runtime) {
+        destroyed = true;
     }
 
     boolean registered;
+    boolean destroyed;
 }

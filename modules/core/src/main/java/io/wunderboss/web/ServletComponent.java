@@ -12,6 +12,7 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
+import io.wunderboss.Application;
 import io.wunderboss.Component;
 import io.wunderboss.ComponentInstance;
 import io.wunderboss.Options;
@@ -42,7 +43,7 @@ public class ServletComponent extends Component {
     }
 
     @Override
-    public ComponentInstance start(Options options) {
+    public ComponentInstance start(Application application, Options options) {
         String context = (String) options.get("context", "/");
         Class servletClass = (Class) options.get("servlet_class");
         final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
@@ -96,18 +97,17 @@ public class ServletComponent extends Component {
             Options webOptions = new Options();
             webOptions.put("context", context);
             webOptions.put("http_handler", manager.start());
-            ComponentInstance web = getContainer().start("web", webOptions);
+            ComponentInstance web = application.start("web", webOptions);
 
             Options instanceOptions = new Options();
             instanceOptions.put("manager", manager);
             instanceOptions.put("web", web);
-            ComponentInstance instance = new ComponentInstance(this, instanceOptions);
+            return new ComponentInstance(this, instanceOptions);
         } catch (ServletException e) {
             // TODO: something better
             e.printStackTrace();
+            return null;
         }
-
-        return null;
     }
 
     @Override
@@ -116,9 +116,10 @@ public class ServletComponent extends Component {
         DeploymentManager manager = (DeploymentManager) instance.getOptions().get("manager");
 
         try {
+            DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
             manager.stop();
             manager.undeploy();
-            Servlets.defaultContainer().removeDeployment(manager.getDeployment().getDeploymentInfo());
+            Servlets.defaultContainer().removeDeployment(deploymentInfo);
             web.stop();
         } catch (ServletException e) {
             // TODO: something better

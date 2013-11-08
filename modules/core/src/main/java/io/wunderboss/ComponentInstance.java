@@ -8,7 +8,14 @@ public class ComponentInstance {
     }
 
     public void stop() {
-        component.stop(this);
+        if (!isStopped()) {
+            component.stop(this);
+            stopped = true;
+        }
+    }
+
+    public boolean isStopped() {
+        return stopped;
     }
 
     public Options getOptions() {
@@ -17,4 +24,5 @@ public class ComponentInstance {
 
     private Component component;
     private Options options;
+    private boolean stopped;
 }

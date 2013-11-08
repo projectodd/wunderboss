@@ -3,6 +3,7 @@ package io.wunderboss;
 import org.jboss.logging.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class WunderBoss {
@@ -54,25 +55,25 @@ public class WunderBoss {
         getComponent(componentName).configure(options);
     }
 
-    public ComponentInstance start(String componentName) {
-        return start(componentName, new HashMap<String, Object>());
-    }
-
-    public ComponentInstance start(String componentName, Map<String, Object> options) {
-        return start(componentName, new Options(options));
-    }
-
-    public ComponentInstance start(String componentName, Options options) {
-        return getComponent(componentName).start(options);
-    }
-
     public void stop() {
         for (Component component : components.values()) {
             component.shutdown();
         }
     }
 
-    private Component getComponent(String name) {
+    public Application newApplication(String languageName) {
+        return newApplication(languageName, new Options());
+    }
+
+    public Application newApplication(String languageName, Map<String, Object> options) {
+        return newApplication(languageName, new Options(options));
+    }
+
+    public Application newApplication(String languageName, Options options) {
+        return new Application(this, getLanguage(languageName), options);
+    }
+
+    public Component getComponent(String name) {
         Component component = components.get(name);
         if (component == null) {
             throw new IllegalArgumentException("Unknown component: " + name);

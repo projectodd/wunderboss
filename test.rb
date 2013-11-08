@@ -17,8 +17,10 @@ container.register_component('rack', Java::IoWunderbossRubyRack::RackComponent.n
 # we bring to WildFly, like jobs. Perhaps confusing.
 container.configure('web', 'host' => 'localhost', 'port' => '8080')
 
-rack = container.start('rack', 'root' => '.', 'context' => '/')
+app = container.new_application('ruby')
+rack = app.start('rack', 'context' => '/')
 
 # rack.stop
+# app.stop
 
 # container.stop

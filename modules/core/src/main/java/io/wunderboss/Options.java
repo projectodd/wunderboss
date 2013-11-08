@@ -29,5 +29,16 @@ public class Options {
         return options.containsKey(key);
     }
 
+    public Options merge(Options otherOptions) {
+        Options mergedOptions = new Options();
+        for (String key : this.options.keySet()) {
+            mergedOptions.put(key, this.options.get(key));
+        }
+        for (String key : otherOptions.options.keySet()) {
+            mergedOptions.put(key, otherOptions.options.get(key));
+        }
+        return mergedOptions;
+    }
+
     private Map<String, Object> options;
 }

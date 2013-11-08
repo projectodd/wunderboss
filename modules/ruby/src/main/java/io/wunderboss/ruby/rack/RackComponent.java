@@ -1,5 +1,6 @@
 package io.wunderboss.ruby.rack;
 
+import io.wunderboss.Application;
 import io.wunderboss.Component;
 import io.wunderboss.ComponentInstance;
 import io.wunderboss.Options;
@@ -34,16 +35,15 @@ public class RackComponent extends Component{
     }
 
     @Override
-    public ComponentInstance start(Options options) {
+    public ComponentInstance start(Application application, Options options) {
         String context = options.get("context", "/").toString();
         String root = options.get("root", ".").toString();
         String staticDirectory = options.get("static_dir", root + "/public").toString();
 
-        StringBuilder rackScript = new StringBuilder()
-                .append("require 'rack'\n")
-                .append("app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n")
-                .append("app\n");
-        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(getRuntime(), rackScript.toString(), false);
+        String rackScript = "require 'rack'\n" +
+                "app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n" +
+                "app\n";
+        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(getRuntime(application), rackScript, false);
 
         Map<String, Object> servletContextAttributes = new HashMap<>();
         servletContextAttributes.put("rack_application", rackApplication);
@@ -53,13 +53,11 @@ public class RackComponent extends Component{
         servletOptions.put("static_dir", staticDirectory);
         servletOptions.put("servlet_class", RackServlet.class);
         servletOptions.put("context_attributes", servletContextAttributes);
-        ComponentInstance servlet = getContainer().start("servlet", servletOptions);
+        ComponentInstance servlet = application.start("servlet", servletOptions);
 
         Options instanceOptions = new Options();
         instanceOptions.put("servlet", servlet);
-        ComponentInstance instance = new ComponentInstance(this, instanceOptions);
-
-        return instance;
+        return new ComponentInstance(this, instanceOptions);
     }
 
     @Override
@@ -68,7 +66,7 @@ public class RackComponent extends Component{
         servlet.stop();
     }
 
-    private Ruby getRuntime() {
-        return (Ruby) getContainer().getLanguage("ruby").getRuntime();
+    private Ruby getRuntime(Application application) {
+        return (Ruby) application.getRuntime();
     }
 }

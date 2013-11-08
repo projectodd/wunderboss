@@ -3,6 +3,7 @@ package io.wunderboss.web;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.wunderboss.Application;
 import io.wunderboss.Component;
 import io.wunderboss.ComponentInstance;
 import io.wunderboss.Options;
@@ -33,7 +34,7 @@ public class WebComponent extends Component {
     }
 
     @Override
-    public ComponentInstance start(Options options) {
+    public ComponentInstance start(Application application, Options options) {
         String context = (String) options.get("context");
         HttpHandler httpHandler = (HttpHandler) options.get("http_handler");
 
@@ -44,6 +45,7 @@ public class WebComponent extends Component {
             log.info("Undertow listening on " + host + ":" + port);
             started = true;
         }
+        log.info("Started web context " + context);
 
         Options instanceOptions = new Options();
         instanceOptions.put("context", context);
@@ -55,6 +57,7 @@ public class WebComponent extends Component {
     public void stop(ComponentInstance instance) {
         String context = (String) instance.getOptions().get("context");
         pathHandler.removePath(context);
+        log.info("Stopped web context " + context);
     }
 
     private int port;

@@ -57,22 +57,6 @@ public class WunderBossTest {
     }
 
     @Test
-    public void testCanStartComponent() {
-        container.registerComponent("test", testComponent);
-        container.start("test");
-        assertTrue(testComponent.started);
-    }
-
-    @Test
-    public void testCanStartComponentWithOptions() {
-        Map<String, Object> options = new HashMap<>();
-        options.put("foo", "bar");
-        container.registerComponent("test", testComponent);
-        container.start("test", options);
-        assertEquals("bar", testComponent.startOptions.get("foo"));
-    }
-
-    @Test
     public void testCanStopContainer() {
         container.registerComponent("test", testComponent);
         container.stop();
