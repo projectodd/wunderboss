@@ -3,13 +3,12 @@ require 'spec_helper'
 feature 'basic rails4 test' do
 
   before(:all) do
-    app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/rails4/basic",
-                                        'language' => 'ruby')
-    app.deploy_web('/basic-rails4', {})
+    rack = CONTAINER.start('rack', 'root' => "#{apps_dir}/rails4/basic",
+                           'context' => '/basic-rails4')
   end
 
   after(:all) do
-    app.undeploy
+    rack.stop
   end
 
   it 'should do a basic get' do

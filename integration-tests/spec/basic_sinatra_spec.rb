@@ -3,13 +3,12 @@ require 'spec_helper'
 feature "basic sinatra test" do
 
   before(:all) do
-    app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/sinatra/basic",
-                                        'language' => 'ruby')
-    app.deploy_web('/basic-sinatra', {})
+    rack = CONTAINER.start('rack', 'root' => "#{apps_dir}/sinatra/basic",
+                           'context' => '/basic-sinatra')
   end
 
   after(:all) do
-    app.undeploy
+    rack.stop
   end
 
   it "should work" do

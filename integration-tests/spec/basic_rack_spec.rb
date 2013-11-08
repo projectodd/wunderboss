@@ -3,13 +3,12 @@ require 'spec_helper'
 feature "basic rack" do
 
   before(:all) do
-    app = WUNDERBOSS.deploy_application('root' => "#{apps_dir}/rack/basic",
-                                         'language' => 'ruby')
-    app.deploy_web('/basic-rack', {})
+    rack = CONTAINER.start('rack', 'root' => "#{apps_dir}/rack/basic",
+                           'context' => '/basic-rack')
   end
 
   after(:all) do
-    app.undeploy
+    rack.stop
   end
 
   before(:each) do

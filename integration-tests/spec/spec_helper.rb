@@ -8,8 +8,19 @@ Capybara.default_driver = :poltergeist
 
 RSpec.configure do |config|
   config.before(:suite) do
-    Java::IoWunderboss::WunderBoss.register_language('ruby', 'io.wunderboss.ruby.RubyApplication')
-    WUNDERBOSS = Java::IoWunderboss::WunderBoss.new('web_host' => 'localhost', 'web_port' => '8080')
+    begin
+      CONTAINER = Java::IoWunderboss::WunderBoss.new
+      CONTAINER.register_language('ruby', Java::IoWunderbossRuby::RubyLanguage.new)
+      CONTAINER.register_component('web', Java::IoWunderbossWeb::WebComponent.new)
+      CONTAINER.register_component('servlet', Java::IoWunderbossWeb::ServletComponent.new)
+      CONTAINER.register_component('rack', Java::IoWunderbossRubyRack::RackComponent.new)
+      CONTAINER.configure('web', 'host' => 'localhost', 'port' => '8080')
+    rescue Exception => ex
+      puts ex.inspect
+      puts ex.backtrace
+      raise ex
+    end
+
     begin
       Capybara.visit "/"
     rescue Exception => ex
@@ -38,7 +49,7 @@ EOF
   end
 
   config.after(:suite) do
-    WUNDERBOSS.stop
+    CONTAINER.stop
   end
 end
 
