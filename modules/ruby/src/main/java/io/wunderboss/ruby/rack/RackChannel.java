@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
  */
 public class RackChannel extends RubyObject {
 
-    public static RubyClass getRackChannelClass(Ruby runtime) {
+    public static RubyClass createRackChannelClass(Ruby runtime) {
         RubyModule wunderBossModule = runtime.getOrCreateModule("WunderBoss");
         RubyClass rackChannel = wunderBossModule.getClass("RackChannel");
         if (rackChannel == null) {
@@ -42,8 +42,8 @@ public class RackChannel extends RubyObject {
         super(runtime, metaClass);
     }
 
-    public RackChannel(Ruby runtime, InputStream inputStream) {
-        super(runtime, getRackChannelClass(runtime));
+    public RackChannel(Ruby runtime, RubyClass metaClass, InputStream inputStream) {
+        super(runtime, metaClass);
         // Wrap the input stream in a RewindableChannel because Rack expects
         // 'rack.input' to be rewindable and a ServletInputStream is not
         this.inputChannel = new RewindableChannel(inputStream);
