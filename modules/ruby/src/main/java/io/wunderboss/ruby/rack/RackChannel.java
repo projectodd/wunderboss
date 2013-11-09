@@ -60,7 +60,7 @@ public class RackChannel extends RubyObject {
         long bytesToRead = Long.MAX_VALUE;
         boolean lengthGiven = false;
         if (args.length > 0 && !(args[0].isNil())) {
-            bytesToRead = Long.valueOf(args[0].convertToInteger("to_i").getLongValue());
+            bytesToRead = args[0].convertToInteger("to_i").getLongValue();
             lengthGiven = true;
         }
         RubyString stringBuffer = null;
