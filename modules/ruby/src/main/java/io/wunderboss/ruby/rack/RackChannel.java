@@ -53,6 +53,7 @@ public class RackChannel extends RubyObject {
 
     @JRubyMethod
     public IRubyObject gets(ThreadContext context) {
+        // TODO: Implement RackChannel#gets
         System.err.println("!!! Calling gets");
         return null;
     }
@@ -108,6 +109,7 @@ public class RackChannel extends RubyObject {
 
     @JRubyMethod
     public IRubyObject each(ThreadContext context) {
+        // TODO: Implement RackChannel#each
         System.err.println("!!! Calling each");
         return null;
     }
