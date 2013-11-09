@@ -23,13 +23,10 @@ public class RackEnvironment {
         rackVersion.add(RubyFixnum.one(runtime));
         errors = new RubyIO(this.runtime, this.runtime.getErr());
         errors.setAutoclose(false);
-        rackChannelClass = RackChannel.createRackChannelClass(runtime);
     }
 
-    public RubyHash getEnv(HttpServletRequestImpl request) throws IOException {
+    public RubyHash getEnv(HttpServletRequestImpl request, RackChannel inputChannel) throws IOException {
         RubyHash env = new RubyHash(runtime);
-
-        RackChannel inputChannel = new RackChannel(runtime, rackChannelClass, request.getInputStream());
         env.put(RubyString.newString(runtime, "rack.input"), inputChannel);
         env.put(RubyString.newString(runtime, "rack.errors"), errors);
 
@@ -93,7 +90,6 @@ public class RackEnvironment {
     private Ruby runtime;
     private RubyArray rackVersion;
     private RubyIO errors;
-    private RubyClass rackChannelClass;
 
 
 }

@@ -46,6 +46,8 @@ public class RackChannel extends RubyObject {
         super(runtime, metaClass);
         // Wrap the input stream in a RewindableChannel because Rack expects
         // 'rack.input' to be rewindable and a ServletInputStream is not
+        // TODO: RewindableChannel isn't really needed now - we should incorporate its
+        // rewinding directly into here
         this.inputChannel = new RewindableChannel(inputStream);
     }
 

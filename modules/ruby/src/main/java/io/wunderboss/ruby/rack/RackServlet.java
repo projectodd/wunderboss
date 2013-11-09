@@ -5,6 +5,7 @@ import io.undertow.servlet.spec.HttpServletResponseImpl;
 import io.wunderboss.ruby.RuntimeHelper;
 import org.jboss.logging.Logger;
 import org.jruby.Ruby;
+import org.jruby.RubyClass;
 import org.jruby.RubyHash;
 import org.jruby.RubyModule;
 import org.jruby.exceptions.RaiseException;
@@ -25,12 +26,13 @@ public class RackServlet extends GenericServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        this.rackApplication = (IRubyObject) config.getServletContext().getAttribute("rack_application");
-        this.runtime = this.rackApplication.getRuntime();
-        RuntimeHelper.requireUnlessDefined(this.runtime, RESPONSE_HANDLER_RB, RESPONSE_HANDLER_CLASS_NAME);
-        this.responseModule = RuntimeHelper.getClass(this.runtime, RESPONSE_HANDLER_CLASS_NAME);
+        rackApplication = (IRubyObject) config.getServletContext().getAttribute("rack_application");
+        runtime = this.rackApplication.getRuntime();
+        RuntimeHelper.requireUnlessDefined(runtime, RESPONSE_HANDLER_RB, RESPONSE_HANDLER_CLASS_NAME);
+        responseModule = RuntimeHelper.getClass(runtime, RESPONSE_HANDLER_CLASS_NAME);
+        rackChannelClass = RackChannel.createRackChannelClass(runtime);
         try {
-            this.rackEnvironment = new RackEnvironment(this.runtime);
+            rackEnvironment = new RackEnvironment(runtime);
         } catch (IOException e) {
             throw new ServletException(e);
         }
@@ -49,13 +51,10 @@ public class RackServlet extends GenericServlet {
             return;
         }
 
-        RubyHash rackEnvHash = null;
+        RackChannel inputChannel = null;
         try {
-            rackEnvHash = this.rackEnvironment.getEnv(request);
-//            IRubyObject rackResponse = (IRubyObject) RuntimeHelper.call(this.runtime,
-//                    this.rackApplication, "call", new Object[]{rackEnvHash});
-//            RuntimeHelper.call(this.runtime, this.responseModule, RESPONSE_HANDLER_METHOD_NAME,
-//                    new Object[]{rackResponse, response});
+            inputChannel = new RackChannel(runtime, rackChannelClass, request.getInputStream());
+            RubyHash rackEnvHash = this.rackEnvironment.getEnv(request, inputChannel);
             IRubyObject rackResponse = this.rackApplication.callMethod(this.runtime.getCurrentContext(), "call", rackEnvHash);
             IRubyObject[] rubyObjects = new IRubyObject[2];
             rubyObjects[0] = rackResponse;
@@ -66,11 +65,8 @@ public class RackServlet extends GenericServlet {
         } catch (Exception e) {
             throw new ServletException(e);
         } finally {
-            if (rackEnvHash != null) {
-                RackChannel input = (RackChannel) rackEnvHash.get("rack.input");
-                if (input != null) {
-                    input.close();
-                }
+            if (inputChannel != null) {
+                inputChannel.close();
             }
         }
     }
@@ -88,6 +84,7 @@ public class RackServlet extends GenericServlet {
     private Ruby runtime;
     private IRubyObject rackApplication;
     private RubyModule responseModule;
+    private RubyClass rackChannelClass;
     private RackEnvironment rackEnvironment;
 
     public static final String RESPONSE_HANDLER_RB = "io/wunderboss/ruby/rack/response_handler";
