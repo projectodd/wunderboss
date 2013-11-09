@@ -10,6 +10,7 @@ import org.jruby.RubyHash;
 import org.jruby.RubyModule;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaUtil;
+import org.jruby.runtime.Helpers;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import javax.servlet.GenericServlet;
@@ -54,12 +55,11 @@ public class RackServlet extends GenericServlet {
         RackChannel inputChannel = null;
         try {
             inputChannel = new RackChannel(runtime, rackChannelClass, request.getInputStream());
-            RubyHash rackEnvHash = this.rackEnvironment.getEnv(request, inputChannel);
-            IRubyObject rackResponse = this.rackApplication.callMethod(this.runtime.getCurrentContext(), "call", rackEnvHash);
-            IRubyObject[] rubyObjects = new IRubyObject[2];
-            rubyObjects[0] = rackResponse;
-            rubyObjects[1] = JavaUtil.convertJavaToUsableRubyObject(this.runtime, response);
-            this.responseModule.callMethod(this.runtime.getCurrentContext(), RESPONSE_HANDLER_METHOD_NAME, rubyObjects);
+            RubyHash rackEnvHash = rackEnvironment.getEnv(request, inputChannel);
+            IRubyObject rackResponse = rackApplication.callMethod(runtime.getCurrentContext(), "call", rackEnvHash);
+            IRubyObject servletResponse = JavaUtil.convertJavaToUsableRubyObject(runtime, response);
+            Helpers.invoke(runtime.getCurrentContext(), responseModule,
+                    RESPONSE_HANDLER_METHOD_NAME, rackResponse, servletResponse);
         } catch (RaiseException e) {
             throw new ServletException(e);
         } catch (Exception e) {
