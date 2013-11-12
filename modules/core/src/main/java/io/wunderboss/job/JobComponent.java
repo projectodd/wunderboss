@@ -20,6 +20,7 @@ public class JobComponent extends Component {
     @Override
     public void boot() {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
+        configure(new Options());
         // TODO: Configurable non-lazy boot of Quartz
     }
 
