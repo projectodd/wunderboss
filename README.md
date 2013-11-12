@@ -6,7 +6,7 @@ This is a prototype of the next-generation TorqueBox platform
 
 Make sure you're using Java 7 or above.
 
-    mvn install
+    mvn install -s support/settings.xml
 
 ## Running integration tests
 
@@ -14,7 +14,7 @@ Make sure `phantomjs` is available on your $PATH -
 http://phantomjs.org/download.html
 
     cd integration-tests/
-    mvn test
+    mvn test -s support/settings.xml
 
 
 ## Hello World example

@@ -7,4 +7,6 @@ public interface Language {
     public Object getRuntime(Options options);
 
     public void destroyRuntime(Object runtime);
+
+    public Options transformOptions(Options options);
 }

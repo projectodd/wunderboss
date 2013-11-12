@@ -23,6 +23,7 @@ public class Application {
     }
 
     public ComponentInstance start(String componentName, Options options) {
+        Options convertedOptions = language.transformOptions(options);
         ComponentInstance instance = container.getComponent(componentName).start(this, this.options.merge(options));
         instanceStack.push(instance);
         return instance;
@@ -33,7 +34,9 @@ public class Application {
         Iterator<ComponentInstance> iterator = instanceStack.iterator();
         while (iterator.hasNext()) {
             ComponentInstance instance = iterator.next();
-            instance.stop();
+            if (instance != null) {
+                instance.stop();
+            }
             iterator.remove();
         }
         language.destroyRuntime(runtime);

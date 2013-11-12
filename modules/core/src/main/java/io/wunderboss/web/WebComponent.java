@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 public class WebComponent extends Component {
     @Override
     public void boot() {
+        // TODO: Configurable non-lazy boot of Undertow
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.wunderboss;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Options {
 
@@ -27,6 +28,10 @@ public class Options {
 
     public boolean containsKey(String key) {
         return options.containsKey(key);
+    }
+
+    public Set<String> keySet() {
+        return options.keySet();
     }
 
     public Options merge(Options otherOptions) {

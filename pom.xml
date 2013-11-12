@@ -43,6 +43,11 @@
     <version.log4j>1.2.16</version.log4j>
     <version.undertow>1.0.0.Beta19</version.undertow>
 
+    <!-- Needed only for Quartz Scheduler -->
+    <version.quartz-scheduler>2.2.1</version.quartz-scheduler>
+    <version.slf4j>1.5.5</version.slf4j>
+    <version.jboss-logging-slf4j>1.0.4.GA</version.jboss-logging-slf4j>
+
     <version.junit>4.11</version.junit>
   </properties>
 
@@ -61,6 +66,36 @@
         <groupId>io.undertow</groupId>
         <artifactId>undertow-servlet</artifactId>
         <version>${version.undertow}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.quartz-scheduler</groupId>
+        <artifactId>quartz</artifactId>
+        <version>${version.quartz-scheduler}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.transaction</groupId>
+            <artifactId>jta</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>c3p0</groupId>
+            <artifactId>c3p0</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${version.slf4j}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.slf4j</groupId>
+        <artifactId>slf4j-jboss-logging</artifactId>
+        <version>${version.jboss-logging-slf4j}</version>
       </dependency>
 
       <dependency>
