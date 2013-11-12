@@ -15,11 +15,31 @@ public class Options {
     }
 
     public Object get(String key) {
-        return options.get(key);
+        return get(key, null);
     }
 
     public Object get(String key, Object defaultValue) {
         return options.get(key) != null ? options.get(key) : defaultValue;
+    }
+
+    public Integer getInt(String key) {
+        return getInt(key, null);
+    }
+
+    public Integer getInt(String key, Integer defaultValue) {
+        Object value = options.get(key);
+        if (value != null) {
+            return Integer.parseInt(value.toString());
+        }
+        return defaultValue;
+    }
+
+    public String getString(String key) {
+        return getString(key, null);
+    }
+
+    public String getString(String key, String defaultValue) {
+        return options.get(key) != null ? options.get(key).toString() : defaultValue;
     }
 
     public void put(String key, Object value) {

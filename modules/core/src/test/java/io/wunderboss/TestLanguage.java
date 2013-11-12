@@ -19,8 +19,8 @@ public class TestLanguage implements Language {
     }
 
     @Override
-    public Options transformOptions(Options options) {
-        return options;
+    public <T> T coerceToClass(Object object, Class<T> toClass) {
+        return (T) object;
     }
 
     boolean registered;

@@ -40,14 +40,14 @@ public class JobComponent extends Component {
 
     @Override
     public void configure(Options options) {
-        numThreads = Integer.parseInt((String) options.get("num_threads", "5"));
+        numThreads = options.getInt("num_threads", 5);
     }
 
     @Override
     public ComponentInstance start(Application application, Options options) {
-        String cronString = (String) options.get("cron");
+        String cronString = options.getString("cron");
         // Cast and retrieve this here to error early if it's not given
-        Runnable runFunction = (Runnable) options.get("run_function");
+        Runnable runFunction = application.coerceObjectToClass(options.get("run_function"), Runnable.class);
 
         DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
         try {

@@ -23,7 +23,6 @@ public class Application {
     }
 
     public ComponentInstance start(String componentName, Options options) {
-        Options convertedOptions = language.transformOptions(options);
         ComponentInstance instance = container.getComponent(componentName).start(this, this.options.merge(options));
         instanceStack.push(instance);
         return instance;
@@ -44,6 +43,10 @@ public class Application {
 
     public Object getRuntime() {
         return runtime;
+    }
+
+    public <T> T coerceObjectToClass(Object object, Class<T> toClass) {
+        return language.coerceToClass(object, toClass);
     }
 
     private WunderBoss container;

@@ -8,5 +8,5 @@ public interface Language {
 
     public void destroyRuntime(Object runtime);
 
-    public Options transformOptions(Options options);
+    public <T> T coerceToClass(Object object, Class<T> toClass);
 }

@@ -36,9 +36,9 @@ public class RackComponent extends Component{
 
     @Override
     public ComponentInstance start(Application application, Options options) {
-        String context = options.get("context", "/").toString();
-        String root = options.get("root", ".").toString();
-        String staticDirectory = options.get("static_dir", root + "/public").toString();
+        String context = options.getString("context", "/");
+        String root = options.getString("root", ".");
+        String staticDirectory = options.getString("static_dir", root + "/public");
 
         String rackScript = "require 'rack'\n" +
                 "app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n" +

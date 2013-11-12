@@ -27,8 +27,8 @@ public class WebComponent extends Component {
 
     @Override
     public void configure(Options options) {
-        port = Integer.parseInt((String) options.get("port", "8080"));
-        host = (String) options.get("host", "localhost");
+        port = options.getInt("port", 8080);
+        host = options.getString("host", "localhost");
         undertow = Undertow.builder()
                 .addListener(port, host)
                 .setHandler(pathHandler)
@@ -37,8 +37,8 @@ public class WebComponent extends Component {
 
     @Override
     public ComponentInstance start(Application application, Options options) {
-        String context = (String) options.get("context");
-        HttpHandler httpHandler = (HttpHandler) options.get("http_handler");
+        String context = options.getString("context");
+        HttpHandler httpHandler = application.coerceObjectToClass(options.get("http_handler"), HttpHandler.class);
 
         pathHandler.addPath(context, httpHandler);
 
@@ -57,7 +57,7 @@ public class WebComponent extends Component {
 
     @Override
     public void stop(ComponentInstance instance) {
-        String context = (String) instance.getOptions().get("context");
+        String context = instance.getOptions().getString("context");
         pathHandler.removePath(context);
         log.info("Stopped web context " + context);
     }

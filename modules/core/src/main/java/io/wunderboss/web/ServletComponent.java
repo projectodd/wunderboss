@@ -18,6 +18,7 @@ import io.wunderboss.ComponentInstance;
 import io.wunderboss.Options;
 import io.wunderboss.WunderBoss;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
@@ -42,10 +43,11 @@ public class ServletComponent extends Component {
     public void configure(Options options) {
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public ComponentInstance start(Application application, Options options) {
-        String context = (String) options.get("context", "/");
-        Class servletClass = (Class) options.get("servlet_class");
+        String context = options.getString("context", "/");
+        Class<Servlet> servletClass = application.coerceObjectToClass(options.get("servlet_class"), Class.class);
         final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
                 .addMapping("/*");
 
@@ -57,7 +59,7 @@ public class ServletComponent extends Component {
 
         if (options.containsKey("static_dir")) {
             servletBuilder.setResourceManager(new CachingResourceManager(1000, 1L, null,
-                    new FileResourceManager(new File((String) options.get("static_dir")), 1 * 1024 * 1024), 250));
+                    new FileResourceManager(new File(options.getString("static_dir")), 1 * 1024 * 1024), 250));
 
             servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
                 @Override
@@ -66,7 +68,7 @@ public class ServletComponent extends Component {
                             .setResourceManager(servletBuilder.getResourceManager())
                             .setDirectoryListingEnabled(false);
 
-                    PredicateHandler predicateHandler = new PredicateHandler(new Predicate() {
+                    return new PredicateHandler(new Predicate() {
                         @Override
                         public boolean resolve(HttpServerExchange value) {
                             try {
@@ -79,14 +81,14 @@ public class ServletComponent extends Component {
                             }
                         }
                     }, resourceHandler, handler);
-
-                    return predicateHandler;
                 }
             });
         }
 
         if (options.containsKey("context_attributes")) {
-            for (Map.Entry<String, Object> entry : ((Map<String, Object>) options.get("context_attributes")).entrySet()) {
+            Map<String, Object> contextAttributes = application
+                    .coerceObjectToClass(options.get("context_attributes"), Map.class);
+            for (Map.Entry<String, Object> entry : contextAttributes.entrySet()) {
                 servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());
             }
         }

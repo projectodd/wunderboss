@@ -5,7 +5,7 @@ import io.wunderboss.Options;
 import io.wunderboss.WunderBoss;
 import org.jruby.Ruby;
 import org.jruby.RubyInstanceConfig;
-import org.jruby.RubyProc;
+import org.jruby.runtime.builtin.IRubyObject;
 
 import java.util.Arrays;
 
@@ -35,16 +35,12 @@ public class RubyLanguage implements Language {
         ((Ruby) runtime).tearDown(false);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Options transformOptions(Options options) {
-        Options convertedOptions = new Options();
-        for (String key : options.keySet()) {
-            Object value = options.get(key);
-            if (value instanceof RubyProc) {
-                value = ((RubyProc) value).toJava(Runnable.class);
-            }
-            convertedOptions.put(key, value);
+    public <T> T coerceToClass(Object object, Class<T> toClass) {
+        if (object instanceof IRubyObject) {
+            return (T) ((IRubyObject) object).toJava(toClass);
         }
-        return convertedOptions;
+        return (T) object;
     }
 }
