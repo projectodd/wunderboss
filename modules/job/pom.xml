@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>io.wunderboss</groupId>
+    <artifactId>wunderboss-modules</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.wunderboss</groupId>
+  <artifactId>wunderboss-job</artifactId>
+  <name>WunderBoss Job Module</name>
+
+  <packaging>jar</packaging>
+
+  <properties>
+    <version.quartz-scheduler>2.2.1</version.quartz-scheduler>
+    <version.slf4j>1.5.5</version.slf4j>
+    <version.jboss-logging-slf4j>1.0.4.GA</version.jboss-logging-slf4j>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.wunderboss</groupId>
+      <artifactId>wunderboss-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz</artifactId>
+      <version>${version.quartz-scheduler}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.transaction</groupId>
+          <artifactId>jta</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>c3p0</groupId>
+          <artifactId>c3p0</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.slf4j}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.slf4j</groupId>
+      <artifactId>slf4j-jboss-logging</artifactId>
+      <version>${version.jboss-logging-slf4j}</version>
+    </dependency>
+  </dependencies>
+
+</project>

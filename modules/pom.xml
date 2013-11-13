@@ -20,6 +20,9 @@
 
   <modules>
     <module>core</module>
+    <module>job</module>
+    <module>web</module>
+
     <module>ruby</module>
   </modules>
 

@@ -18,6 +18,10 @@
 
   <packaging>jar</packaging>
 
+  <properties>
+    <version.jruby>1.7.6</version.jruby>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.wunderboss</groupId>
@@ -26,8 +30,21 @@
     </dependency>
 
     <dependency>
+      <groupId>io.wunderboss</groupId>
+      <artifactId>wunderboss-web</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.wunderboss</groupId>
+      <artifactId>wunderboss-job</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
+      <version>${version.jruby}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
