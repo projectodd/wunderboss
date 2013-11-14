@@ -29,8 +29,8 @@ public class RackEnvironment {
 
     public RubyHash getEnv(HttpServletRequestImpl request, RackChannel inputChannel) throws IOException {
         RubyHash env = new RubyHash(runtime);
-        env.put(toRubyString("rack.input"), inputChannel);
-        env.put(toRubyString("rack.errors"), errors);
+        env.put(toUsAsciiRubyString("rack.input"), inputChannel);
+        env.put(toUsAsciiRubyString("rack.errors"), errors);
 
         // Don't use request.getPathInfo because that gets decoded by the container
         String pathInfo = request.getRequestURI();
@@ -45,28 +45,28 @@ public class RackEnvironment {
             pathInfo = pathInfo.substring(servletPath.length());
         }
 
-        env.put(toRubyString("REQUEST_METHOD"), toRubyString(request.getMethod()));
-        env.put(toRubyString("SCRIPT_NAME"), toRubyString(contextPath + servletPath));
-        env.put(toRubyString("PATH_INFO"), toRubyString(pathInfo));
-        env.put(toRubyString("QUERY_STRING"), toRubyString(queryString == null ? "" : queryString));
-        env.put(toRubyString("SERVER_NAME"), toRubyString(request.getServerName()));
-        env.put(toRubyString("SERVER_PORT"), toRubyString(request.getServerPort() + ""));
-        env.put(toRubyString("CONTENT_TYPE"), toRubyString(request.getContentType() + ""));
-        env.put(toRubyString("REQUEST_URI"), toRubyString(contextPath + servletPath + pathInfo));
-        env.put(toRubyString("REMOTE_ADDR"), toRubyString(request.getRemoteAddr()));
-        env.put(toRubyString("rack.url_scheme"), toRubyString(request.getScheme()));
-        env.put(toRubyString("rack.version"), rackVersion);
-        env.put(toRubyString("rack.multithread"), RubyBoolean.newBoolean(runtime, true));
-        env.put(toRubyString("rack.multiprocess"), RubyBoolean.newBoolean(runtime, true));
-        env.put(toRubyString("rack.run_once"), RubyBoolean.newBoolean(runtime, false));
+        env.put(toUsAsciiRubyString("REQUEST_METHOD"), toUsAsciiRubyString(request.getMethod()));
+        env.put(toUsAsciiRubyString("SCRIPT_NAME"), toRubyString(contextPath + servletPath));
+        env.put(toUsAsciiRubyString("PATH_INFO"), toRubyString(pathInfo));
+        env.put(toUsAsciiRubyString("QUERY_STRING"), toRubyString(queryString == null ? "" : queryString));
+        env.put(toUsAsciiRubyString("SERVER_NAME"), toRubyString(request.getServerName()));
+        env.put(toUsAsciiRubyString("SERVER_PORT"), toUsAsciiRubyString(request.getServerPort() + ""));
+        env.put(toUsAsciiRubyString("CONTENT_TYPE"), toRubyString(request.getContentType() + ""));
+        env.put(toUsAsciiRubyString("REQUEST_URI"), toRubyString(contextPath + servletPath + pathInfo));
+        env.put(toUsAsciiRubyString("REMOTE_ADDR"), toUsAsciiRubyString(request.getRemoteAddr()));
+        env.put(toUsAsciiRubyString("rack.url_scheme"), toUsAsciiRubyString(request.getScheme()));
+        env.put(toUsAsciiRubyString("rack.version"), rackVersion);
+        env.put(toUsAsciiRubyString("rack.multithread"), RubyBoolean.newBoolean(runtime, true));
+        env.put(toUsAsciiRubyString("rack.multiprocess"), RubyBoolean.newBoolean(runtime, true));
+        env.put(toUsAsciiRubyString("rack.run_once"), RubyBoolean.newBoolean(runtime, false));
 
         int contentLength = request.getContentLength();
         if (contentLength >= 0) {
-            env.put(toRubyString("CONTENT_LENGTH"), RubyFixnum.newFixnum(runtime, contentLength));
+            env.put(toUsAsciiRubyString("CONTENT_LENGTH"), RubyFixnum.newFixnum(runtime, contentLength));
         }
 
         if ("https".equals(request.getScheme())) {
-            env.put(toRubyString("HTTPS"), toRubyString("on"));
+            env.put(toUsAsciiRubyString("HTTPS"), toUsAsciiRubyString("on"));
         }
 
         Enumeration<String> headerNames = request.getHeaderNames();
@@ -76,7 +76,7 @@ public class RackEnvironment {
 
             String value = request.getHeader(headerName);
 
-            env.put(toRubyString(envName), toRubyString(value));
+            env.put(toUsAsciiRubyString(envName), toUsAsciiRubyString(value));
         }
 
         //env.put(toRubyString("servlet_request"), request);
@@ -94,6 +94,14 @@ public class RackEnvironment {
         return RubyString.newString(runtime,
                 new ByteList(string.getBytes(charset), false),
                 ASCIIEncoding.INSTANCE);
+    }
+
+    private RubyString toUsAsciiRubyString(final String string) {
+        byte[] bytes = new byte[string.length()];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) string.charAt(i);
+        }
+        return RubyString.newStringNoCopy(runtime, bytes);
     }
 
     private static final Logger log = Logger.getLogger(RackEnvironment.class);
