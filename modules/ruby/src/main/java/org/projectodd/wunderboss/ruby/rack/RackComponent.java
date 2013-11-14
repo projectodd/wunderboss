@@ -39,11 +39,17 @@ public class RackComponent extends Component{
         String context = options.getString("context", "/");
         String root = options.getString("root", ".");
         String staticDirectory = options.getString("static_dir", root + "/public");
+        Object rackApp = options.get("rack_app");
 
-        String rackScript = "require 'rack'\n" +
-                "app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n" +
-                "app\n";
-        IRubyObject rackApplication = RuntimeHelper.evalScriptlet(getRuntime(application), rackScript, false);
+        IRubyObject rackApplication;
+        if (rackApp != null) {
+            rackApplication = (IRubyObject) rackApp;
+        } else {
+            String rackScript = "require 'rack'\n" +
+                    "app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n" +
+                    "app\n";
+            rackApplication = RuntimeHelper.evalScriptlet(getRuntime(application), rackScript, false);
+        }
 
         Map<String, Object> servletContextAttributes = new HashMap<>();
         servletContextAttributes.put("rack_application", rackApplication);
