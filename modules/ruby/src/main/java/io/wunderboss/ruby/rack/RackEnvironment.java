@@ -112,7 +112,7 @@ public class RackEnvironment {
     }
 
     private RubyString toUsAsciiRubyString(final byte[] bytes) {
-        return RubyString.newStringNoCopy(runtime, bytes);
+        return RubyString.newUsAsciiStringNoCopy(runtime, new ByteList(bytes, false));
     }
 
     private static byte[] rackHeaderNameToBytes(String headerName) {
