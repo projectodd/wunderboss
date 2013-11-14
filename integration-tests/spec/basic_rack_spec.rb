@@ -45,6 +45,36 @@ feature "basic rack at non-root context" do
     end
   end
 
+  it "should read post bodies via gets" do
+    uri = URI.parse("#{Capybara.app_host}/basic-rack/gets")
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request.form_data = {'field' => 'nothing'}
+      response = http.request(request)
+      response.body.should include("<div id='posted'>field=nothing</div>")
+    end
+  end
+
+  it "should read post bodies via read" do
+    uri = URI.parse("#{Capybara.app_host}/basic-rack/read")
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request.form_data = {'field' => 'nothing'}
+      response = http.request(request)
+      response.body.should include("<div id='posted'>field=nothing</div>")
+    end
+  end
+
+  it "should read post bodies via each" do
+    uri = URI.parse("#{Capybara.app_host}/basic-rack/each")
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request.form_data = {'field' => 'nothing'}
+      response = http.request(request)
+      response.body.should include("<div id='posted'>field=nothing</div>")
+    end
+  end
+
 end
 
 feature "basic rack at root context" do

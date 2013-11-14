@@ -6,6 +6,7 @@ import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyString;
 import org.jruby.anno.JRubyMethod;
+import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -48,14 +49,38 @@ public class RackChannel extends RubyObject {
         // 'rack.input' to be rewindable and a ServletInputStream is not
         // TODO: RewindableChannel isn't really needed now - we should incorporate its
         // rewinding directly into here
-        this.inputChannel = new RewindableChannel(inputStream);
+        inputChannel = new RewindableChannel(inputStream);
+        // TODO: A more efficient implementation would create a single ByteBuffer
+        // used by all read/gets/each methods instead of allocating a new one
+        // per method call
     }
 
     @JRubyMethod
     public IRubyObject gets(ThreadContext context) {
-        // TODO: Implement RackChannel#gets
-        System.err.println("!!! Calling gets");
-        return null;
+        try {
+            // TODO: 1 byte? really?
+            ByteBuffer byteBuffer = ByteBuffer.allocate(1);
+            int bytesRead = inputChannel.read(byteBuffer);
+            if (bytesRead == -1) { //EOF
+                return getRuntime().getNil();
+            } else {
+                RubyString stringBuffer = RubyString.newEmptyString(getRuntime());
+                byte readByte = byteBuffer.get(0);
+                // 10 is newline
+                while (readByte != 10) {
+                    stringBuffer.cat(readByte);
+                    byteBuffer.clear();
+                    bytesRead = inputChannel.read(byteBuffer);
+                    if (bytesRead == -1) {
+                        break; // EOF
+                    }
+                    readByte = byteBuffer.get(0);
+                }
+                return stringBuffer;
+            }
+        } catch (IOException e) {
+            throw getRuntime().newIOErrorFromException(e);
+        }
     }
 
     @JRubyMethod(optional = 2)
@@ -108,10 +133,13 @@ public class RackChannel extends RubyObject {
     }
 
     @JRubyMethod
-    public IRubyObject each(ThreadContext context) {
-        // TODO: Implement RackChannel#each
-        System.err.println("!!! Calling each");
-        return null;
+    public IRubyObject each(ThreadContext context, Block block) {
+        IRubyObject readLine = gets(context);
+        while (readLine != getRuntime().getNil()) {
+            block.yield(context, readLine);
+            readLine = gets(context);
+        }
+        return getRuntime().getNil();
     }
 
     @JRubyMethod

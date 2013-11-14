@@ -69,7 +69,7 @@ public class RackEnvironment {
 
         int contentLength = request.getContentLength();
         if (contentLength >= 0) {
-            env.put(toUsAsciiRubyString("CONTENT_LENGTH"), RubyFixnum.newFixnum(runtime, contentLength));
+            env.put(toUsAsciiRubyString("CONTENT_LENGTH"), toUsAsciiRubyString(contentLength + ""));
         }
 
         if ("https".equals(request.getScheme())) {
@@ -79,8 +79,11 @@ public class RackEnvironment {
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            env.put(toUsAsciiRubyString(rackHeaderNameToBytes(headerName)),
-                    toUsAsciiRubyString(request.getHeader(headerName)));
+            // RACK spec says not to create HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH heaers
+            if (!headerName.equals("Content-Type") && !headerName.equals("Content-Length")) {
+                env.put(toUsAsciiRubyString(rackHeaderNameToBytes(headerName)),
+                        toUsAsciiRubyString(request.getHeader(headerName)));
+            }
         }
 
         //env.put(toRubyString("servlet_request"), request);
