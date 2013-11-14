@@ -1,16 +1,16 @@
 require 'modules/ruby/target/wunderboss-all.jar'
 
 # does "container" carry too much baggage?
-container = Java::IoWunderboss::WunderBoss.new
+container = Java::OrgProjectoddWunderboss::WunderBoss.new
 
 # Language implementations are always bootstraped as Java classes.
-container.register_language('ruby', Java::IoWunderbossRuby::RubyLanguage.new)
+container.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLanguage.new)
 
 
 # Components are written in Java only (for now)
-container.register_component('web', Java::IoWunderbossWeb::WebComponent.new)
-container.register_component('servlet', Java::IoWunderbossWeb::ServletComponent.new)
-container.register_component('rack', Java::IoWunderbossRubyRack::RackComponent.new)
+container.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
+container.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
+container.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
 # container.register_component('job', Java::IoWunderbossJob::JobComponent.new)
 
 # If running inside WildFly, the .configure calls wouldn't be necessary

@@ -1,14 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <parent>
-    <groupId>io.wunderboss</groupId>
+    <groupId>org.projectodd.wunderboss</groupId>
     <artifactId>wunderboss</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>io.wunderboss</groupId>
+  <groupId>org.projectodd.wunderboss</groupId>
   <artifactId>wunderboss-integration-tests</artifactId>
   <packaging>jar</packaging>
   <name>WunderBoss Integration Tests</name>
@@ -59,7 +59,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>io.wunderboss</groupId>
+      <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-ruby</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
