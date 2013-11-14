@@ -11,28 +11,22 @@ module WunderBoss
           servlet_response.setStatus( status_code )
 
           headers.each{|key,value|
-            if value.respond_to?( :each_line )
-              value.each_line { |v| add_header( servlet_response, key, v.chomp("\n") ) }
-            elsif value.respond_to?( :each )
-              value.each { |v| add_header( servlet_response, key, v.chomp("\n") ) }
-            else
-              add_header( servlet_response, key, value )
-            end
+            # values of headers must be Strings, separated by newlines for
+            # multiple values
+            value.each_line { |v| add_header( servlet_response, key, v.chomp("\n") ) }
           }
           out = servlet_response.getOutputStream()
 
-          if body.respond_to?( :each_line ) || body.respond_to?( :each )
-            chunked = headers.fetch( 'Transfer-Encoding', '' ) == 'chunked'
-            body.send( body.respond_to?( :each_line ) ? :each_line : :each ) { |chunk|
-              output = chunked ? strip_term_markers( chunk ) : chunk
-              unless output.nil?
-                out.write( output.to_java_bytes )
-                out.flush if chunked
-              end
-            }
-          else
-            out.write( body.to_java_bytes )
-          end
+          chunked = headers.fetch( 'Transfer-Encoding', '' ) == 'chunked'
+          # body must respond to each and yield only String values
+          # TODO: check body.to_path as a more efficient way to serve files
+          body.each { |chunk|
+            output = chunked ? strip_term_markers( chunk ) : chunk
+            unless output.nil?
+              out.write( output.to_java_bytes )
+              out.flush if chunked
+            end
+          }
         rescue NativeException => e
           # Don't needlessly raise errors because of client abort exceptions
           raise unless e.cause.toString =~ /(clientabortexception|broken pipe)/i
