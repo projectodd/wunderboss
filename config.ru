@@ -1,22 +1,22 @@
-run lambda { |env|
-  [200, { 'Content-Type' => 'text/plain' }, ["hello world\n"]]
-}
+# run lambda { |env|
+#   [200, { 'Content-Type' => 'text/plain' }, ["hello world\n"]]
+# }
 
-# require 'json'
+require 'json'
 
-# app = lambda do |env|
-#   if env['PATH_INFO'] == "/plaintext"
-#     [
-#       200,
-#       { 'Content-Type' => 'text/plain' },
-#       ["Hello, World!"]
-#     ]
-#   else
-#     [
-#       200,
-#       { 'Content-Type' => 'application/json' },
-#       [{:message => "Hello World!"}.to_json]
-#     ]
-#   end
-# end
-# run app
+app = lambda do |env|
+  if env['PATH_INFO'] == "/plaintext"
+    [
+      200,
+      { 'Content-Type' => 'text/plain' },
+      ["Hello, World!"]
+    ]
+  else
+    [
+      200,
+      { 'Content-Type' => 'application/json' },
+      [{:message => "Hello World!"}.to_json]
+    ]
+  end
+end
+run app

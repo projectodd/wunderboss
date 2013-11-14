@@ -22,8 +22,8 @@ my_app = container.new_application('ruby')
 
 rack = my_app.start('rack', 'context' => '/')
 
-job_func = lambda { puts "!!! Running job" }
-my_app.start('job', 'cron' => '*/5 * * * * ?', 'run_function' => job_func)
+# job_func = lambda { puts "!!! Running job" }
+# my_app.start('job', 'cron' => '*/5 * * * * ?', 'run_function' => job_func)
 
 Signal.trap("INT") do
   container.stop
