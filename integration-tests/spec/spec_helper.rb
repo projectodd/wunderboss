@@ -9,11 +9,11 @@ Capybara.default_driver = :poltergeist
 RSpec.configure do |config|
   config.before(:suite) do
     begin
-      CONTAINER = Java::IoWunderboss::WunderBoss.new
-      CONTAINER.register_language('ruby', Java::IoWunderbossRuby::RubyLanguage.new)
-      CONTAINER.register_component('web', Java::IoWunderbossWeb::WebComponent.new)
-      CONTAINER.register_component('servlet', Java::IoWunderbossWeb::ServletComponent.new)
-      CONTAINER.register_component('rack', Java::IoWunderbossRubyRack::RackComponent.new)
+      CONTAINER = Java::OrgProjectoddWunderboss::WunderBoss.new
+      CONTAINER.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLanguage.new)
+      CONTAINER.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
+      CONTAINER.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
+      CONTAINER.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
       CONTAINER.configure('web', 'host' => 'localhost', 'port' => '8080')
     rescue Exception => ex
       puts ex.inspect
