@@ -11,7 +11,7 @@ container.register_language('ruby', Java::IoWunderbossRuby::RubyLanguage.new)
 container.register_component('web', Java::IoWunderbossWeb::WebComponent.new)
 container.register_component('servlet', Java::IoWunderbossWeb::ServletComponent.new)
 container.register_component('rack', Java::IoWunderbossRubyRack::RackComponent.new)
-container.register_component('job', Java::IoWunderbossJob::JobComponent.new)
+# container.register_component('job', Java::IoWunderbossJob::JobComponent.new)
 
 # If running inside WildFly, the .configure calls wouldn't be necessary
 # for WildFly-provided services, like web. But we'd still allow it for things
