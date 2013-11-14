@@ -2,16 +2,18 @@ package io.wunderboss.ruby.rack;
 
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 import org.jboss.logging.Logger;
+import org.jcodings.specific.ASCIIEncoding;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyBoolean;
-import org.jruby.RubyClass;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyIO;
 import org.jruby.RubyString;
+import org.jruby.util.ByteList;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 
 public class RackEnvironment {
@@ -21,63 +23,64 @@ public class RackEnvironment {
         rackVersion = RubyArray.newArray(runtime);
         rackVersion.add(RubyFixnum.one(runtime));
         rackVersion.add(RubyFixnum.one(runtime));
-        errors = new RubyIO(this.runtime, this.runtime.getErr());
+        errors = new RubyIO(runtime, runtime.getErr());
         errors.setAutoclose(false);
     }
 
     public RubyHash getEnv(HttpServletRequestImpl request, RackChannel inputChannel) throws IOException {
         RubyHash env = new RubyHash(runtime);
-        env.put(RubyString.newString(runtime, "rack.input"), inputChannel);
-        env.put(RubyString.newString(runtime, "rack.errors"), errors);
+        env.put(toRubyString("rack.input"), inputChannel);
+        env.put(toRubyString("rack.errors"), errors);
 
         // Don't use request.getPathInfo because that gets decoded by the container
         String pathInfo = request.getRequestURI();
-        if (pathInfo.startsWith(request.getContextPath())) {
-            pathInfo = pathInfo.substring(request.getContextPath().length());
+        String contextPath = request.getContextPath();
+        String servletPath = request.getServletPath();
+        String queryString = request.getQueryString();
+
+        if (pathInfo.startsWith(contextPath)) {
+            pathInfo = pathInfo.substring(contextPath.length());
         }
-        if (pathInfo.startsWith(request.getServletPath())) {
-            pathInfo = pathInfo.substring(request.getServletPath().length());
+        if (pathInfo.startsWith(servletPath)) {
+            pathInfo = pathInfo.substring(servletPath.length());
         }
 
-        env.put(RubyString.newString(this.runtime, "REQUEST_METHOD"), RubyString.newString(this.runtime, request.getMethod()));
-        env.put(RubyString.newString(this.runtime, "SCRIPT_NAME"), RubyString.newString(this.runtime,
-                request.getContextPath() + request.getServletPath()));
-        env.put(RubyString.newString(this.runtime, "PATH_INFO"), RubyString.newString(this.runtime, pathInfo));
-        env.put(RubyString.newString(this.runtime, "QUERY_STRING"), RubyString.newString(this.runtime,
-                request.getQueryString() == null ? "" : request.getQueryString()));
-        env.put(RubyString.newString(this.runtime, "SERVER_NAME"), RubyString.newString(this.runtime, request.getServerName()));
-        env.put(RubyString.newString(this.runtime, "SERVER_PORT"), RubyString.newString(this.runtime, request.getServerPort() + ""));
-        env.put(RubyString.newString(this.runtime, "CONTENT_TYPE"), RubyString.newString(this.runtime, request.getContentType() + ""));
-        env.put(RubyString.newString(this.runtime, "REQUEST_URI"), RubyString.newString(this.runtime,
-                request.getContextPath() + request.getServletPath() + pathInfo));
-        env.put(RubyString.newString(this.runtime, "REMOTE_ADDR"), RubyString.newString(this.runtime, request.getRemoteAddr()));
-        env.put(RubyString.newString(this.runtime, "rack.url_scheme"), RubyString.newString(this.runtime, request.getScheme()));
-        env.put(RubyString.newString(this.runtime, "rack.version"), this.rackVersion);
-        env.put(RubyString.newString(this.runtime, "rack.multithread"), RubyBoolean.newBoolean(this.runtime, true));
-        env.put(RubyString.newString(this.runtime, "rack.multiprocess"), RubyBoolean.newBoolean(this.runtime, true));
-        env.put(RubyString.newString(this.runtime, "rack.run_once"), RubyBoolean.newBoolean(this.runtime, false));
+        env.put(toRubyString("REQUEST_METHOD"), toRubyString(request.getMethod()));
+        env.put(toRubyString("SCRIPT_NAME"), toRubyString(contextPath + servletPath));
+        env.put(toRubyString("PATH_INFO"), toRubyString(pathInfo));
+        env.put(toRubyString("QUERY_STRING"), toRubyString(queryString == null ? "" : queryString));
+        env.put(toRubyString("SERVER_NAME"), toRubyString(request.getServerName()));
+        env.put(toRubyString("SERVER_PORT"), toRubyString(request.getServerPort() + ""));
+        env.put(toRubyString("CONTENT_TYPE"), toRubyString(request.getContentType() + ""));
+        env.put(toRubyString("REQUEST_URI"), toRubyString(contextPath + servletPath + pathInfo));
+        env.put(toRubyString("REMOTE_ADDR"), toRubyString(request.getRemoteAddr()));
+        env.put(toRubyString("rack.url_scheme"), toRubyString(request.getScheme()));
+        env.put(toRubyString("rack.version"), rackVersion);
+        env.put(toRubyString("rack.multithread"), RubyBoolean.newBoolean(runtime, true));
+        env.put(toRubyString("rack.multiprocess"), RubyBoolean.newBoolean(runtime, true));
+        env.put(toRubyString("rack.run_once"), RubyBoolean.newBoolean(runtime, false));
 
-        if (request.getContentLength() >= 0) {
-            env.put(RubyString.newString(this.runtime, "CONTENT_LENGTH"), RubyFixnum.newFixnum(this.runtime, request.getContentLength()));
+        int contentLength = request.getContentLength();
+        if (contentLength >= 0) {
+            env.put(toRubyString("CONTENT_LENGTH"), RubyFixnum.newFixnum(runtime, contentLength));
         }
 
         if ("https".equals(request.getScheme())) {
-            env.put(RubyString.newString(this.runtime, "HTTPS"), RubyString.newString(this.runtime, "on"));
+            env.put(toRubyString("HTTPS"), toRubyString("on"));
         }
 
-        if (request.getHeaderNames() != null) {
-            for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();) {
-                String headerName = headerNames.nextElement();
-                String envName = "HTTP_" + headerName.toUpperCase().replace('-', '_');
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String envName = "HTTP_" + headerName.toUpperCase().replace('-', '_');
 
-                String value = request.getHeader(headerName);
+            String value = request.getHeader(headerName);
 
-                env.put(RubyString.newString(this.runtime, envName), RubyString.newString(this.runtime, value));
-            }
+            env.put(toRubyString(envName), toRubyString(value));
         }
 
-        //env.put(RubyString.newString(this.runtime, "servlet_request"), request);
-        //env.put(RubyString.newString(this.runtime, "java.servlet_request"), request);
+        //env.put(toRubyString("servlet_request"), request);
+        //env.put(toRubyString("java.servlet_request"), request);
 
         if (log.isTraceEnabled()) {
             log.trace("Created: " + env.inspect());
@@ -85,11 +88,20 @@ public class RackEnvironment {
         return env;
     }
 
+    private RubyString toRubyString(final String string) {
+        // TODO: Does Rack specify a particular encoding for all these strings?
+        // https://groups.google.com/forum/#!topic/rack-devel/dmlAeKkm52g seems to imply ASCII?
+        return RubyString.newString(runtime,
+                new ByteList(string.getBytes(charset), false),
+                ASCIIEncoding.INSTANCE);
+    }
+
     private static final Logger log = Logger.getLogger(RackEnvironment.class);
 
     private Ruby runtime;
     private RubyArray rackVersion;
     private RubyIO errors;
+    private static final Charset charset = Charset.forName("UTF-8");
 
 
 }

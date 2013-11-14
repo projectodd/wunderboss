@@ -11,6 +11,7 @@ import org.jruby.RubyModule;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaUtil;
 import org.jruby.runtime.Helpers;
+import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import javax.servlet.GenericServlet;
@@ -56,9 +57,10 @@ public class RackServlet extends GenericServlet {
         try {
             inputChannel = new RackChannel(runtime, rackChannelClass, request.getInputStream());
             RubyHash rackEnvHash = rackEnvironment.getEnv(request, inputChannel);
-            IRubyObject rackResponse = rackApplication.callMethod(runtime.getCurrentContext(), "call", rackEnvHash);
+            ThreadContext context = runtime.getCurrentContext();
+            IRubyObject rackResponse = rackApplication.callMethod(context, "call", rackEnvHash);
             IRubyObject servletResponse = JavaUtil.convertJavaToUsableRubyObject(runtime, response);
-            Helpers.invoke(runtime.getCurrentContext(), responseModule,
+            Helpers.invoke(context, responseModule,
                     RESPONSE_HANDLER_METHOD_NAME, rackResponse, servletResponse);
         } catch (RaiseException e) {
             throw new ServletException(e);
