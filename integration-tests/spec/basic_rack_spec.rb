@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-feature "basic rack" do
+feature "basic rack at non-root context" do
 
   before(:all) do
     @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rack/basic")
@@ -11,22 +11,21 @@ feature "basic rack" do
     @app.stop
   end
 
-  before(:each) do
+  it "should work for basic requests" do
     visit "/basic-rack"
     page.should have_content('it worked')
-  end
-
-  it "should work" do
     page.find("#success")[:class].strip.should == 'basic-rack'
     page.find("#path_info").text.strip.should == '/'
     page.find("#request_uri").text.strip.should == '/basic-rack/'
   end
 
   it "should be running under the proper ruby version" do
+    visit "/basic-rack/"
     page.find("#ruby-version").text.strip.should == RUBY_VERSION
   end
 
   it "should not have a vfs path for __FILE__" do
+    visit "/basic-rack/"
     page.find("#path").text.strip.should_not match(/^vfs:/)
   end
 
@@ -34,6 +33,37 @@ feature "basic rack" do
     visit "/basic-rack/foo%23%2C"
     page.find("#path_info").text.strip.should == '/foo%23%2C'
     page.find("#request_uri").text.strip.should == '/basic-rack/foo%23%2C'
+  end
+
+  it "should contain correct request headers" do
+    uri = URI.parse("#{Capybara.app_host}/basic-rack/")
+    Net::HTTP.start(uri.host, uri.port) do |http|
+      accept = 'text/html;q=0.9,*/*;q=0.7'
+      response = http.get(uri.request_uri, {'Accept' => accept})
+      response.code.should == "200"
+      response.body.should include("<div id='accept_header'>#{accept}</div>")
+    end
+  end
+
+end
+
+feature "basic rack at root context" do
+
+  before(:all) do
+    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rack/basic")
+    @app.start('rack', 'context' => '/')
+  end
+
+  after(:all) do
+    @app.stop
+  end
+
+  it "should have correct path information" do
+    visit "/plaintext"
+    page.should have_content('it worked')
+    page.find("#success")[:class].strip.should == 'basic-rack'
+    page.find("#path_info").text.strip.should == '/plaintext'
+    page.find("#request_uri").text.strip.should == '/plaintext'
   end
 
 end

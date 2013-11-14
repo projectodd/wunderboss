@@ -38,21 +38,28 @@ public class RackEnvironment {
         String servletPath = request.getServletPath();
         String queryString = request.getQueryString();
 
-        if (pathInfo.startsWith(contextPath)) {
+        // strip contextPath and servletPath from pathInfo
+        if (pathInfo.startsWith(contextPath) && !contextPath.equals("/")) {
             pathInfo = pathInfo.substring(contextPath.length());
         }
-        if (pathInfo.startsWith(servletPath)) {
+        if (pathInfo.startsWith(servletPath) && !servletPath.equals("/")) {
             pathInfo = pathInfo.substring(servletPath.length());
         }
 
+        String scriptName = contextPath + servletPath;
+        // SCRIPT_NAME should be an empty string for the root
+        if (scriptName.equals("/")) {
+            scriptName = "";
+        }
+
         env.put(toUsAsciiRubyString("REQUEST_METHOD"), toUsAsciiRubyString(request.getMethod()));
-        env.put(toUsAsciiRubyString("SCRIPT_NAME"), toRubyString(contextPath + servletPath));
+        env.put(toUsAsciiRubyString("SCRIPT_NAME"), toRubyString(scriptName));
         env.put(toUsAsciiRubyString("PATH_INFO"), toRubyString(pathInfo));
         env.put(toUsAsciiRubyString("QUERY_STRING"), toRubyString(queryString == null ? "" : queryString));
         env.put(toUsAsciiRubyString("SERVER_NAME"), toRubyString(request.getServerName()));
         env.put(toUsAsciiRubyString("SERVER_PORT"), toUsAsciiRubyString(request.getServerPort() + ""));
         env.put(toUsAsciiRubyString("CONTENT_TYPE"), toRubyString(request.getContentType() + ""));
-        env.put(toUsAsciiRubyString("REQUEST_URI"), toRubyString(contextPath + servletPath + pathInfo));
+        env.put(toUsAsciiRubyString("REQUEST_URI"), toRubyString(scriptName + pathInfo));
         env.put(toUsAsciiRubyString("REMOTE_ADDR"), toUsAsciiRubyString(request.getRemoteAddr()));
         env.put(toUsAsciiRubyString("rack.url_scheme"), toUsAsciiRubyString(request.getScheme()));
         env.put(toUsAsciiRubyString("rack.version"), rackVersion);
@@ -72,11 +79,8 @@ public class RackEnvironment {
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            String envName = "HTTP_" + headerName.toUpperCase().replace('-', '_');
-
-            String value = request.getHeader(headerName);
-
-            env.put(toUsAsciiRubyString(envName), toUsAsciiRubyString(value));
+            env.put(toUsAsciiRubyString(rackHeaderNameToBytes(headerName)),
+                    toUsAsciiRubyString(request.getHeader(headerName)));
         }
 
         //env.put(toRubyString("servlet_request"), request);
@@ -101,7 +105,40 @@ public class RackEnvironment {
         for (int i = 0; i < bytes.length; i++) {
             bytes[i] = (byte) string.charAt(i);
         }
+        return toUsAsciiRubyString(bytes);
+    }
+
+    private RubyString toUsAsciiRubyString(final byte[] bytes) {
         return RubyString.newStringNoCopy(runtime, bytes);
+    }
+
+    private static byte[] rackHeaderNameToBytes(String headerName) {
+        // This is a more performant implemention of:
+        // "HTTP_" + headerName.toUpperCase().replace('-', '_');
+        byte[] envNameBytes = new byte[headerName.length() + 5];
+        envNameBytes[0] = 'H';
+        envNameBytes[1] = 'T';
+        envNameBytes[2] = 'T';
+        envNameBytes[3] = 'P';
+        envNameBytes[4] = '_';
+        for (int i = 5; i < envNameBytes.length; i++) {
+            envNameBytes[i] = (byte) rackHeaderize(headerName.charAt(i - 5));
+        }
+        return envNameBytes;
+    }
+
+    private static char rackHeaderize(char c) {
+        if (c == '-') {
+            c = '_';
+        }
+        return toUpperCase(c);
+    }
+
+    private static char toUpperCase(char c) {
+        if (c >= 'a' && c <= 'z') {
+            c -= 32;
+        }
+        return c;
     }
 
     private static final Logger log = Logger.getLogger(RackEnvironment.class);
