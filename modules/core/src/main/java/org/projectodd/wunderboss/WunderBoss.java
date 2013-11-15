@@ -1,5 +1,7 @@
 package org.projectodd.wunderboss;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.jboss.logging.Logger;
 
 import java.util.HashMap;
@@ -78,6 +80,14 @@ public class WunderBoss {
             throw new IllegalArgumentException("Unknown component: " + name);
         }
         return component;
+    }
+
+    public Logger getLogger(String name) {
+        return Logger.getLogger(name);
+    }
+
+    public void setLogLevel(String level) {
+        LogManager.getRootLogger().setLevel(Level.toLevel(level));
     }
 
     private Map<String, Language> languages = new HashMap<>();
