@@ -18,7 +18,7 @@
     <rspec.max.heap>768m</rspec.max.heap>
     <spec.dir>spec</spec.dir>
 
-    <version.jruby>1.7.6</version.jruby>
+    <version.jruby>1.7.8</version.jruby>
     <version.rspec>2.7.0</version.rspec>
     <version.poltergeist>1.4.1</version.poltergeist>
     <version.capybara>2.1.0</version.capybara>
