@@ -8,6 +8,7 @@ import org.projectodd.wunderboss.ruby.RuntimeHelper;
 import org.jruby.Ruby;
 import org.jruby.runtime.builtin.IRubyObject;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,15 +39,20 @@ public class RackComponent extends Component{
     public ComponentInstance start(Application application, Options options) {
         String context = options.getString("context", "/");
         String root = options.getString("root", ".");
+        String rackup = options.getString("rackup", "config.ru");
         String staticDirectory = options.getString("static_dir", root + "/public");
         Object rackApp = options.get("rack_app");
+
+        if (!new File(rackup).isAbsolute()) {
+            rackup = root + File.separator + rackup;
+        }
 
         IRubyObject rackApplication;
         if (rackApp != null) {
             rackApplication = (IRubyObject) rackApp;
         } else {
             String rackScript = "require 'rack'\n" +
-                    "app, _ = Rack::Builder.parse_file(File.join('" + root + "', 'config.ru'))\n" +
+                    "app, _ = Rack::Builder.parse_file('" + rackup + "')\n" +
                     "app\n";
             rackApplication = RuntimeHelper.evalScriptlet(getRuntime(application), rackScript, false);
         }
