@@ -8,15 +8,17 @@ import org.jboss.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
 import org.jruby.RubyModule;
+import org.jruby.RubyString;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.util.ByteList;
 
 /**
  * Ruby reflection helper utilities.
  *
  * @author Bob McWhirter <bmcwhirt@redhat.com>
  */
-public class RuntimeHelper {
+public class RubyHelper {
 
     /**
      * Set a property on a Ruby object, if possible.
@@ -84,15 +86,6 @@ public class RuntimeHelper {
         } catch (Throwable t) {
             log.errorf( t, "Unable to require file: %s", requirement );
         }
-    }
-
-    /**
-     * Looks in application ROOT/config and application ROOT for configurationFile
-     * and requires it if possible.
-     */
-    public static void requireTorqueBoxInit(Ruby ruby) {
-        RuntimeHelper.requireIfAvailable( ruby, "config" + File.separator + "torquebox_init", false );
-        RuntimeHelper.requireIfAvailable( ruby, "torquebox_init", false );
     }
 
     public static boolean requireIfAvailable(Ruby ruby, String requirement) {
@@ -187,6 +180,18 @@ public class RuntimeHelper {
         return rubyHash;
     }
 
-    private static final Logger log = Logger.getLogger(RuntimeHelper.class);
+    public static final RubyString toUsAsciiRubyString(final Ruby runtime, final String string) {
+        byte[] bytes = new byte[string.length()];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) string.charAt(i);
+        }
+        return toUsAsciiRubyString(runtime, bytes);
+    }
+
+    public static final RubyString toUsAsciiRubyString(final Ruby runtime, final byte[] bytes) {
+        return RubyString.newUsAsciiStringNoCopy(runtime, new ByteList(bytes, false));
+    }
+
+    private static final Logger log = Logger.getLogger(RubyHelper.class);
 }
 

@@ -15,6 +15,16 @@ feature "basic rack at non-root context" do
     visit "/basic-rack"
     page.should have_content('it worked')
     page.find("#success")[:class].strip.should == 'basic-rack'
+    page.find("#script_name").text.strip.should == '/basic-rack'
+    page.find("#path_info").text.strip.should == ''
+    page.find("#request_uri").text.strip.should == '/basic-rack'
+  end
+
+  it "should work for subcontext root with trailing slash" do
+    visit "/basic-rack/"
+    page.should have_content('it worked')
+    page.find("#success")[:class].strip.should == 'basic-rack'
+    page.find("#script_name").text.strip.should == '/basic-rack'
     page.find("#path_info").text.strip.should == '/'
     page.find("#request_uri").text.strip.should == '/basic-rack/'
   end

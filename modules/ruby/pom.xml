@@ -57,8 +57,14 @@
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedArtifactId>wunderboss-all</shadedArtifactId>
-              <finalName>wunderboss-all</finalName>
+              <shadedArtifactId>wunderboss-rack</shadedArtifactId>
+              <finalName>wunderboss-rack</finalName>
+              <artifactSet>
+                <excludes>
+                  <exclude>io.undertow:undertow-servlet</exclude>
+                  <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                </excludes>
+              </artifactSet>
             </configuration>
           </execution>
         </executions>

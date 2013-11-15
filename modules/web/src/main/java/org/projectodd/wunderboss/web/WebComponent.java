@@ -1,13 +1,23 @@
 package org.projectodd.wunderboss.web;
 
 import io.undertow.Undertow;
+import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.PredicateHandler;
+import io.undertow.server.handlers.resource.CachingResourceManager;
+import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
+import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
-import org.jboss.logging.Logger;
+
+import java.io.File;
+import java.io.IOException;
 
 public class WebComponent extends Component {
     @Override
@@ -39,6 +49,27 @@ public class WebComponent extends Component {
     public ComponentInstance start(Application application, Options options) {
         String context = options.getString("context");
         HttpHandler httpHandler = application.coerceObjectToClass(options.get("http_handler"), HttpHandler.class);
+
+        if (options.containsKey("static_dir")) {
+            final ResourceManager resourceManager = new CachingResourceManager(1000, 1L, null,
+                    new FileResourceManager(new File(options.getString("static_dir")), 1 * 1024 * 1024), 250);
+            final ResourceHandler resourceHandler = new ResourceHandler()
+                    .setResourceManager(resourceManager)
+                    .setDirectoryListingEnabled(false);
+            httpHandler = new PredicateHandler(new Predicate() {
+                @Override
+                public boolean resolve(HttpServerExchange value) {
+                    try {
+                        if (value.getRelativePath().length() > 0 && !value.getRelativePath().equals("/")) {
+                            return resourceManager.getResource(value.getRelativePath()) != null;
+                        }
+                        return false;
+                    } catch (IOException ex) {
+                        return false;
+                    }
+                }
+            }, resourceHandler, httpHandler);
+        }
 
         pathHandler.addPath(context, httpHandler);
 

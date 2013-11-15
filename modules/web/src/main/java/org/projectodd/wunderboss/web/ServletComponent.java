@@ -56,34 +56,6 @@ public class ServletComponent extends Component {
                 .setDeploymentName(context)
                 .addServlet(servlet);
 
-        if (options.containsKey("static_dir")) {
-            servletBuilder.setResourceManager(new CachingResourceManager(1000, 1L, null,
-                    new FileResourceManager(new File(options.getString("static_dir")), 1 * 1024 * 1024), 250));
-
-            servletBuilder.addInitialHandlerChainWrapper(new HandlerWrapper() {
-                @Override
-                public HttpHandler wrap(HttpHandler handler) {
-                    final ResourceHandler resourceHandler = new ResourceHandler()
-                            .setResourceManager(servletBuilder.getResourceManager())
-                            .setDirectoryListingEnabled(false);
-
-                    return new PredicateHandler(new Predicate() {
-                        @Override
-                        public boolean resolve(HttpServerExchange value) {
-                            try {
-                                if (value.getRelativePath().length() > 0 && !value.getRelativePath().equals("/")) {
-                                    return servletBuilder.getResourceManager().getResource(value.getRelativePath()) != null;
-                                }
-                                return false;
-                            } catch (IOException ex) {
-                                return false;
-                            }
-                        }
-                    }, resourceHandler, handler);
-                }
-            });
-        }
-
         if (options.containsKey("context_attributes")) {
             Map<String, Object> contextAttributes = application
                     .coerceObjectToClass(options.get("context_attributes"), Map.class);
@@ -98,6 +70,9 @@ public class ServletComponent extends Component {
             Options webOptions = new Options();
             webOptions.put("context", context);
             webOptions.put("http_handler", manager.start());
+            if (options.containsKey("static_dir")) {
+                webOptions.put("static_dir", options.getString("static_dir"));
+            }
             ComponentInstance web = application.start("web", webOptions);
 
             Options instanceOptions = new Options();

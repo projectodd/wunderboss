@@ -1,6 +1,11 @@
 package org.projectodd.wunderboss.ruby.rack;
 
+import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import org.jboss.logging.Logger;
 import org.jcodings.specific.ASCIIEncoding;
 import org.jruby.Ruby;
@@ -11,8 +16,11 @@ import org.jruby.RubyHash;
 import org.jruby.RubyIO;
 import org.jruby.RubyString;
 import org.jruby.util.ByteList;
+import org.projectodd.wunderboss.ruby.RubyHelper;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
 
@@ -27,72 +35,94 @@ public class RackEnvironment {
         errors.setAutoclose(false);
     }
 
-    public RubyHash getEnv(HttpServletRequestImpl request, RackChannel inputChannel) throws IOException {
-        RubyHash env = new RubyHash(runtime);
+    public RubyHash getEnv(final HttpServerExchange exchange,
+                           final RackChannel inputChannel,
+                           final String contextPath) throws IOException {
+        final RubyHash env = new RubyHash(runtime);
         env.put(toUsAsciiRubyString("rack.input"), inputChannel);
         env.put(toUsAsciiRubyString("rack.errors"), errors);
 
         // Don't use request.getPathInfo because that gets decoded by the container
-        String pathInfo = request.getRequestURI();
-        String contextPath = request.getContextPath();
-        String servletPath = request.getServletPath();
-        String queryString = request.getQueryString();
+        String pathInfo = exchange.getRequestURI();
+        HeaderMap headers = exchange.getRequestHeaders();
 
         // strip contextPath and servletPath from pathInfo
         if (pathInfo.startsWith(contextPath) && !contextPath.equals("/")) {
             pathInfo = pathInfo.substring(contextPath.length());
         }
-        if (pathInfo.startsWith(servletPath) && !servletPath.equals("/")) {
-            pathInfo = pathInfo.substring(servletPath.length());
-        }
 
-        String scriptName = contextPath + servletPath;
+        String scriptName = contextPath;
         // SCRIPT_NAME should be an empty string for the root
         if (scriptName.equals("/")) {
             scriptName = "";
         }
 
-        env.put(toUsAsciiRubyString("REQUEST_METHOD"), toUsAsciiRubyString(request.getMethod()));
+        env.put(toUsAsciiRubyString("REQUEST_METHOD"), toUsAsciiRubyString(exchange.getRequestMethod().toString()));
         env.put(toUsAsciiRubyString("SCRIPT_NAME"), toRubyString(scriptName));
         env.put(toUsAsciiRubyString("PATH_INFO"), toRubyString(pathInfo));
-        env.put(toUsAsciiRubyString("QUERY_STRING"), toRubyString(queryString == null ? "" : queryString));
-        env.put(toUsAsciiRubyString("SERVER_NAME"), toRubyString(request.getServerName()));
-        env.put(toUsAsciiRubyString("SERVER_PORT"), toUsAsciiRubyString(request.getServerPort() + ""));
-        env.put(toUsAsciiRubyString("CONTENT_TYPE"), toRubyString(request.getContentType() + ""));
+        env.put(toUsAsciiRubyString("QUERY_STRING"), toRubyString(exchange.getQueryString()));
+        env.put(toUsAsciiRubyString("SERVER_NAME"), toRubyString(exchange.getHostName()));
+        env.put(toUsAsciiRubyString("SERVER_PORT"), toUsAsciiRubyString(exchange.getDestinationAddress().getPort() + ""));
+        env.put(toUsAsciiRubyString("CONTENT_TYPE"), toUsAsciiRubyString(headers.getFirst(Headers.CONTENT_TYPE) + ""));
         env.put(toUsAsciiRubyString("REQUEST_URI"), toRubyString(scriptName + pathInfo));
-        env.put(toUsAsciiRubyString("REMOTE_ADDR"), toUsAsciiRubyString(request.getRemoteAddr()));
-        env.put(toUsAsciiRubyString("rack.url_scheme"), toUsAsciiRubyString(request.getScheme()));
+        env.put(toUsAsciiRubyString("REMOTE_ADDR"), toUsAsciiRubyString(getRemoteAddr(exchange)));
+        env.put(toUsAsciiRubyString("rack.url_scheme"), toUsAsciiRubyString(exchange.getRequestScheme()));
         env.put(toUsAsciiRubyString("rack.version"), rackVersion);
         env.put(toUsAsciiRubyString("rack.multithread"), RubyBoolean.newBoolean(runtime, true));
         env.put(toUsAsciiRubyString("rack.multiprocess"), RubyBoolean.newBoolean(runtime, true));
         env.put(toUsAsciiRubyString("rack.run_once"), RubyBoolean.newBoolean(runtime, false));
 
-        int contentLength = request.getContentLength();
+
+        final int contentLength = getContentLength(headers);
         if (contentLength >= 0) {
             env.put(toUsAsciiRubyString("CONTENT_LENGTH"), toUsAsciiRubyString(contentLength + ""));
         }
 
-        if ("https".equals(request.getScheme())) {
+        if ("https".equals(exchange.getRequestScheme())) {
             env.put(toUsAsciiRubyString("HTTPS"), toUsAsciiRubyString("on"));
         }
 
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            // RACK spec says not to create HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH heaers
+        long iterCookie = headers.fastIterateNonEmpty();
+        while (iterCookie != -1L) {
+            HeaderValues headerValues = headers.fiCurrent(iterCookie);
+            String headerName = headerValues.getHeaderName().toString();
+            // RACK spec says not to create HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH headers
             if (!headerName.equals("Content-Type") && !headerName.equals("Content-Length")) {
+                String headerValue = headerValues.get(0);
+                int valueIndex = 1;
+                while (valueIndex < headerValues.size()) {
+                    headerValue += "\n" + headerValues.get(valueIndex++);
+                }
                 env.put(toUsAsciiRubyString(rackHeaderNameToBytes(headerName)),
-                        toUsAsciiRubyString(request.getHeader(headerName)));
+                        toUsAsciiRubyString(headerValue));
             }
+            iterCookie = headers.fiNextNonEmpty(iterCookie);
         }
-
-        //env.put(toRubyString("servlet_request"), request);
-        //env.put(toRubyString("java.servlet_request"), request);
 
         if (log.isTraceEnabled()) {
             log.trace("Created: " + env.inspect());
         }
         return env;
+    }
+
+    private static String getRemoteAddr(HttpServerExchange exchange) {
+        InetSocketAddress sourceAddress = exchange.getSourceAddress();
+        if(sourceAddress == null) {
+            return "";
+        }
+        InetAddress address = sourceAddress.getAddress();
+        if(address == null) {
+            return "";
+        }
+        return address.getHostAddress();
+    }
+
+    private static int getContentLength(HeaderMap headers) {
+        final String contentLengthStr = headers.getFirst(Headers.CONTENT_LENGTH);
+        if (contentLengthStr == null || contentLengthStr.isEmpty()) {
+            return -1;
+        }
+        return Integer.parseInt(contentLengthStr);
     }
 
     private RubyString toRubyString(final String string) {
@@ -104,15 +134,11 @@ public class RackEnvironment {
     }
 
     private RubyString toUsAsciiRubyString(final String string) {
-        byte[] bytes = new byte[string.length()];
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = (byte) string.charAt(i);
-        }
-        return toUsAsciiRubyString(bytes);
+        return RubyHelper.toUsAsciiRubyString(runtime, string);
     }
 
     private RubyString toUsAsciiRubyString(final byte[] bytes) {
-        return RubyString.newUsAsciiStringNoCopy(runtime, new ByteList(bytes, false));
+        return RubyHelper.toUsAsciiRubyString(runtime, bytes);
     }
 
     private static byte[] rackHeaderNameToBytes(String headerName) {

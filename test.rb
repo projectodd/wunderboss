@@ -1,4 +1,4 @@
-require 'modules/ruby/target/wunderboss-all.jar'
+require 'modules/ruby/target/wunderboss-rack.jar'
 
 # does "container" carry too much baggage?
 container = Java::OrgProjectoddWunderboss::WunderBoss.new
@@ -9,7 +9,7 @@ container.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLangu
 
 # Components are written in Java only (for now)
 container.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
-container.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
+# container.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
 container.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
 # container.register_component('job', Java::IoWunderbossJob::JobComponent.new)
 
