@@ -9,9 +9,11 @@ import java.util.Map;
 
 public class WunderBoss {
 
-    public void registerLanguage(String languageName, Language language) {
+    public WunderBoss registerLanguage(String languageName, Language language) {
         language.initialize(this);
         languages.put(languageName, language);
+
+        return this;
     }
 
     public Language getLanguage(String name) {
@@ -26,7 +28,7 @@ public class WunderBoss {
         return languages.containsKey(name);
     }
 
-    public void registerComponent(String componentName, Component component) {
+    public WunderBoss registerComponent(String componentName, Component component) {
         for (String dependency : component.getLanguageDependencies()) {
             if (!hasLanguage(dependency)) {
                 throw new IllegalStateException("Component " + componentName +
@@ -42,18 +44,24 @@ public class WunderBoss {
         component.setContainer(this);
         component.boot();
         components.put(componentName, component);
+
+        return this;
     }
 
     public boolean hasComponent(String name) {
         return components.containsKey(name);
     }
 
-    public void configure(String componentName, Map<String, Object> options) {
+    public WunderBoss configure(String componentName, Map<String, Object> options) {
         configure(componentName, new Options(options));
+
+        return this;
     }
 
-    public void configure(String componentName, Options options) {
+    public WunderBoss configure(String componentName, Options options) {
         getComponent(componentName).configure(options);
+
+        return this;
     }
 
     public void stop() {
