@@ -24,6 +24,7 @@
     <module>web</module>
 
     <module>ruby</module>
+    <module>clojure</module>
   </modules>
 
 </project>
