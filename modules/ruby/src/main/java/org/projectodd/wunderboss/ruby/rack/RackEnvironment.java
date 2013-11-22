@@ -1,30 +1,54 @@
 package org.projectodd.wunderboss.ruby.rack;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.servlet.spec.HttpServletRequestImpl;
 import io.undertow.util.HeaderMap;
-import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import org.jboss.logging.Logger;
-import org.jcodings.specific.ASCIIEncoding;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyBoolean;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyIO;
-import org.jruby.RubyString;
-import org.jruby.util.ByteList;
-import org.projectodd.wunderboss.ruby.RubyHelper;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RackEnvironment {
+
+    // When adding a key to the enum be sure to add its string equivalent
+    // to the map below
+    static enum RACK_KEY {
+        RACK_INPUT, RACK_ERRORS, REQUEST_METHOD, SCRIPT_NAME,
+        PATH_INFO, QUERY_STRING, SERVER_NAME, SERVER_PORT,
+        CONTENT_TYPE, REQUEST_URI, REMOTE_ADDR, URL_SCHEME,
+        VERSION, MULTITHREAD, MULTIPROCESS, RUN_ONCE, CONTENT_LENGTH,
+        HTTPS
+    }
+    static final int NUM_RACK_KEYS = RACK_KEY.values().length;
+    static final Map<String, RACK_KEY> RACK_KEY_MAP = new HashMap<String, RACK_KEY>() {{
+        put("rack.input", RACK_KEY.RACK_INPUT);
+        put("rack.errors", RACK_KEY.RACK_ERRORS);
+        put("REQUEST_METHOD", RACK_KEY.REQUEST_METHOD);
+        put("SCRIPT_NAME", RACK_KEY.SCRIPT_NAME);
+        put("PATH_INFO", RACK_KEY.PATH_INFO);
+        put("QUERY_STRING", RACK_KEY.QUERY_STRING);
+        put("SERVER_NAME", RACK_KEY.SERVER_NAME);
+        put("SERVER_PORT", RACK_KEY.SERVER_PORT);
+        put("CONTENT_TYPE", RACK_KEY.CONTENT_TYPE);
+        put("REQUEST_URI", RACK_KEY.REQUEST_URI);
+        put("REMOTE_ADDR", RACK_KEY.REMOTE_ADDR);
+        put("rack.url_scheme", RACK_KEY.URL_SCHEME);
+        put("rack.version", RACK_KEY.VERSION);
+        put("rack.multithread", RACK_KEY.MULTITHREAD);
+        put("rack.multiprocess", RACK_KEY.MULTIPROCESS);
+        put("rack.run_once", RACK_KEY.RUN_ONCE);
+        put("CONTENT_LENGTH", RACK_KEY.CONTENT_LENGTH);
+        put("HTTPS", RACK_KEY.HTTPS);
+    }};
 
     public RackEnvironment(Ruby runtime) throws IOException {
         this.runtime = runtime;
@@ -38,13 +62,15 @@ public class RackEnvironment {
     public RubyHash getEnv(final HttpServerExchange exchange,
                            final RackChannel inputChannel,
                            final String contextPath) throws IOException {
-        final RubyHash env = new RubyHash(runtime);
-        env.put(toUsAsciiRubyString("rack.input"), inputChannel);
-        env.put(toUsAsciiRubyString("rack.errors"), errors);
+        HeaderMap headers = exchange.getRequestHeaders();
+        // TODO: Should we only use this faster RackEnvironmentHash if we detect
+        // specific JRuby versions that we know are compatible?
+        final RackEnvironmentHash env = new RackEnvironmentHash(runtime, headers);
+        env.lazyPut(RACK_KEY.RACK_INPUT, inputChannel, false);
+        env.lazyPut(RACK_KEY.RACK_ERRORS, errors, false);
 
         // Don't use request.getPathInfo because that gets decoded by the container
         String pathInfo = exchange.getRequestURI();
-        HeaderMap headers = exchange.getRequestHeaders();
 
         // strip contextPath and servletPath from pathInfo
         if (pathInfo.startsWith(contextPath) && !contextPath.equals("/")) {
@@ -57,51 +83,31 @@ public class RackEnvironment {
             scriptName = "";
         }
 
-        env.put(toUsAsciiRubyString("REQUEST_METHOD"), toUsAsciiRubyString(exchange.getRequestMethod().toString()));
-        env.put(toUsAsciiRubyString("SCRIPT_NAME"), toRubyString(scriptName));
-        env.put(toUsAsciiRubyString("PATH_INFO"), toRubyString(pathInfo));
-        env.put(toUsAsciiRubyString("QUERY_STRING"), toRubyString(exchange.getQueryString()));
-        env.put(toUsAsciiRubyString("SERVER_NAME"), toRubyString(exchange.getHostName()));
-        env.put(toUsAsciiRubyString("SERVER_PORT"), toUsAsciiRubyString(exchange.getDestinationAddress().getPort() + ""));
-        env.put(toUsAsciiRubyString("CONTENT_TYPE"), toUsAsciiRubyString(headers.getFirst(Headers.CONTENT_TYPE) + ""));
-        env.put(toUsAsciiRubyString("REQUEST_URI"), toRubyString(scriptName + pathInfo));
-        env.put(toUsAsciiRubyString("REMOTE_ADDR"), toUsAsciiRubyString(getRemoteAddr(exchange)));
-        env.put(toUsAsciiRubyString("rack.url_scheme"), toUsAsciiRubyString(exchange.getRequestScheme()));
-        env.put(toUsAsciiRubyString("rack.version"), rackVersion);
-        env.put(toUsAsciiRubyString("rack.multithread"), RubyBoolean.newBoolean(runtime, true));
-        env.put(toUsAsciiRubyString("rack.multiprocess"), RubyBoolean.newBoolean(runtime, true));
-        env.put(toUsAsciiRubyString("rack.run_once"), RubyBoolean.newBoolean(runtime, false));
+        env.lazyPut(RACK_KEY.REQUEST_METHOD, exchange.getRequestMethod(), true);
+        env.lazyPut(RACK_KEY.SCRIPT_NAME, scriptName, false);
+        env.lazyPut(RACK_KEY.PATH_INFO, pathInfo, false);
+        env.lazyPut(RACK_KEY.QUERY_STRING, exchange.getQueryString(), false);
+        env.lazyPut(RACK_KEY.SERVER_NAME, exchange.getHostName(), false);
+        env.lazyPut(RACK_KEY.SERVER_PORT, exchange.getDestinationAddress().getPort() + "", true);
+        env.lazyPut(RACK_KEY.CONTENT_TYPE, headers.getFirst(Headers.CONTENT_TYPE) + "", true);
+        env.lazyPut(RACK_KEY.REQUEST_URI, scriptName + pathInfo, false);
+        env.lazyPut(RACK_KEY.REMOTE_ADDR, getRemoteAddr(exchange), true);
+        env.lazyPut(RACK_KEY.URL_SCHEME, exchange.getRequestScheme(), true);
+        env.lazyPut(RACK_KEY.VERSION, rackVersion, false);
+        env.lazyPut(RACK_KEY.MULTITHREAD, RubyBoolean.newBoolean(runtime, true), false);
+        env.lazyPut(RACK_KEY.MULTIPROCESS, RubyBoolean.newBoolean(runtime, true), false);
+        env.lazyPut(RACK_KEY.RUN_ONCE, RubyBoolean.newBoolean(runtime, false), false);
 
 
         final int contentLength = getContentLength(headers);
         if (contentLength >= 0) {
-            env.put(toUsAsciiRubyString("CONTENT_LENGTH"), toUsAsciiRubyString(contentLength + ""));
+            env.lazyPut(RACK_KEY.CONTENT_LENGTH, contentLength + "", true);
         }
 
         if ("https".equals(exchange.getRequestScheme())) {
-            env.put(toUsAsciiRubyString("HTTPS"), toUsAsciiRubyString("on"));
+            env.lazyPut(RACK_KEY.HTTPS, "on", true);
         }
 
-        long iterCookie = headers.fastIterateNonEmpty();
-        while (iterCookie != -1L) {
-            HeaderValues headerValues = headers.fiCurrent(iterCookie);
-            String headerName = headerValues.getHeaderName().toString();
-            // RACK spec says not to create HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH headers
-            if (!headerName.equals("Content-Type") && !headerName.equals("Content-Length")) {
-                String headerValue = headerValues.get(0);
-                int valueIndex = 1;
-                while (valueIndex < headerValues.size()) {
-                    headerValue += "\n" + headerValues.get(valueIndex++);
-                }
-                env.put(toUsAsciiRubyString(rackHeaderNameToBytes(headerName)),
-                        toUsAsciiRubyString(headerValue));
-            }
-            iterCookie = headers.fiNextNonEmpty(iterCookie);
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("Created: " + env.inspect());
-        }
         return env;
     }
 
@@ -125,57 +131,10 @@ public class RackEnvironment {
         return Integer.parseInt(contentLengthStr);
     }
 
-    private RubyString toRubyString(final String string) {
-        // TODO: Does Rack specify a particular encoding for all these strings?
-        // https://groups.google.com/forum/#!topic/rack-devel/dmlAeKkm52g seems to imply ASCII?
-        return RubyString.newString(runtime,
-                new ByteList(string.getBytes(charset), false),
-                ASCIIEncoding.INSTANCE);
-    }
-
-    private RubyString toUsAsciiRubyString(final String string) {
-        return RubyHelper.toUsAsciiRubyString(runtime, string);
-    }
-
-    private RubyString toUsAsciiRubyString(final byte[] bytes) {
-        return RubyHelper.toUsAsciiRubyString(runtime, bytes);
-    }
-
-    private static byte[] rackHeaderNameToBytes(String headerName) {
-        // This is a more performant implemention of:
-        // "HTTP_" + headerName.toUpperCase().replace('-', '_');
-        byte[] envNameBytes = new byte[headerName.length() + 5];
-        envNameBytes[0] = 'H';
-        envNameBytes[1] = 'T';
-        envNameBytes[2] = 'T';
-        envNameBytes[3] = 'P';
-        envNameBytes[4] = '_';
-        for (int i = 5; i < envNameBytes.length; i++) {
-            envNameBytes[i] = (byte) rackHeaderize(headerName.charAt(i - 5));
-        }
-        return envNameBytes;
-    }
-
-    private static char rackHeaderize(char c) {
-        if (c == '-') {
-            c = '_';
-        }
-        return toUpperCase(c);
-    }
-
-    private static char toUpperCase(char c) {
-        if (c >= 'a' && c <= 'z') {
-            c -= 32;
-        }
-        return c;
-    }
-
-    private static final Logger log = Logger.getLogger(RackEnvironment.class);
-
     private Ruby runtime;
     private RubyArray rackVersion;
     private RubyIO errors;
-    private static final Charset charset = Charset.forName("UTF-8");
 
+    private static final Logger log = Logger.getLogger(RackEnvironment.class);
 
 }

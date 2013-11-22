@@ -1,10 +1,7 @@
 package org.projectodd.wunderboss.ruby;
 
-import java.io.File;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.jboss.logging.Logger;
+import org.jcodings.specific.USASCIIEncoding;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
 import org.jruby.RubyModule;
@@ -12,6 +9,9 @@ import org.jruby.RubyString;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.util.ByteList;
+
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Ruby reflection helper utilities.
@@ -189,7 +189,11 @@ public class RubyHelper {
     }
 
     public static final RubyString toUsAsciiRubyString(final Ruby runtime, final byte[] bytes) {
-        return RubyString.newUsAsciiStringNoCopy(runtime, new ByteList(bytes, false));
+        return RubyString.newString(runtime, new ByteList(bytes, USASCIIEncoding.INSTANCE, false));
+    }
+
+    public static final RubyString toUnicodeRubyString(final Ruby runtime, final String string) {
+        return RubyString.newUnicodeString(runtime, string);
     }
 
     private static final Logger log = Logger.getLogger(RubyHelper.class);
