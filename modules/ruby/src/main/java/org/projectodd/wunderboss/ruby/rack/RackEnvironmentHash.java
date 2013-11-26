@@ -37,7 +37,9 @@ public class RackEnvironmentHash extends RubyHash {
                 if (keyBytes.length > 5 && keyBytes[0] == 'H'
                         && keyBytes[1] == 'T' && keyBytes[2] == 'T'
                         && keyBytes[3] == 'P' && keyBytes[4] == '_') {
-                    HttpString httpString = new HttpString(keyBytes, 5, keyBytes.length - 5);
+                    // this HttpString ctor has misleading variable names -
+                    // it's a copy from/to, not offset/length
+                    HttpString httpString = new HttpString(keyBytes, 5, keyBytes.length);
                     fillHeaderKey(httpString, keyBytes);
                 } else {
                     String key = new String(keyBytes);
@@ -155,6 +157,11 @@ public class RackEnvironmentHash extends RubyHash {
         return super.has_key_p(key);
     }
     @Override
+    public IRubyObject op_aset(ThreadContext context, IRubyObject key, IRubyObject value) {
+        fillKey(key);
+        return super.op_aset(context, key, value);
+    }
+    @Override
     public IRubyObject delete(ThreadContext context, IRubyObject key, Block block) {
         fillKey(key);
         return super.delete(context, key, block);
@@ -204,11 +211,6 @@ public class RackEnvironmentHash extends RubyHash {
     public RubyHash rehash() {
         fillEntireHash();
         return super.rehash();
-    }
-    @Override
-    public IRubyObject op_aset(ThreadContext context, IRubyObject key, IRubyObject value) {
-        fillEntireHash();
-        return super.op_aset(context, key, value);
     }
     @Override
     public IRubyObject op_equal(final ThreadContext context, IRubyObject other) {

@@ -1,5 +1,20 @@
 require 'rack'
 
+class BasicMiddleware
+  def initialize(app, options={})
+    @app = app
+  end
+  def call(env)
+    # We had a bug triggered at one point by trying to access any HTTP
+    # header with a key less than 10 bytes long
+    env['HTTP_foo']
+    # Save off the accept header before Rack::Lint messes with it
+    env['tb.accept_header'] = env['HTTP_ACCEPT']
+    @app.call(env)
+  end
+end
+
+use BasicMiddleware
 use Rack::Lint
 
 app = lambda { |env|
@@ -10,7 +25,7 @@ app = lambda { |env|
 <div id='script_name'>#{env['SCRIPT_NAME']}</div>
 <div id='path_info'>#{env['PATH_INFO']}</div>
 <div id='request_uri'>#{env['REQUEST_URI']}</div>
-<div id='accept_header'>#{env['HTTP_ACCEPT']}</div>
+<div id='accept_header'>#{env['tb.accept_header']}</div>
 EOF
   if env['REQUEST_METHOD'] == 'POST'
     input = env['rack.input']
