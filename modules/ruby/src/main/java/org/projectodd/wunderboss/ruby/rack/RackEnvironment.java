@@ -10,6 +10,8 @@ import org.jruby.RubyBoolean;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyIO;
+import org.jruby.RubyString;
+import org.projectodd.wunderboss.ruby.RubyHelper;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -19,8 +21,8 @@ import java.util.Map;
 
 public class RackEnvironment {
 
-    // When adding a key to the enum be sure to add its string equivalent
-    // to the map below
+    // When adding a key to the enum be sure to add its RubyString equivalent
+    // to populateRackKeyMap below
     static enum RACK_KEY {
         RACK_INPUT, RACK_ERRORS, REQUEST_METHOD, SCRIPT_NAME,
         PATH_INFO, QUERY_STRING, SERVER_NAME, SERVER_PORT,
@@ -29,34 +31,41 @@ public class RackEnvironment {
         HTTPS
     }
     static final int NUM_RACK_KEYS = RACK_KEY.values().length;
-    static final Map<String, RACK_KEY> RACK_KEY_MAP = new HashMap<String, RACK_KEY>() {{
-        put("rack.input", RACK_KEY.RACK_INPUT);
-        put("rack.errors", RACK_KEY.RACK_ERRORS);
-        put("REQUEST_METHOD", RACK_KEY.REQUEST_METHOD);
-        put("SCRIPT_NAME", RACK_KEY.SCRIPT_NAME);
-        put("PATH_INFO", RACK_KEY.PATH_INFO);
-        put("QUERY_STRING", RACK_KEY.QUERY_STRING);
-        put("SERVER_NAME", RACK_KEY.SERVER_NAME);
-        put("SERVER_PORT", RACK_KEY.SERVER_PORT);
-        put("CONTENT_TYPE", RACK_KEY.CONTENT_TYPE);
-        put("REQUEST_URI", RACK_KEY.REQUEST_URI);
-        put("REMOTE_ADDR", RACK_KEY.REMOTE_ADDR);
-        put("rack.url_scheme", RACK_KEY.URL_SCHEME);
-        put("rack.version", RACK_KEY.VERSION);
-        put("rack.multithread", RACK_KEY.MULTITHREAD);
-        put("rack.multiprocess", RACK_KEY.MULTIPROCESS);
-        put("rack.run_once", RACK_KEY.RUN_ONCE);
-        put("CONTENT_LENGTH", RACK_KEY.CONTENT_LENGTH);
-        put("HTTPS", RACK_KEY.HTTPS);
-    }};
 
-    public RackEnvironment(Ruby runtime) throws IOException {
+    public RackEnvironment(final Ruby runtime) throws IOException {
         this.runtime = runtime;
         rackVersion = RubyArray.newArray(runtime);
         rackVersion.add(RubyFixnum.one(runtime));
         rackVersion.add(RubyFixnum.one(runtime));
         errors = new RubyIO(runtime, runtime.getErr());
         errors.setAutoclose(false);
+
+        populateRackKeyMap();
+    }
+
+    private void populateRackKeyMap() {
+        putRack("rack.input", RACK_KEY.RACK_INPUT);
+        putRack("rack.errors", RACK_KEY.RACK_ERRORS);
+        putRack("REQUEST_METHOD", RACK_KEY.REQUEST_METHOD);
+        putRack("SCRIPT_NAME", RACK_KEY.SCRIPT_NAME);
+        putRack("PATH_INFO", RACK_KEY.PATH_INFO);
+        putRack("QUERY_STRING", RACK_KEY.QUERY_STRING);
+        putRack("SERVER_NAME", RACK_KEY.SERVER_NAME);
+        putRack("SERVER_PORT", RACK_KEY.SERVER_PORT);
+        putRack("CONTENT_TYPE", RACK_KEY.CONTENT_TYPE);
+        putRack("REQUEST_URI", RACK_KEY.REQUEST_URI);
+        putRack("REMOTE_ADDR", RACK_KEY.REMOTE_ADDR);
+        putRack("rack.url_scheme", RACK_KEY.URL_SCHEME);
+        putRack("rack.version", RACK_KEY.VERSION);
+        putRack("rack.multithread", RACK_KEY.MULTITHREAD);
+        putRack("rack.multiprocess", RACK_KEY.MULTIPROCESS);
+        putRack("rack.run_once", RACK_KEY.RUN_ONCE);
+        putRack("CONTENT_LENGTH", RACK_KEY.CONTENT_LENGTH);
+        putRack("HTTPS", RACK_KEY.HTTPS);
+    }
+
+    private void putRack(String key, RACK_KEY value) {
+        rackKeyMap.put(RubyHelper.toUsAsciiRubyString(runtime, key), value);
     }
 
     public RubyHash getEnv(final HttpServerExchange exchange,
@@ -65,7 +74,7 @@ public class RackEnvironment {
         HeaderMap headers = exchange.getRequestHeaders();
         // TODO: Should we only use this faster RackEnvironmentHash if we detect
         // specific JRuby versions that we know are compatible?
-        final RackEnvironmentHash env = new RackEnvironmentHash(runtime, headers);
+        final RackEnvironmentHash env = new RackEnvironmentHash(runtime, headers, rackKeyMap);
         env.lazyPut(RACK_KEY.RACK_INPUT, inputChannel, false);
         env.lazyPut(RACK_KEY.RACK_ERRORS, errors, false);
 
@@ -111,7 +120,7 @@ public class RackEnvironment {
         return env;
     }
 
-    private static String getRemoteAddr(HttpServerExchange exchange) {
+    private static String getRemoteAddr(final HttpServerExchange exchange) {
         InetSocketAddress sourceAddress = exchange.getSourceAddress();
         if(sourceAddress == null) {
             return "";
@@ -123,7 +132,7 @@ public class RackEnvironment {
         return address.getHostAddress();
     }
 
-    private static int getContentLength(HeaderMap headers) {
+    private static int getContentLength(final HeaderMap headers) {
         final String contentLengthStr = headers.getFirst(Headers.CONTENT_LENGTH);
         if (contentLengthStr == null || contentLengthStr.isEmpty()) {
             return -1;
@@ -131,9 +140,10 @@ public class RackEnvironment {
         return Integer.parseInt(contentLengthStr);
     }
 
-    private Ruby runtime;
-    private RubyArray rackVersion;
-    private RubyIO errors;
+    private final Ruby runtime;
+    private final RubyArray rackVersion;
+    private final RubyIO errors;
+    private final Map<RubyString, RACK_KEY> rackKeyMap = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(RackEnvironment.class);
 

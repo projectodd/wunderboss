@@ -15,14 +15,18 @@ import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.projectodd.wunderboss.ruby.RubyHelper;
 
+import java.util.Map;
+
 public class RackEnvironmentHash extends RubyHash {
 
-    public RackEnvironmentHash(Ruby runtime, HeaderMap headers) {
+    public RackEnvironmentHash(final Ruby runtime, final HeaderMap headers,
+                               final Map<RubyString, RackEnvironment.RACK_KEY> rackKeyMap) {
         super(runtime);
         this.headers = headers;
+        this.rackKeyMap = rackKeyMap;
     }
 
-    public void lazyPut(RackEnvironment.RACK_KEY rackKey, Object value, boolean usAscii) {
+    public void lazyPut(RackEnvironment.RACK_KEY rackKey, final Object value, boolean usAscii) {
         rackValues[rackKey.ordinal()] = value;
         usAsciiValues[rackKey.ordinal()] = usAscii;
     }
@@ -30,7 +34,7 @@ public class RackEnvironmentHash extends RubyHash {
     // synchronized probably isn't needed here since we create a new RackEnvironment
     // per request, but we can't guarantee users aren't spawning a new thread and
     // passing the env to that new thread
-    private synchronized void fillKey(IRubyObject rubyKey) {
+    private synchronized void fillKey(final IRubyObject rubyKey) {
         if (!filledEntireHash) {
             if (rubyKey instanceof RubyString && !containsKey(rubyKey)) {
                 byte[] keyBytes = ((RubyString) rubyKey).getBytes();
@@ -42,15 +46,14 @@ public class RackEnvironmentHash extends RubyHash {
                     HttpString httpString = new HttpString(keyBytes, 5, keyBytes.length);
                     fillHeaderKey(httpString, keyBytes);
                 } else {
-                    String key = new String(keyBytes);
-                    fillRackKey(key);
+                    fillRackKey((RubyString) rubyKey);
                 }
             }
         }
     }
     private synchronized void fillEntireHash() {
         if (!filledEntireHash) {
-            for (String key : RackEnvironment.RACK_KEY_MAP.keySet()) {
+            for (RubyString key : rackKeyMap.keySet()) {
                 fillRackKey(key);
             }
 
@@ -60,12 +63,11 @@ public class RackEnvironmentHash extends RubyHash {
             filledEntireHash = true;
         }
     }
-    private synchronized void fillRackKey(String key) {
-        RackEnvironment.RACK_KEY rackKey = RackEnvironment.RACK_KEY_MAP.get(key);
+    private synchronized void fillRackKey(final RubyString key) {
+        RackEnvironment.RACK_KEY rackKey = rackKeyMap.get(key);
         if (rackKey != null) {
             Object value = rackValues[rackKey.ordinal()];
             if (value != null) {
-                RubyString rubyKey = RubyHelper.toUsAsciiRubyString(getRuntime(), key);
                 if (value instanceof HttpString) {
                     value = value.toString();
                 }
@@ -73,15 +75,15 @@ public class RackEnvironmentHash extends RubyHash {
                     boolean usAscii = usAsciiValues[rackKey.ordinal()];
                     RubyString rubyValue = usAscii ? RubyHelper.toUsAsciiRubyString(getRuntime(), (String) value) :
                             RubyHelper.toUnicodeRubyString(getRuntime(), (String) value);
-                    put(rubyKey, rubyValue);
+                    put(key, rubyValue);
                 } else {
-                    put(rubyKey, value);
+                    put(key, value);
                 }
                 rackValues[rackKey.ordinal()] = null;
             }
         }
     }
-    private synchronized void fillHeaderKey(HttpString key, byte[] rubyKeyBytes) {
+    private synchronized void fillHeaderKey(final HttpString key, byte[] rubyKeyBytes) {
         // RACK spec says not to create HTTP_CONTENT_TYPE or HTTP_CONTENT_LENGTH headers
         if (!key.equals(Headers.CONTENT_TYPE) && !key.equals(Headers.CONTENT_LENGTH)) {
             HeaderValues headerValues = headers.get(key);
@@ -97,7 +99,7 @@ public class RackEnvironmentHash extends RubyHash {
         }
     }
 
-    private static byte[] rackHeaderNameToBytes(HttpString headerName) {
+    private static byte[] rackHeaderNameToBytes(final HttpString headerName) {
         // This is a more performant implemention of:
         // "HTTP_" + headerName.toUpperCase().replace('-', '_');
         byte[] envNameBytes = new byte[headerName.length() + 5];
@@ -126,9 +128,10 @@ public class RackEnvironmentHash extends RubyHash {
         return c;
     }
 
-    private Object[] rackValues = new Object[RackEnvironment.NUM_RACK_KEYS];
-    private boolean[] usAsciiValues = new boolean[RackEnvironment.NUM_RACK_KEYS];
-    private HeaderMap headers;
+    private final Object[] rackValues = new Object[RackEnvironment.NUM_RACK_KEYS];
+    private final boolean[] usAsciiValues = new boolean[RackEnvironment.NUM_RACK_KEYS];
+    private final HeaderMap headers;
+    private final Map<RubyString, RackEnvironment.RACK_KEY> rackKeyMap;
     private boolean filledEntireHash = false;
 
 
