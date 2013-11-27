@@ -1,5 +1,6 @@
 package org.projectodd.wunderboss.web;
 
+import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpHandler;
@@ -10,6 +11,7 @@ import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.util.Headers;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
@@ -41,7 +43,7 @@ public class WebComponent extends Component {
         host = options.getString("host", "localhost");
         undertow = Undertow.builder()
                 .addListener(port, host)
-                .setHandler(pathHandler)
+                .setHandler(Handlers.date(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow")))
                 .build();
     }
 
