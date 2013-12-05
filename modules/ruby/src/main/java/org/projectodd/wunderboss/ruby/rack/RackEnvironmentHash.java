@@ -1,5 +1,6 @@
 package org.projectodd.wunderboss.ruby.rack;
 
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -15,14 +16,17 @@ import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.projectodd.wunderboss.ruby.RubyHelper;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 public class RackEnvironmentHash extends RubyHash {
 
-    public RackEnvironmentHash(final Ruby runtime, final HeaderMap headers,
+    public RackEnvironmentHash(final Ruby runtime, final HttpServerExchange exchange,
                                final Map<RubyString, RackEnvironment.RACK_KEY> rackKeyMap) {
         super(runtime);
-        this.headers = headers;
+        this.exchange = exchange;
+        this.headers = exchange.getRequestHeaders();
         this.rackKeyMap = rackKeyMap;
     }
 
@@ -66,7 +70,35 @@ public class RackEnvironmentHash extends RubyHash {
     private synchronized void fillRackKey(final RubyString key) {
         RackEnvironment.RACK_KEY rackKey = rackKeyMap.get(key);
         if (rackKey != null) {
-            Object value = rackValues[rackKey.ordinal()];
+            Object value = null;
+            switch(rackKey) {
+                case SERVER_NAME:
+                    value = RubyHelper.toUnicodeRubyString(getRuntime(),
+                            exchange.getHostName());
+                    break;
+                case SERVER_PORT:
+                    value = RubyHelper.toUsAsciiRubyString(getRuntime(),
+                            exchange.getDestinationAddress().getPort() + "");
+                    break;
+                case CONTENT_TYPE:
+                    value = RubyHelper.toUsAsciiRubyString(getRuntime(),
+                            headers.getFirst(Headers.CONTENT_TYPE) + "");
+                    break;
+                case CONTENT_LENGTH:
+                    final int contentLength = getContentLength(headers);
+                    if (contentLength >= 0) {
+                        value = RubyHelper.toUsAsciiRubyString(getRuntime(),
+                                contentLength + "");
+                    }
+                    break;
+                case REMOTE_ADDR:
+                    value = RubyHelper.toUnicodeRubyString(getRuntime(),
+                            getRemoteAddr(exchange));
+                    break;
+            }
+            if (value == null) {
+                value = rackValues[rackKey.ordinal()];
+            }
             if (value != null) {
                 if (value instanceof HttpString) {
                     value = value.toString();
@@ -128,8 +160,29 @@ public class RackEnvironmentHash extends RubyHash {
         return c;
     }
 
+    private static String getRemoteAddr(final HttpServerExchange exchange) {
+        InetSocketAddress sourceAddress = exchange.getSourceAddress();
+        if(sourceAddress == null) {
+            return "";
+        }
+        InetAddress address = sourceAddress.getAddress();
+        if(address == null) {
+            return "";
+        }
+        return address.getHostAddress();
+    }
+
+    private static int getContentLength(final HeaderMap headers) {
+        final String contentLengthStr = headers.getFirst(Headers.CONTENT_LENGTH);
+        if (contentLengthStr == null || contentLengthStr.isEmpty()) {
+            return -1;
+        }
+        return Integer.parseInt(contentLengthStr);
+    }
+
     private final Object[] rackValues = new Object[RackEnvironment.NUM_RACK_KEYS];
     private final boolean[] usAsciiValues = new boolean[RackEnvironment.NUM_RACK_KEYS];
+    private final HttpServerExchange exchange;
     private final HeaderMap headers;
     private final Map<RubyString, RackEnvironment.RACK_KEY> rackKeyMap;
     private boolean filledEntireHash = false;

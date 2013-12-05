@@ -71,10 +71,9 @@ public class RackEnvironment {
     public RubyHash getEnv(final HttpServerExchange exchange,
                            final RackChannel inputChannel,
                            final String contextPath) throws IOException {
-        HeaderMap headers = exchange.getRequestHeaders();
         // TODO: Should we only use this faster RackEnvironmentHash if we detect
         // specific JRuby versions that we know are compatible?
-        final RackEnvironmentHash env = new RackEnvironmentHash(runtime, headers, rackKeyMap);
+        final RackEnvironmentHash env = new RackEnvironmentHash(runtime, exchange, rackKeyMap);
         env.lazyPut(RACK_KEY.RACK_INPUT, inputChannel, false);
         env.lazyPut(RACK_KEY.RACK_ERRORS, errors, false);
 
@@ -92,52 +91,26 @@ public class RackEnvironment {
             scriptName = "";
         }
 
+        // For performance reasons, a lot of these Rack keys have been moved
+        // into RackEnvironmentHash where their values are lazily computed
+        // We should probably move everything over just to get all this code
+        // in one place
         env.lazyPut(RACK_KEY.REQUEST_METHOD, exchange.getRequestMethod(), true);
         env.lazyPut(RACK_KEY.SCRIPT_NAME, scriptName, false);
         env.lazyPut(RACK_KEY.PATH_INFO, pathInfo, false);
         env.lazyPut(RACK_KEY.QUERY_STRING, exchange.getQueryString(), false);
-        env.lazyPut(RACK_KEY.SERVER_NAME, exchange.getHostName(), false);
-        env.lazyPut(RACK_KEY.SERVER_PORT, exchange.getDestinationAddress().getPort() + "", true);
-        env.lazyPut(RACK_KEY.CONTENT_TYPE, headers.getFirst(Headers.CONTENT_TYPE) + "", true);
         env.lazyPut(RACK_KEY.REQUEST_URI, scriptName + pathInfo, false);
-        env.lazyPut(RACK_KEY.REMOTE_ADDR, getRemoteAddr(exchange), true);
         env.lazyPut(RACK_KEY.URL_SCHEME, exchange.getRequestScheme(), true);
         env.lazyPut(RACK_KEY.VERSION, rackVersion, false);
         env.lazyPut(RACK_KEY.MULTITHREAD, RubyBoolean.newBoolean(runtime, true), false);
         env.lazyPut(RACK_KEY.MULTIPROCESS, RubyBoolean.newBoolean(runtime, true), false);
         env.lazyPut(RACK_KEY.RUN_ONCE, RubyBoolean.newBoolean(runtime, false), false);
 
-
-        final int contentLength = getContentLength(headers);
-        if (contentLength >= 0) {
-            env.lazyPut(RACK_KEY.CONTENT_LENGTH, contentLength + "", true);
-        }
-
         if ("https".equals(exchange.getRequestScheme())) {
             env.lazyPut(RACK_KEY.HTTPS, "on", true);
         }
 
         return env;
-    }
-
-    private static String getRemoteAddr(final HttpServerExchange exchange) {
-        InetSocketAddress sourceAddress = exchange.getSourceAddress();
-        if(sourceAddress == null) {
-            return "";
-        }
-        InetAddress address = sourceAddress.getAddress();
-        if(address == null) {
-            return "";
-        }
-        return address.getHostAddress();
-    }
-
-    private static int getContentLength(final HeaderMap headers) {
-        final String contentLengthStr = headers.getFirst(Headers.CONTENT_LENGTH);
-        if (contentLengthStr == null || contentLengthStr.isEmpty()) {
-            return -1;
-        }
-        return Integer.parseInt(contentLengthStr);
     }
 
     private final Ruby runtime;
