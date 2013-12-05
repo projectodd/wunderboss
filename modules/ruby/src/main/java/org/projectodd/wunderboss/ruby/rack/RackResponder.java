@@ -54,7 +54,7 @@ public class RackResponder extends RubyObject {
         // HTTP headers are always US_ASCII so we take a couple of shortcuts
         // for converting them from RubyStrings to Java Strings
         final HttpString key = new HttpString(((RubyString) rubyKey).getBytes());
-        final String value = new String((((RubyString) rubyValue).getBytes()));
+        final String value = rubyValue.asJavaString();
         // Leave out the transfer-encoding header since the container takes
         // care of chunking responses and adding that header
         if (!Headers.TRANSFER_ENCODING.equals(key) && !"chunked".equals(value)) {
