@@ -46,7 +46,7 @@ public class RackHandler implements HttpHandler {
             if (inputChannel != null) {
                 inputChannel.close();
             }
-            exchange.getOutputStream().close();
+            exchange.endExchange();
         }
     }
 

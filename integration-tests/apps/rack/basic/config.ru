@@ -45,6 +45,10 @@ EOF
     end
     body << "<div id='posted'>#{posted}</div>"
   end
+  if env['PATH_INFO'] == '/long_body'
+    body << 'foobarbaz' * 50000
+    body << "<div id='long_body'>complete</div>"
+  end
   [200, { 'Content-Type' => 'text/html' }, [body]]
 }
 run app

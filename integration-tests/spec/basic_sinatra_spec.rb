@@ -76,4 +76,9 @@ feature "basic sinatra test" do
     end
   end
 
+  it "should work for long response bodies" do
+    visit '/basic-sinatra/long_body'
+    page.find('#long_body').text.strip.should == 'complete'
+  end
+
 end

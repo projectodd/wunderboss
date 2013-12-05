@@ -25,3 +25,8 @@ end
 post '/poster' do
   haml :posted
 end
+
+get '/long_body' do
+  body = 'foobarbaz' * 50000
+  body << "<div id='long_body'>complete</div>"
+end

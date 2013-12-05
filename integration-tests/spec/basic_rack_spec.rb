@@ -45,6 +45,11 @@ feature "basic rack at non-root context" do
     page.find("#request_uri").text.strip.should == '/basic-rack/foo%23%2C'
   end
 
+  it "should work for long response bodies" do
+    visit '/basic-rack/long_body'
+    page.find('#long_body').text.strip.should == 'complete'
+  end
+
   it "should contain correct request headers" do
     uri = URI.parse("#{Capybara.app_host}/basic-rack/")
     Net::HTTP.start(uri.host, uri.port) do |http|
