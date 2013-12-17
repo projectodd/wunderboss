@@ -17,7 +17,7 @@ public class RubyLanguage implements Language {
     }
 
     @Override
-    public Ruby getRuntime(Options options) {
+    public Ruby getRuntime(ClassLoader ignored, Options options) {
         String root = options.get("root", ".").toString();
         if (root.equals(".")) {
             return Ruby.getGlobalRuntime();

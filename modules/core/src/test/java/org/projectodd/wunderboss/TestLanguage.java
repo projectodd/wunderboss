@@ -7,7 +7,7 @@ public class TestLanguage implements Language {
     }
 
     @Override
-    public String getRuntime(Options options) {
+    public String getRuntime(ClassLoader ignored, Options options) {
         return "runtime";
     }
 

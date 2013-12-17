@@ -70,16 +70,17 @@ public class WunderBoss {
         }
     }
 
+
     public Application newApplication(String languageName) {
-        return newApplication(languageName, new Options());
+        return newApplication(languageName, this.getClass().getClassLoader(), new Options());
     }
 
     public Application newApplication(String languageName, Map<String, Object> options) {
-        return newApplication(languageName, new Options(options));
+        return newApplication(languageName, this.getClass().getClassLoader(), new Options(options));
     }
 
-    public Application newApplication(String languageName, Options options) {
-        return new Application(this, getLanguage(languageName), options);
+    public Application newApplication(String languageName, ClassLoader classLoader, Options options) {
+        return new Application(this, getLanguage(languageName), classLoader, options);
     }
 
     public Component getComponent(String name) {

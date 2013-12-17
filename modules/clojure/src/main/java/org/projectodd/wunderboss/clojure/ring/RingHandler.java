@@ -1,16 +1,19 @@
 package org.projectodd.wunderboss.clojure.ring;
 
-import clojure.api.API;
-import clojure.lang.IFn;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.projectodd.shimdandy.ClojureRuntimeShim;
 
 public class RingHandler implements HttpHandler {
 
-    public RingHandler(IFn ringFn, String context) {
-        this.ringFn = ringFn;
-        API.var("clojure.core", "require").invoke(API.read(HANDLER_FN_NS));
-        this.handlerFn = API.var(HANDLER_FN_NS, HANDLER_FN_NAME);
+    public RingHandler(Object runtime, String ringFn, String context) {
+        this.runtime = (ClojureRuntimeShim)runtime;
+        //TODO: move interning based on FQ name to a util fn called from clojure
+        String[] parts = ringFn.split("/");
+        this.runtime.require(parts[0]);
+        this.ringFn = this.runtime.invoke("clojure.core/intern",
+                                          this.runtime.invoke("clojure.core/symbol", parts[0]),
+                                          this.runtime.invoke("clojure.core/symbol", parts[1]));
         this.context = context;
     }
 
@@ -21,13 +24,12 @@ public class RingHandler implements HttpHandler {
             return;
         }
 
-        this.handlerFn.invoke(this.ringFn, exchange);
+        this.runtime.invoke(HANDLER_FN, this.ringFn, exchange);
     }
 
-    private IFn ringFn;
-    private String context;
-    private IFn handlerFn;
+    private final Object ringFn;
+    private final ClojureRuntimeShim runtime;
+    private final String context;
 
-    public static final String HANDLER_FN_NS = "wunderboss.ring";
-    public static final String HANDLER_FN_NAME = "handle-request";
+    public static final String HANDLER_FN = "wunderboss.ring/handle-request";
 }

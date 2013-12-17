@@ -1,12 +1,9 @@
 package org.projectodd.wunderboss.clojure.ring;
 
-import clojure.api.API;
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
-
-import java.io.File;
 
 public class RingComponent extends Component{
     @Override
@@ -35,11 +32,15 @@ public class RingComponent extends Component{
     public ComponentInstance start(Application application, Options options) {
         String context = options.getString("context", "/");
         String root = options.getString("root", ".");
-        String handler = options.getString("ring-handler", "wunderboss.ring/echo");
+        String handler = options.getString("ring-handler");
+
+        //TODO: make an InvalidOptionException?
+        if (handler == null) {
+            throw new RuntimeException("'ring-handler' option missing for ring component");
+        }
 
         try {
-            String[] parts = handler.split("/");
-            RingHandler ringHandler = new RingHandler(API.var(parts[0], parts[1]), context);
+            RingHandler ringHandler = new RingHandler(application.getRuntime(), handler, context);
 
             Options webOptions = new Options();
             webOptions.put("context", context);

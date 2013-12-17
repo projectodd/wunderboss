@@ -19,6 +19,7 @@
 
   <properties>
     <version.clojure>1.6.0-alpha2</version.clojure>
+    <version.shimdandy>1.0.1</version.shimdandy>
   </properties>
 
   <dependencies>
@@ -40,6 +41,21 @@
       <version>${version.clojure}</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.projectodd.shimdandy</groupId>
+      <artifactId>shimdandy-api</artifactId>
+      <version>${version.shimdandy}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectodd.shimdandy</groupId>
+      <artifactId>shimdandy-impl</artifactId>
+      <version>${version.shimdandy}</version>
+      <scope>provided</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -52,24 +68,24 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>1.4</version>
+        <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
+            <id>copy</id>
+            <phase>compile</phase>
             <goals>
-              <goal>shade</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedArtifactId>wunderboss-ring</shadedArtifactId>
-              <finalName>wunderboss-ring</finalName>
-              <artifactSet>
-                <excludes>
-                  <exclude>io.undertow:undertow-servlet</exclude>
-                  <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
-                </excludes>
-              </artifactSet>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.projectodd.shimdandy</groupId>
+                  <artifactId>shimdandy-impl</artifactId>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <stripVersion>true</stripVersion>
+              <outputDirectory>${project.build.directory}/classes</outputDirectory>
             </configuration>
           </execution>
         </executions>
