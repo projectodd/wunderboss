@@ -58,7 +58,7 @@ public class RackHandler implements HttpHandler {
     private RubyClass rackResponderClass;
     private RackEnvironment rackEnvironment;
 
-    public static final String RESPONSE_HANDLER_RB = "org/projectodd/wunderboss/ruby/rack/response_handler";
+    public static final String RESPONSE_HANDLER_RB = "wunderboss/rack/response_handler";
     public static final String RESPONSE_HANDLER_CLASS_NAME = "WunderBoss::Rack::ResponseHandler";
     public static final String RESPONSE_HANDLER_METHOD_NAME = "handle";
 }

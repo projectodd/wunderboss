@@ -2,7 +2,6 @@ package org.projectodd.wunderboss.clojure;
 
 import org.projectodd.shimdandy.ClojureRuntimeShim;
 import org.projectodd.wunderboss.Language;
-import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 
 import java.io.File;
@@ -20,21 +19,33 @@ public class ClojureLanguage implements Language {
 
     @Override
     public void initialize(WunderBoss container) {
-
+        this.container = container;
     }
 
     @Override
-    public Object getRuntime(ClassLoader loader, Options options) {
-        List classpath = new ArrayList((List)options.get("classpath", Collections.EMPTY_LIST));
-        classpath.add(implJarURL());
-        URLClassLoader wrappingLoader = URLClassLoader.newInstance((URL[])classpath.toArray(new URL[classpath.size()]),loader);
+    public synchronized ClojureRuntimeShim runtime() {
+        if (this.runtime == null) {
+            List classpath = new ArrayList((List)this.container.options().get("classpath", Collections.EMPTY_LIST));
+            classpath.add(implJarURL());
+            URLClassLoader wrappingLoader = URLClassLoader.newInstance((URL[])classpath
+                    .toArray(new URL[classpath.size()]), this.container.classLoader());
 
-        return ClojureRuntimeShim.newRuntime(wrappingLoader);
+            this.runtime = ClojureRuntimeShim.newRuntime(wrappingLoader);
+        }
+
+        return this.runtime;
     }
 
     @Override
-    public void destroyRuntime(Object runtime) {
-        ((ClojureRuntimeShim)runtime).invoke("clojure.core/shutdown-agents");
+    public synchronized void shutdown() {
+        if (this.runtime != null) {
+            this.runtime.invoke("clojure.core/shutdown-agents");
+        }
+    }
+
+    @Override
+    public Object eval(String strToEval) {
+        return runtime().invoke("clojure.core/eval", runtime().invoke("clojure.core/read-string", strToEval));
     }
 
     @SuppressWarnings("unchecked")
@@ -73,6 +84,8 @@ public class ClojureLanguage implements Language {
     }
 
     private URL implJar = null;
+    private WunderBoss container;
+    private ClojureRuntimeShim runtime;
 }
 
 

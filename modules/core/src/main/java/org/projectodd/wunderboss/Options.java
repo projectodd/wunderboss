@@ -42,8 +42,10 @@ public class Options {
         return options.get(key) != null ? options.get(key).toString() : defaultValue;
     }
 
-    public void put(String key, Object value) {
+    public Options put(String key, Object value) {
         options.put(key, value);
+
+        return this;
     }
 
     public boolean containsKey(String key) {

@@ -9,6 +9,23 @@ import java.util.Map;
 
 public class WunderBoss {
 
+    public WunderBoss() {
+        this(new Options().put("root", "."));
+    }
+
+    public WunderBoss(Map<String, Object> options) {
+        this(new Options(options));
+    }
+
+    public WunderBoss(Options options) {
+        this(options, WunderBoss.class.getClassLoader());
+    }
+
+    public WunderBoss(Options options, ClassLoader loader) {
+        this.options = options;
+        this.classLoader = loader;
+    }
+
     public WunderBoss registerLanguage(String languageName, Language language) {
         language.initialize(this);
         languages.put(languageName, language);
@@ -68,19 +85,23 @@ public class WunderBoss {
         for (Component component : components.values()) {
             component.shutdown();
         }
+
+        for (Language language : languages.values()) {
+            language.shutdown();
+        }
     }
 
 
     public Application newApplication(String languageName) {
-        return newApplication(languageName, this.getClass().getClassLoader(), new Options());
+        return newApplication(languageName, new Options());
     }
 
     public Application newApplication(String languageName, Map<String, Object> options) {
-        return newApplication(languageName, this.getClass().getClassLoader(), new Options(options));
+        return newApplication(languageName, new Options(options));
     }
 
-    public Application newApplication(String languageName, ClassLoader classLoader, Options options) {
-        return new Application(this, getLanguage(languageName), classLoader, options);
+    public Application newApplication(String languageName, Options options) {
+        return new Application(this, getLanguage(languageName), options);
     }
 
     public Component getComponent(String name) {
@@ -99,8 +120,18 @@ public class WunderBoss {
         LogManager.getRootLogger().setLevel(Level.toLevel(level));
     }
 
-    private Map<String, Language> languages = new HashMap<>();
-    private Map<String, Component> components = new HashMap<>();
+    public Options options() {
+        return this.options;
+    }
+
+    public ClassLoader classLoader() {
+        return this.classLoader;
+    }
+
+    private final Map<String, Language> languages = new HashMap<>();
+    private final Map<String, Component> components = new HashMap<>();
+    private final Options options;
+    private final ClassLoader classLoader;
 
     private static final Logger log = Logger.getLogger(WunderBoss.class);
 }

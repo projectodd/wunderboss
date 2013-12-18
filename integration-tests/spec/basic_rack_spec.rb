@@ -3,7 +3,7 @@ require 'spec_helper'
 feature "basic rack at non-root context" do
 
   before(:all) do
-    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rack/basic")
+    @app = container('root' => "#{apps_dir}/rack/basic").new_application('ruby')
     @app.start('rack', 'context' => '/basic-rack')
   end
 
@@ -90,7 +90,7 @@ end
 feature "basic rack at root context" do
 
   before(:all) do
-    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rack/basic")
+    @app = container('root' => "#{apps_dir}/rack/basic").new_application('ruby')
     @app.start('rack', 'context' => '/')
   end
 

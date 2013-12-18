@@ -4,9 +4,11 @@ public interface Language {
 
     public void initialize(WunderBoss container);
 
-    public Object getRuntime(ClassLoader loader, Options options);
+    public Object runtime();
 
-    public void destroyRuntime(Object runtime);
+    public void shutdown();
+
+    public Object eval(String toEval);
 
     public <T> T coerceToClass(Object object, Class<T> toClass);
 }

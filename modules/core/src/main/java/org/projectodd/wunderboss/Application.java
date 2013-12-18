@@ -7,12 +7,11 @@ import java.util.Map;
 
 public class Application {
 
-    public Application(WunderBoss container, Language language, ClassLoader loader, Options options) {
+    public Application(WunderBoss container, Language language, Options options) {
         this.container = container;
         this.language = language;
-        this.classLoader = loader;
-        this.options = options;
-        this.runtime = language.getRuntime(loader, options);
+        //TODO: verify root *isn't* set here, since it's a container-level opt
+        this.options = container.options().merge(options);
     }
 
     public ComponentInstance start(String componentName) {
@@ -39,11 +38,10 @@ public class Application {
             }
             iterator.remove();
         }
-        language.destroyRuntime(runtime);
     }
 
-    public Object getRuntime() {
-        return this.runtime;
+    public Object runtime() {
+        return language.runtime();
     }
 
     public <T> T coerceObjectToClass(Object object, Class<T> toClass) {
@@ -53,7 +51,5 @@ public class Application {
     private final WunderBoss container;
     private final Language language;
     private final Options options;
-    private final ClassLoader classLoader;
-    private final Object runtime;
     private final Deque<ComponentInstance> instanceStack = new LinkedList<>();
 }

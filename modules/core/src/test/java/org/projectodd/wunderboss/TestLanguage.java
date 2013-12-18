@@ -7,18 +7,23 @@ public class TestLanguage implements Language {
     }
 
     @Override
-    public String getRuntime(ClassLoader ignored, Options options) {
+    public String runtime() {
         return "runtime";
     }
 
     @Override
-    public void destroyRuntime(Object runtime) {
+    public void shutdown() {
         destroyed = true;
     }
 
     @Override
     public <T> T coerceToClass(Object object, Class<T> toClass) {
         return (T) object;
+    }
+
+    @Override
+    public Object eval(String toEval) {
+        return null;
     }
 
     boolean registered;

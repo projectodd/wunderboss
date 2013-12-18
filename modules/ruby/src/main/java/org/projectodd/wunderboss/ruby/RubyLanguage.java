@@ -1,11 +1,10 @@
 package org.projectodd.wunderboss.ruby;
 
-import org.projectodd.wunderboss.Language;
-import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.WunderBoss;
 import org.jruby.Ruby;
 import org.jruby.RubyInstanceConfig;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.projectodd.wunderboss.Language;
+import org.projectodd.wunderboss.WunderBoss;
 
 import java.util.Arrays;
 
@@ -13,26 +12,36 @@ public class RubyLanguage implements Language {
 
     @Override
     public void initialize(WunderBoss container) {
-
+        this.container = container;
     }
 
     @Override
-    public Ruby getRuntime(ClassLoader ignored, Options options) {
-        String root = options.get("root", ".").toString();
-        if (root.equals(".")) {
-            return Ruby.getGlobalRuntime();
-        } else {
-            RubyInstanceConfig rubyConfig = new RubyInstanceConfig();
-            rubyConfig.setLoadPaths(Arrays.asList(root));
-            Ruby runtime = Ruby.newInstance(rubyConfig);
-            runtime.setCurrentDirectory(root);
-            return runtime;
+    public synchronized Ruby runtime() {
+        if (this.runtime == null) {
+            String root = this.container.options().get("root", ".").toString();
+            if (root.equals(".")) {
+                this.runtime = Ruby.getGlobalRuntime();
+            } else {
+                RubyInstanceConfig rubyConfig = new RubyInstanceConfig();
+                rubyConfig.setLoadPaths(Arrays.asList(root));
+                this.runtime = Ruby.newInstance(rubyConfig);
+                this.runtime.setCurrentDirectory(root);
+            }
+        }
+
+        return this.runtime;
+    }
+
+    @Override
+    public synchronized void shutdown() {
+        if (this.runtime != null) {
+            this.runtime.tearDown(false);
         }
     }
 
     @Override
-    public void destroyRuntime(Object runtime) {
-        ((Ruby) runtime).tearDown(false);
+    public Object eval(String toEval) {
+        return runtime().evalScriptlet(toEval);
     }
 
     @SuppressWarnings("unchecked")
@@ -43,4 +52,7 @@ public class RubyLanguage implements Language {
         }
         return (T) object;
     }
+
+    private WunderBoss container;
+    private Ruby runtime;
 }

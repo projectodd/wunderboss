@@ -81,6 +81,6 @@ public class RackComponent extends Component{
     }
 
     private Ruby getRuntime(Application application) {
-        return (Ruby) application.getRuntime();
+        return (Ruby) application.runtime();
     }
 }

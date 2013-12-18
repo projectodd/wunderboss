@@ -3,7 +3,7 @@ require 'spec_helper'
 feature 'basic rails4 test' do
 
   before(:all) do
-    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/rails4/basic")
+    @app = container('root' => "#{apps_dir}/rails4/basic").new_application('ruby')
     @app.start('rack', 'context' => '/basic-rails4')
   end
 

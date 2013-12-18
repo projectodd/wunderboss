@@ -31,7 +31,6 @@ public class RingComponent extends Component{
     @Override
     public ComponentInstance start(Application application, Options options) {
         String context = options.getString("context", "/");
-        String root = options.getString("root", ".");
         String handler = options.getString("ring-handler");
 
         //TODO: make an InvalidOptionException?
@@ -40,7 +39,7 @@ public class RingComponent extends Component{
         }
 
         try {
-            RingHandler ringHandler = new RingHandler(application.getRuntime(), handler, context);
+            RingHandler ringHandler = new RingHandler(application.runtime(), handler, context);
 
             Options webOptions = new Options();
             webOptions.put("context", context);

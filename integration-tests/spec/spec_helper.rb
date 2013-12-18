@@ -3,28 +3,40 @@ require 'capybara/rspec'
 require 'ostruct'
 require 'edn'
 require 'net/http'
+require 'wunderboss'
 
 Capybara.app_host = "http://localhost:8080"
 Capybara.run_server = false
 Capybara.default_driver = :poltergeist
 
-RSpec.configure do |config|
-  config.before(:suite) do
-    begin
-      CONTAINER = Java::OrgProjectoddWunderboss::WunderBoss.new
-      CONTAINER.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
-      CONTAINER.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
-      CONTAINER.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLanguage.new)
-      CONTAINER.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
-      CONTAINER.register_language('clojure', Java::OrgProjectoddWunderbossClojure::ClojureLanguage.new)
-      CONTAINER.register_component('ring', Java::OrgProjectoddWunderbossClojureRing::RingComponent.new)
-      CONTAINER.configure('web', 'host' => 'localhost', 'port' => '8080')
-    rescue Exception => ex
-      puts ex.inspect
-      puts ex.backtrace
-      raise ex
-    end
 
+$containers = []
+
+def container(opts=nil)
+  container = WunderBoss.container(opts)
+  container.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
+  container.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
+  container.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLanguage.new)
+  container.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
+  container.register_language('clojure', Java::OrgProjectoddWunderbossClojure::ClojureLanguage.new)
+  container.register_component('ring', Java::OrgProjectoddWunderbossClojureRing::RingComponent.new)
+  container.configure('web', 'host' => 'localhost', 'port' => '8080')
+  $containers << container
+  container
+rescue Exception => ex
+  puts ex.inspect
+  puts ex.backtrace
+  raise ex
+end
+
+def stop_containers
+  $containers.each(&:stop)
+  $containers = []
+end
+  
+RSpec.configure do |config|
+
+  config.before(:suite) do
     begin
       Capybara.visit "/"
     rescue Exception => ex
@@ -52,10 +64,12 @@ EOF
     end
   end
 
-  config.after(:suite) do
-    CONTAINER.stop
+  config.after(:all) do
+    stop_containers
   end
 end
+
+
 
 def apps_dir
   File.join(File.dirname(__FILE__), '..', 'apps')

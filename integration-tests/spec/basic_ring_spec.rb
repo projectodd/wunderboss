@@ -4,10 +4,10 @@ feature "basic ring at non-root context" do
 
   before(:all) do
     dir = "#{apps_dir}/ring/basic"
-    @app = CONTAINER.new_application('clojure',
-                                     'root' => dir,
-                                     'classpath' => lein_classpath(dir),
-                                     'ring-handler' => "basic.core/handler")
+    @app = container('root' => dir,
+                     'classpath' => lein_classpath(dir))
+      .new_application('clojure',
+                       'ring-handler' => "basic.core/handler")
     @app.start('ring', 'context' => '/basic-ring')
   end
 

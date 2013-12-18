@@ -3,7 +3,7 @@ require 'spec_helper'
 feature "basic sinatra test" do
 
   before(:all) do
-    @app = CONTAINER.new_application('ruby', 'root' => "#{apps_dir}/sinatra/basic")
+    @app = container('root' => "#{apps_dir}/sinatra/basic").new_application('ruby')
     @app.start('rack', 'context' => '/basic-sinatra')
   end
 
