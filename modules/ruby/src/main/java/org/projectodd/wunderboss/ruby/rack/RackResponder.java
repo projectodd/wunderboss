@@ -44,33 +44,51 @@ public class RackResponder extends RubyObject {
     }
 
     @JRubyMethod(name = "response_code=")
-    public IRubyObject setResponseCode(ThreadContext context, IRubyObject status) {
+    public IRubyObject setResponseCode(final IRubyObject status) {
         exchange.setResponseCode((Integer) status.toJava((Integer.class)));
         return getRuntime().getNil();
     }
 
     @JRubyMethod(name = "add_header")
-    public IRubyObject addHeader(ThreadContext context, IRubyObject rubyKey, IRubyObject rubyValue) {
+    public IRubyObject addHeader(final RubyString rubyKey, final RubyString rubyValues) {
         // HTTP headers are always US_ASCII so we take a couple of shortcuts
         // for converting them from RubyStrings to Java Strings
-        final HttpString key = new HttpString(((RubyString) rubyKey).getBytes());
-        final String value = rubyValue.asJavaString();
+        final HttpString key = new HttpString(rubyKey.getBytes());
+        final byte[] byteValues = rubyValues.getBytes();
+        final char[] charValues = new char[byteValues.length];
+        int i;
+        int offset = 0;
+        // split header values on newlines while converting from bytes to chars
+        for (i = 0; i < charValues.length; i++) {
+            charValues[i] = (char) byteValues[i];
+            if (charValues[i] == '\n') {
+                String value = new String(charValues, offset, i - offset);
+                offset = i + 1;
+                addHeader(key, value);
+            } else if (i == charValues.length - 1) {
+                String value = new String(charValues, offset, charValues.length - offset);
+                addHeader(key, value);
+            }
+        }
+        return getRuntime().getNil();
+    }
+
+    private void addHeader(final HttpString key, final String value) {
         // Leave out the transfer-encoding header since the container takes
         // care of chunking responses and adding that header
         if (!Headers.TRANSFER_ENCODING.equals(key) && !"chunked".equals(value)) {
             exchange.getResponseHeaders().add(key, value);
         }
-        return getRuntime().getNil();
     }
 
     @JRubyMethod(name = "write")
-    public IRubyObject write(ThreadContext context, IRubyObject string) throws IOException {
-        exchange.getOutputStream().write(((RubyString) string).getBytes());
+    public IRubyObject write(final RubyString string) throws IOException {
+        exchange.getOutputStream().write(string.getBytes());
         return getRuntime().getNil();
     }
 
     @JRubyMethod(name = "flush")
-    public IRubyObject flush(ThreadContext context) throws IOException {
+    public IRubyObject flush() throws IOException {
         exchange.getOutputStream().flush();
         return getRuntime().getNil();
     }

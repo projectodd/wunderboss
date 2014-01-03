@@ -11,11 +11,7 @@ module WunderBoss
 
           transfer_encoding_value = nil
           headers.each { |key,value|
-            # values of headers must be Strings, separated by newlines for
-            # multiple values
-            value.each_line { |v|
-              rack_responder.add_header(key, v.chomp("\n"))
-            }
+            rack_responder.add_header(key, value);
             transfer_encoding_value = value if key == 'Transfer-Encoding'
           }
 
