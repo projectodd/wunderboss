@@ -19,14 +19,16 @@ public class RubyLanguage implements Language {
     public synchronized Ruby runtime() {
         if (this.runtime == null) {
             String root = this.container.options().get("root", ".").toString();
-            if (root.equals(".")) {
+            if (Ruby.isGlobalRuntimeReady()) {
                 this.runtime = Ruby.getGlobalRuntime();
             } else {
                 RubyInstanceConfig rubyConfig = new RubyInstanceConfig();
                 rubyConfig.setLoadPaths(Arrays.asList(root));
                 this.runtime = Ruby.newInstance(rubyConfig);
-                this.runtime.setCurrentDirectory(root);
+                this.createdRuntime = true;
             }
+            String expandedRoot = this.runtime.evalScriptlet("File.expand_path(%q(" + root + "))").asJavaString();
+            this.runtime.setCurrentDirectory(expandedRoot);
         }
 
         return this.runtime;
@@ -34,8 +36,9 @@ public class RubyLanguage implements Language {
 
     @Override
     public synchronized void shutdown() {
-        if (this.runtime != null) {
+        if (this.runtime != null && this.createdRuntime) {
             this.runtime.tearDown(false);
+            this.runtime = null;
         }
     }
 
@@ -55,4 +58,5 @@ public class RubyLanguage implements Language {
 
     private WunderBoss container;
     private Ruby runtime;
+    private boolean createdRuntime = false;
 }
