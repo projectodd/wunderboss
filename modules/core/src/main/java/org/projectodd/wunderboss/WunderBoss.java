@@ -4,7 +4,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.jboss.logging.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class WunderBoss {
@@ -82,6 +84,10 @@ public class WunderBoss {
     }
 
     public void stop() {
+        for (Application application : applications) {
+            application.stop();
+        }
+
         for (Component component : components.values()) {
             component.shutdown();
         }
@@ -101,7 +107,9 @@ public class WunderBoss {
     }
 
     public Application newApplication(String languageName, Options options) {
-        return new Application(this, getLanguage(languageName), options);
+        Application application = new Application(this, getLanguage(languageName), options);
+        applications.add(application);
+        return application;
     }
 
     public Component getComponent(String name) {
@@ -130,6 +138,7 @@ public class WunderBoss {
 
     private final Map<String, Language> languages = new HashMap<>();
     private final Map<String, Component> components = new HashMap<>();
+    private final List<Application> applications = new ArrayList<>();
     private final Options options;
     private final ClassLoader classLoader;
 

@@ -3,12 +3,13 @@ require 'spec_helper'
 feature 'basic rails4 test' do
 
   before(:all) do
-    @app = container('root' => "#{apps_dir}/rails4/basic").new_application('ruby')
-    @app.start('rack', 'context' => '/basic-rails4')
+    @container = container('root' => "#{apps_dir}/rails4/basic")
+    @container.new_application('ruby')
+      .start('rack', 'context' => '/basic-rails4')
   end
 
   after(:all) do
-    @app.stop
+    @container.stop
   end
 
   it 'should do a basic get' do

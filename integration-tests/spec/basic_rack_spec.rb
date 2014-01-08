@@ -3,12 +3,13 @@ require 'spec_helper'
 feature "basic rack at non-root context" do
 
   before(:all) do
-    @app = container('root' => "#{apps_dir}/rack/basic").new_application('ruby')
-    @app.start('rack', 'context' => '/basic-rack')
+    @container = container('root' => "#{apps_dir}/rack/basic")
+    @container.new_application('ruby')
+      .start('rack', 'context' => '/basic-rack')
   end
 
   after(:all) do
-    @app.stop
+    @container.stop
   end
 
   it "should work for basic requests" do
@@ -95,12 +96,13 @@ end
 feature "basic rack at root context" do
 
   before(:all) do
-    @app = container('root' => "#{apps_dir}/rack/basic").new_application('ruby')
-    @app.start('rack', 'context' => '/')
+    @container = container('root' => "#{apps_dir}/rack/basic")
+    @container.new_application('ruby')
+      .start('rack', 'context' => '/')
   end
 
   after(:all) do
-    @app.stop
+    @container.stop
   end
 
   it "should have correct path information" do
