@@ -17,6 +17,7 @@ import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.WunderBoss;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,14 +74,7 @@ public class WebComponent extends Component {
             }, resourceHandler, httpHandler);
         }
 
-        pathHandler.addPath(context, httpHandler);
-
-        if (!started) {
-            undertow.start();
-            log.info("Undertow listening on " + host + ":" + port);
-            started = true;
-        }
-        log.info("Started web context " + context);
+        registerHttpHandler(context, httpHandler);
 
         Options instanceOptions = new Options();
         instanceOptions.put("context", context);
@@ -91,7 +85,21 @@ public class WebComponent extends Component {
     @Override
     public void stop(ComponentInstance instance) {
         String context = instance.getOptions().getString("context");
-        pathHandler.removePath(context);
+        unregisterHttpHandler(context);
+    }
+
+    protected void registerHttpHandler(String context, HttpHandler httpHandler) {
+        pathHandler.addPrefixPath(context, httpHandler);
+        if (!started) {
+            undertow.start();
+            log.info("Undertow listening on " + host + ":" + port);
+            started = true;
+        }
+        log.info("Started web context " + context);
+    }
+
+    protected void unregisterHttpHandler(String context) {
+        pathHandler.removePrefixPath(context);
         log.info("Stopped web context " + context);
     }
 

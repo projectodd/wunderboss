@@ -39,7 +39,6 @@
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
       <version>${version.jruby}</version>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -68,6 +67,7 @@
                 <excludes>
                   <exclude>io.undertow:undertow-servlet</exclude>
                   <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                  <exclude>org.jruby:jruby-complete</exclude>
                 </excludes>
               </artifactSet>
             </configuration>

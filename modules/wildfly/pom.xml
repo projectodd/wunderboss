@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>org.projectodd.wunderboss</groupId>
+    <artifactId>wunderboss-modules</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.projectodd.wunderboss</groupId>
+  <artifactId>wunderboss-wildfly</artifactId>
+  <name>WunderBoss WildFly Module</name>
+
+  <packaging>jar</packaging>
+
+  <properties>
+    <version.jboss.modules>1.3.0.Final</version.jboss.modules>
+    <version.wildfly>8.0.0.Final</version.wildfly>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-web</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-ruby</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.modules</groupId>
+      <artifactId>jboss-modules</artifactId>
+      <version>${version.jboss.modules}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-undertow</artifactId>
+      <version>${version.wildfly}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Dependencies>
+                io.undertow.core,
+                org.jboss.modules,
+                org.wildfly.extension.undertow
+              </Dependencies>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <finalName>uber-${project.artifactId}</finalName>
+          <artifactSet>
+            <includes>
+              <include>org.projectodd.wunderboss:wunderboss-core</include>
+              <include>org.projectodd.wunderboss:wunderboss-ruby</include>
+              <include>org.projectodd.wunderboss:wunderboss-web</include>
+            </includes>
+          </artifactSet>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
