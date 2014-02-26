@@ -23,12 +23,18 @@ import java.util.jar.JarFile;
 
 public class WildFlyRubyLanguage extends RubyLanguage {
 
+    public WildFlyRubyLanguage(String jrubyHome) {
+        this.jrubyHome = jrubyHome;
+    }
+
     @Override
     public void initialize(WunderBoss container) {
         super.initialize(container);
 
-        jrubyHome = "/home/bbrowning/.rbenv/versions/jruby-1.7.10";
         File libDir = new File(jrubyHome, "lib");
+        if (!libDir.exists()) {
+            throw new RuntimeException("JRuby Home of " + jrubyHome + " does not appear to be a valid JRuby install");
+        }
         List<ResourceLoaderSpec> loaderSpecs = new ArrayList<ResourceLoaderSpec>();
         for (File child : libDir.listFiles()) {
             if (child.getName().endsWith(".jar")) {

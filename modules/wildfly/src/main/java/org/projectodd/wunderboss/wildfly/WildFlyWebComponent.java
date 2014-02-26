@@ -2,6 +2,7 @@ package org.projectodd.wunderboss.wildfly;
 
 import io.undertow.server.HttpHandler;
 import org.jboss.msc.service.ServiceRegistry;
+import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.WebComponent;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
@@ -11,6 +12,11 @@ public class WildFlyWebComponent extends WebComponent {
 
     public WildFlyWebComponent(ServiceRegistry serviceRegistry) {
         this.serviceRegistry = serviceRegistry;
+    }
+
+    @Override
+    public void configure(Options options) {
+        // no-op since we're using undertow from wildfly
     }
 
     @Override
