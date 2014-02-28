@@ -47,8 +47,6 @@ public class WildFlyRubyLanguage extends RubyLanguage {
             }
         }
         swizzleResourceLoaders(loaderSpecs);
-
-        // eval("require 'bundler/setup'");
     }
 
     @Override
