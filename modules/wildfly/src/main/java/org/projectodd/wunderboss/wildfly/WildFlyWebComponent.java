@@ -1,17 +1,20 @@
 package org.projectodd.wunderboss.wildfly;
 
 import io.undertow.server.HttpHandler;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.WebComponent;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
 import org.wildfly.extension.undertow.UndertowService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class WildFlyWebComponent extends WebComponent {
 
-    public WildFlyWebComponent(ServiceRegistry serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
+    public WildFlyWebComponent(UndertowService undertowService) {
+        this.undertowService = undertowService;
     }
 
     @Override
@@ -21,20 +24,31 @@ public class WildFlyWebComponent extends WebComponent {
 
     @Override
     protected void registerHttpHandler(String context, HttpHandler httpHandler) {
-        getHost().registerHandler(context, httpHandler);
+        for (Host host : getHosts()) {
+            log.info("Registered HTTP context '" + context + "' for host " + host.getName());
+            host.registerHandler(context, httpHandler);
+        }
     }
 
     @Override
     protected void unregisterHttpHandler(String context) {
-        getHost().unregisterHandler(context);
+        for (Host host : getHosts()) {
+            log.info("Unregistered HTTP context '" + context + "' for host " + host.getName());
+            host.unregisterHandler(context);
+        }
     }
 
-    private Host getHost() {
-        UndertowService undertowService = (UndertowService) serviceRegistry.getRequiredService(UndertowService.UNDERTOW).getValue();
-        String defaultServerName = undertowService.getDefaultServer();
-        String defaultVirtualHost = undertowService.getDefaultVirtualHost();
-        return (Host) serviceRegistry.getRequiredService(UndertowService.virtualHostName(defaultServerName, defaultVirtualHost)).getValue();
+    private List<Host> getHosts() {
+        List<Host> hosts = new ArrayList<Host>();
+        for (Server server : undertowService.getServers()) {
+            for (Host host : server.getHosts()) {
+                hosts.add(host);
+            }
+        }
+        return hosts;
     }
 
-    private ServiceRegistry serviceRegistry;
+    private UndertowService undertowService;
+
+    private static final Logger log = Logger.getLogger(WildFlyWebComponent.class);
 }

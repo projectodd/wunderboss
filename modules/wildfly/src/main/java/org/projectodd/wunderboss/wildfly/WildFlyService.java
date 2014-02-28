@@ -1,33 +1,29 @@
 package org.projectodd.wunderboss.wildfly;
 
-import org.jboss.as.server.deployment.DeploymentUnit;
-import org.jboss.as.server.deployment.Services;
+import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.ruby.rack.RackComponent;
+import org.wildfly.extension.undertow.UndertowService;
 
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.lang.management.ManagementFactory;
-import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.Properties;
 
 public class WildFlyService implements Service<WildFlyService> {
 
-    public WildFlyService(String deploymentName, ServiceRegistry serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
-        this.moduleName = deploymentName;
+    public WildFlyService(String deploymentName) {
+        this.deploymentName = deploymentName;
+    }
 
+    @Override
+    public void start(StartContext context) throws StartException {
         Properties properties = new Properties();
         String configName = deploymentName.replace(".jar", ".properties");
         String configPath = System.getProperty("jboss.server.base.dir") + File.separator + "deployments" + File.separator + configName;
@@ -41,17 +37,13 @@ public class WildFlyService implements Service<WildFlyService> {
                 System.err.println("Error loading config file: " + e.getMessage());
             }
         }
-
         Options options = new Options();
         options.put("root", properties.getProperty("root"));
         container = new WunderBoss(options);
         container.registerLanguage("ruby", new WildFlyRubyLanguage(properties.getProperty("jruby.home")));
-        container.registerComponent("web", new WildFlyWebComponent(serviceRegistry));
+        container.registerComponent("web", new WildFlyWebComponent(undertowInjector.getValue()));
         container.registerComponent("rack", new RackComponent());
-    }
 
-    @Override
-    public void start(StartContext context) throws StartException {
         System.err.println("!!! Starting Ruby application");
         application = container.newApplication("ruby");
         application.start("rack");
@@ -63,7 +55,9 @@ public class WildFlyService implements Service<WildFlyService> {
             System.err.println("!!! Stopping Ruby application");
             application.stop();
         }
-        container.stop();
+        if (container != null) {
+            container.stop();
+        }
     }
 
     @Override
@@ -71,8 +65,12 @@ public class WildFlyService implements Service<WildFlyService> {
         return this;
     }
 
+    public Injector<UndertowService> getUndertowInjector() {
+        return undertowInjector;
+    }
+
+    private String deploymentName;
     private WunderBoss container;
     private Application application;
-    private ServiceRegistry serviceRegistry;
-    private String moduleName;
+    private InjectedValue<UndertowService> undertowInjector = new InjectedValue<UndertowService>();
 }

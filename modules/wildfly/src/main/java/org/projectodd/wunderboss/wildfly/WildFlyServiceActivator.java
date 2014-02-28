@@ -1,13 +1,12 @@
 package org.projectodd.wunderboss.wildfly;
 
-import org.jboss.as.server.deployment.Services;
 import org.jboss.modules.Module;
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceActivator;
 import org.jboss.msc.service.ServiceActivatorContext;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
+import org.wildfly.extension.undertow.UndertowService;
 
 public class WildFlyServiceActivator implements ServiceActivator {
     @Override
@@ -21,8 +20,9 @@ public class WildFlyServiceActivator implements ServiceActivator {
         ServiceName parentServiceName = ServiceName.JBOSS.append("deployment").append("unit").append(deploymentName);
 
         ServiceName serviceName = ServiceName.of(parentServiceName, "wunderboss");
-        Service service = new WildFlyService(deploymentName, serviceActivatorContext.getServiceRegistry());
+        WildFlyService service = new WildFlyService(deploymentName);
         serviceActivatorContext.getServiceTarget().addService(serviceName, service)
+                .addDependency(UndertowService.UNDERTOW, UndertowService.class, service.getUndertowInjector())
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .install();
     }
