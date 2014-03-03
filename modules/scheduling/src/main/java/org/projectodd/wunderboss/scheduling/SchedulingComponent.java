@@ -1,4 +1,4 @@
-package org.projectodd.wunderboss.job;
+package org.projectodd.wunderboss.scheduling;
 
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
@@ -16,7 +16,7 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
 
-public class JobComponent extends Component {
+public class SchedulingComponent extends Component {
     @Override
     public void boot() {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
@@ -43,6 +43,8 @@ public class JobComponent extends Component {
         numThreads = options.getInt("num_threads", 5);
     }
 
+    // options:
+    // cron, run_function (takes a Map), data (the Map), at options?
     @Override
     public ComponentInstance start(Application application, Options options) {
         String cronString = options.getString("cron");
@@ -99,5 +101,5 @@ public class JobComponent extends Component {
     private int numThreads;
     private boolean started;
 
-    private static final Logger log = Logger.getLogger(JobComponent.class);
+    private static final Logger log = Logger.getLogger(SchedulingComponent.class);
 }

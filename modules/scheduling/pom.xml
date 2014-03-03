@@ -13,8 +13,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-job</artifactId>
-  <name>WunderBoss Job Module</name>
+  <artifactId>wunderboss-scheduling</artifactId>
+  <name>WunderBoss Scheduling Module</name>
 
   <packaging>jar</packaging>
 

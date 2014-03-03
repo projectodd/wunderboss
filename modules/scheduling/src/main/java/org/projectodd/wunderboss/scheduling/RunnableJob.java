@@ -1,4 +1,4 @@
-package org.projectodd.wunderboss.job;
+package org.projectodd.wunderboss.scheduling;
 
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
