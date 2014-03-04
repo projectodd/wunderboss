@@ -47,6 +47,9 @@
       <resource>
         <directory>src/main/ruby</directory>
       </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>  
     </resources>
     <plugins>
       <plugin>

@@ -9,7 +9,6 @@ import org.jboss.msc.value.InjectedValue;
 import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.ruby.rack.RackComponent;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.io.File;
@@ -42,7 +41,6 @@ public class WildFlyService implements Service<WildFlyService> {
         container = new WunderBoss(options);
         container.registerLanguage("ruby", new WildFlyRubyLanguage(properties.getProperty("jruby.home")));
         container.registerComponent("web", new WildFlyWebComponent(undertowInjector.getValue()));
-        container.registerComponent("rack", new RackComponent());
 
         System.err.println("!!! Starting Ruby application");
         application = container.newApplication("ruby");
@@ -69,7 +67,7 @@ public class WildFlyService implements Service<WildFlyService> {
         return undertowInjector;
     }
 
-    private String deploymentName;
+    private final String deploymentName;
     private WunderBoss container;
     private Application application;
     private InjectedValue<UndertowService> undertowInjector = new InjectedValue<UndertowService>();

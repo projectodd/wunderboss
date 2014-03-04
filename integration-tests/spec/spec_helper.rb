@@ -14,13 +14,7 @@ $containers = []
 
 def container(opts=nil)
   container = WunderBoss.container(opts)
-  container.register_component('web', Java::OrgProjectoddWunderbossWeb::WebComponent.new)
-  container.register_component('servlet', Java::OrgProjectoddWunderbossWeb::ServletComponent.new)
-  container.register_language('ruby', Java::OrgProjectoddWunderbossRuby::RubyLanguage.new)
-  container.register_component('rack', Java::OrgProjectoddWunderbossRubyRack::RackComponent.new)
-  container.register_language('clojure', Java::OrgProjectoddWunderbossClojure::ClojureLanguage.new)
-  container.register_component('ring', Java::OrgProjectoddWunderbossClojureRing::RingComponent.new)
-  container.configure('web', 'host' => 'localhost', 'port' => '8080')
+    .configure('web', 'host' => 'localhost', 'port' => '8080')
   $containers << container
   container
 rescue Exception => ex

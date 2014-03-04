@@ -20,12 +20,13 @@ public class WunderBoss {
     }
 
     public WunderBoss(Options options) {
-        this(options, WunderBoss.class.getClassLoader());
+        this(options, WunderBoss.class.getClassLoader(), new ClassPathLocator(WunderBoss.class.getClassLoader()));
     }
 
-    public WunderBoss(Options options, ClassLoader loader) {
+    public WunderBoss(Options options, ClassLoader loader, Locator locator) {
         this.options = options;
         this.classLoader = loader;
+        this.locator = locator;
     }
 
     public WunderBoss registerLanguage(String languageName, Language language) {
@@ -36,15 +37,28 @@ public class WunderBoss {
     }
 
     public Language getLanguage(String name) {
+        return getLanguage(name, true);
+    }
+
+    protected Language getLanguage(String name, boolean throwIfMissing) {
         Language language = languages.get(name);
-        if (language == null) {
+
+        if (language == null &&
+                (language = this.locator.findLanguage(name)) != null) {
+            registerLanguage(name, language);
+            language = languages.get(name);
+        }
+
+        if (throwIfMissing &&
+                language == null) {
             throw new IllegalArgumentException("Unknown language: " + name);
         }
         return language;
     }
 
+
     public boolean hasLanguage(String name) {
-        return languages.containsKey(name);
+        return (getLanguage(name, false) != null);
     }
 
     public WunderBoss registerComponent(String componentName, Component component) {
@@ -68,7 +82,7 @@ public class WunderBoss {
     }
 
     public boolean hasComponent(String name) {
-        return components.containsKey(name);
+        return getComponent(name, false) != null;
     }
 
     public WunderBoss configure(String componentName, Map<String, Object> options) {
@@ -113,10 +127,24 @@ public class WunderBoss {
     }
 
     public Component getComponent(String name) {
+        return getComponent(name, true);
+    }
+
+    protected Component getComponent(String name, boolean throwIfMissing) {
         Component component = components.get(name);
-        if (component == null) {
+
+        if (component == null &&
+                (component = this.locator.findComponent(name)) != null) {
+            log.debug("Loading component from locator");
+            registerComponent(name, component);
+            component = components.get(name);
+        }
+
+        if (throwIfMissing &&
+                component == null) {
             throw new IllegalArgumentException("Unknown component: " + name);
         }
+
         return component;
     }
 
@@ -136,6 +164,7 @@ public class WunderBoss {
         return this.classLoader;
     }
 
+    private final Locator locator;
     private final Map<String, Language> languages = new HashMap<>();
     private final Map<String, Component> components = new HashMap<>();
     private final List<Application> applications = new ArrayList<>();
