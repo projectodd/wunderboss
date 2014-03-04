@@ -33,6 +33,7 @@ public class RingComponent extends Component{
     public ComponentInstance start(Application application, Options options) {
         String context = options.getString("context", "/");
         String handler = options.getString("ring-handler");
+        Runnable init  = (Runnable) options.get("init");
 
         //TODO: make an InvalidOptionException?
         if (handler == null) {
@@ -47,9 +48,10 @@ public class RingComponent extends Component{
             webOptions.put("http_handler", ringHandler);
             //webOptions.put("static_dir", staticDirectory);
             ComponentInstance web = application.start("web", webOptions);
-
+            if (init != null) { init.run(); } // before or after?
             Options instanceOptions = new Options();
             instanceOptions.put("web", web);
+            instanceOptions.put("destroy", options.get("destroy"));
             return new ComponentInstance(this, instanceOptions);
         } catch (Exception e) {
             // TODO: something better
@@ -62,6 +64,8 @@ public class RingComponent extends Component{
     public void stop(ComponentInstance instance) {
         ComponentInstance web = (ComponentInstance) instance.getOptions().get("web");
         web.stop();
+        Runnable destroy = (Runnable) instance.getOptions().get("destroy");
+        if (destroy != null) { destroy.run(); }
     }
 
 }
