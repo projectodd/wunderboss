@@ -12,33 +12,26 @@ public class RingHandler implements HttpHandler {
 
     public RingHandler(final ClojureLoaderWrapper runtime, final String ringFn, final String context) {
         this.runtime = runtime;
-        //TODO: move interning based on FQ name to a util fn called from clojure
-        try {
-            runtime.callInLoader(new Callable() {
-                @Override
-                public Object call() throws Exception {
-                    String[] parts = ringFn.split("/");
-                    IFn symbol = Clojure.var("clojure.core/symbol");
-                    Object nsSym = symbol.invoke(parts[0]);
-                    IFn require = Clojure.var("clojure.core/require");
-                    require.invoke(nsSym);
-
-                    RingHandler.this.ringFn = Clojure.var("clojure.core/intern").invoke(nsSym, symbol.invoke(parts[1]));
-
-
-                    require.invoke(symbol.invoke("wunderboss.ring"));
-                    RingHandler.this.handlerFn = Clojure.var("wunderboss.ring/handle-request");
-
-                    return null;
-                }
-            });
-        } catch (Throwable e) {
-            e.printStackTrace();
-            this.ringFn = null;
-            this.handlerFn = null;
-        }
-
         this.context = context;
+
+        runtime.callInLoader(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                //TODO: move interning based on FQ name to a util fn called from clojure
+                String[] parts = ringFn.split("/");
+                IFn symbol = Clojure.var("clojure.core/symbol");
+                Object nsSym = symbol.invoke(parts[0]);
+                IFn require = Clojure.var("clojure.core/require");
+                require.invoke(nsSym);
+
+                RingHandler.this.ringFn = Clojure.var("clojure.core/intern").invoke(nsSym, symbol.invoke(parts[1]));
+
+                require.invoke(symbol.invoke("wunderboss.ring"));
+                RingHandler.this.handlerFn = Clojure.var("wunderboss.ring/handle-request");
+
+                return null;
+            }
+        });
     }
 
     @Override
@@ -59,8 +52,8 @@ public class RingHandler implements HttpHandler {
 
 
     private final ClojureLoaderWrapper runtime;
-    private  Object ringFn;
-    private  String context;
-    private  IFn handlerFn;
+    private Object ringFn;
+    private final String context;
+    private IFn handlerFn;
 
 }
