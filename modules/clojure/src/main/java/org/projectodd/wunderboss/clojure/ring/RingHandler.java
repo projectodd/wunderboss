@@ -4,13 +4,13 @@ import clojure.java.api.Clojure;
 import clojure.lang.IFn;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.projectodd.wunderboss.clojure.ClojureLoaderWrapper;
+import org.projectodd.wunderboss.LoaderWrapper;
 
 import java.util.concurrent.Callable;
 
 public class RingHandler implements HttpHandler {
 
-    public RingHandler(final ClojureLoaderWrapper runtime, final String ringFn, final String context) {
+    public RingHandler(final LoaderWrapper runtime, final String ringFn, final String context) {
         this.runtime = runtime;
         this.context = context;
 
@@ -51,7 +51,7 @@ public class RingHandler implements HttpHandler {
     }
 
 
-    private final ClojureLoaderWrapper runtime;
+    private final LoaderWrapper runtime;
     private Object ringFn;
     private final String context;
     private IFn handlerFn;

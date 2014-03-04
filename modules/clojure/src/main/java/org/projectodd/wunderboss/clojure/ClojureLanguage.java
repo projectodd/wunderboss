@@ -1,21 +1,20 @@
 package org.projectodd.wunderboss.clojure;
 
+import org.projectodd.wunderboss.LoaderWrapper;
 import org.projectodd.wunderboss.Language;
 import org.projectodd.wunderboss.WunderBoss;
-
-import clojure.java.api.Clojure;
 
 public class ClojureLanguage implements Language {
 
     @Override
     public void initialize(WunderBoss container) {
         this.container = container;
-        this.runtime = new ClojureLoaderWrapper(container.classLoader());
+        this.runtime = new LoaderWrapper(container.classLoader());
 
     }
 
     @Override
-    public ClojureLoaderWrapper runtime() {
+    public LoaderWrapper runtime() {
         return this.runtime;
     }
 
@@ -31,7 +30,7 @@ public class ClojureLanguage implements Language {
     }
 
     private WunderBoss container;
-    private ClojureLoaderWrapper runtime;
+    private LoaderWrapper runtime;
 }
 
 

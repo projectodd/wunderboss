@@ -1,10 +1,10 @@
-package org.projectodd.wunderboss.clojure;
+package org.projectodd.wunderboss;
 
 import java.util.concurrent.Callable;
 
-public class ClojureLoaderWrapper {
+public class LoaderWrapper {
 
-    public ClojureLoaderWrapper(ClassLoader loader) {
+    public LoaderWrapper(ClassLoader loader) {
         this.loader = loader;
     }
 
