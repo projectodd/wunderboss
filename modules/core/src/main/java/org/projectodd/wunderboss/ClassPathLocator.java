@@ -12,12 +12,13 @@ import java.util.Properties;
 
 public class ClassPathLocator implements Locator {
 
-    public ClassPathLocator(ClassLoader loader) {
+    @Override
+    public void setClassLoader(ClassLoader loader) {
         this.loader = loader;
     }
 
     @Override
-    public Language findLanguage(String name) {
+    public synchronized Language findLanguage(String name) {
         String lang = findProviderClassName("language", name);
         if (lang != null) {
             return (Language)instantiate(lang);
@@ -27,7 +28,7 @@ public class ClassPathLocator implements Locator {
     }
 
     @Override
-    public Component findComponent(String name) {
+    public synchronized Component findComponent(String name) {
         String comp = findProviderClassName("component", name);
         if (comp != null) {
             return (Component)instantiate(comp);
@@ -87,7 +88,7 @@ public class ClassPathLocator implements Locator {
         }
     }
 
-    private final ClassLoader loader;
+    private ClassLoader loader;
     private final Map<URL, Properties> propertiesCache = new HashMap<>();
     private static final Logger log = Logger.getLogger(ClassPathLocator.class);
 }

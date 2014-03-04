@@ -4,7 +4,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.jboss.logging.Logger;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +22,23 @@ public class WunderBoss {
     }
 
     public WunderBoss(Options options) {
-        this(options, WunderBoss.class.getClassLoader(), new ClassPathLocator(WunderBoss.class.getClassLoader()));
+        this(options, WunderBoss.class.getClassLoader(), new ClassPathLocator());
     }
 
     public WunderBoss(Options options, ClassLoader loader, Locator locator) {
         this.options = options;
-        this.classLoader = loader;
+        this.classLoader = new DynamicClassLoader(loader);
+        locator.setClassLoader(this.classLoader);
         this.locator = locator;
+
+        updateClassPath();
+    }
+
+    public WunderBoss mergeOptions(Options opts) {
+        this.options.merge(opts);
+        updateClassPath();
+
+        return this;
     }
 
     public WunderBoss registerLanguage(String languageName, Language language) {
@@ -135,7 +147,6 @@ public class WunderBoss {
 
         if (component == null &&
                 (component = this.locator.findComponent(name)) != null) {
-            log.debug("Loading component from locator");
             registerComponent(name, component);
             component = components.get(name);
         }
@@ -164,12 +175,20 @@ public class WunderBoss {
         return this.classLoader;
     }
 
+    protected void updateClassPath() {
+        List<URL> classpath =
+                new ArrayList<>((List<URL>)this.options.get("classpath", Collections.EMPTY_LIST));
+        for(URL each : classpath) {
+            this.classLoader.addURL(each);
+        }
+    }
+
     private final Locator locator;
     private final Map<String, Language> languages = new HashMap<>();
     private final Map<String, Component> components = new HashMap<>();
     private final List<Application> applications = new ArrayList<>();
     private final Options options;
-    private final ClassLoader classLoader;
+    private final DynamicClassLoader classLoader;
 
     private static final Logger log = Logger.getLogger(WunderBoss.class);
 }

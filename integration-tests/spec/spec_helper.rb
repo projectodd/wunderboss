@@ -97,5 +97,8 @@ EOF
 end
 
 def get_edn(path)
-  EDN.read(Net::HTTP.get(URI("http://localhost:8080#{path}")))
+  body = Net::HTTP.get(URI("http://localhost:8080#{path}"))
+  EDN.read(body)
+rescue Exception => e
+  puts body
 end

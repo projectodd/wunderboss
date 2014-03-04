@@ -4,6 +4,7 @@ import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.clojure.ClojureLoaderWrapper;
 
 public class RingComponent extends Component{
     @Override
@@ -39,7 +40,7 @@ public class RingComponent extends Component{
         }
 
         try {
-            RingHandler ringHandler = new RingHandler(application.runtime(), handler, context);
+            RingHandler ringHandler = new RingHandler((ClojureLoaderWrapper)application.runtime(), handler, context);
 
             Options webOptions = new Options();
             webOptions.put("context", context);

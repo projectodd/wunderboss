@@ -1,35 +1,66 @@
 package org.projectodd.wunderboss.clojure.ring;
 
+import clojure.java.api.Clojure;
+import clojure.lang.IFn;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.projectodd.shimdandy.ClojureRuntimeShim;
+import org.projectodd.wunderboss.clojure.ClojureLoaderWrapper;
+
+import java.util.concurrent.Callable;
 
 public class RingHandler implements HttpHandler {
 
-    public RingHandler(Object runtime, String ringFn, String context) {
-        this.runtime = (ClojureRuntimeShim)runtime;
+    public RingHandler(final ClojureLoaderWrapper runtime, final String ringFn, final String context) {
+        this.runtime = runtime;
         //TODO: move interning based on FQ name to a util fn called from clojure
-        String[] parts = ringFn.split("/");
-        this.runtime.require(parts[0]);
-        this.ringFn = this.runtime.invoke("clojure.core/intern",
-                                          this.runtime.invoke("clojure.core/symbol", parts[0]),
-                                          this.runtime.invoke("clojure.core/symbol", parts[1]));
+        try {
+            runtime.callInLoader(new Callable() {
+                @Override
+                public Object call() throws Exception {
+                    String[] parts = ringFn.split("/");
+                    IFn symbol = Clojure.var("clojure.core/symbol");
+                    Object nsSym = symbol.invoke(parts[0]);
+                    IFn require = Clojure.var("clojure.core/require");
+                    require.invoke(nsSym);
+
+                    RingHandler.this.ringFn = Clojure.var("clojure.core/intern").invoke(nsSym, symbol.invoke(parts[1]));
+
+
+                    require.invoke(symbol.invoke("wunderboss.ring"));
+                    RingHandler.this.handlerFn = Clojure.var("wunderboss.ring/handle-request");
+
+                    return null;
+                }
+            });
+        } catch (Throwable e) {
+            e.printStackTrace();
+            this.ringFn = null;
+            this.handlerFn = null;
+        }
+
         this.context = context;
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
         if (exchange.isInIoThread()) {
             exchange.dispatch(this);
             return;
         }
 
-        this.runtime.invoke(HANDLER_FN, this.ringFn, exchange);
+        this.runtime.callInLoader(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                return RingHandler.this.handlerFn.invoke(RingHandler.this.ringFn, exchange);
+            }
+        });
+
     }
 
-    private final Object ringFn;
-    private final ClojureRuntimeShim runtime;
-    private final String context;
 
-    public static final String HANDLER_FN = "wunderboss.ring/handle-request";
+    private final ClojureLoaderWrapper runtime;
+    private  Object ringFn;
+    private  String context;
+    private  IFn handlerFn;
+
 }
