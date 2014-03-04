@@ -34,13 +34,6 @@ public class WunderBoss {
         updateClassPath();
     }
 
-    public WunderBoss mergeOptions(Options opts) {
-        this.options.merge(opts);
-        updateClassPath();
-
-        return this;
-    }
-
     public WunderBoss registerLanguage(String languageName, Language language) {
         language.initialize(this);
         languages.put(languageName, language);
