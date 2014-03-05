@@ -41,7 +41,7 @@ public class RingComponent extends Component{
         }
 
         try {
-            RingHandler ringHandler = new RingHandler((LoaderWrapper)application.runtime(), handler, context);
+            RingHandler ringHandler = new RingHandler((LoaderWrapper)application.runtime(), handler);
 
             Options webOptions = new Options();
             webOptions.put("context", context);

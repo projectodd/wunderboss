@@ -10,9 +10,8 @@ import java.util.concurrent.Callable;
 
 public class RingHandler implements HttpHandler {
 
-    public RingHandler(final LoaderWrapper runtime, final String ringFn, final String context) {
+    public RingHandler(final LoaderWrapper runtime, final String ringFn) {
         this.runtime = runtime;
-        this.context = context;
 
         runtime.callInLoader(new Callable() {
             @Override
@@ -53,7 +52,6 @@ public class RingHandler implements HttpHandler {
 
     private final LoaderWrapper runtime;
     private Object ringFn;
-    private final String context;
     private IFn handlerFn;
 
 }
