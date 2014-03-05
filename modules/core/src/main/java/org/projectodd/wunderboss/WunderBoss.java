@@ -51,7 +51,6 @@ public class WunderBoss {
         if (language == null &&
                 (language = this.locator.findLanguage(name)) != null) {
             registerLanguage(name, language);
-            language = languages.get(name);
         }
 
         if (throwIfMissing &&
@@ -141,7 +140,6 @@ public class WunderBoss {
         if (component == null &&
                 (component = this.locator.findComponent(name)) != null) {
             registerComponent(name, component);
-            component = components.get(name);
         }
 
         if (throwIfMissing &&
