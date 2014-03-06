@@ -20,7 +20,7 @@ public class WildFlyWeb extends Web {
     }
 
     @Override
-    public void registerHttpHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
+    public void registerHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
         Options options = new Options(opts);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));

@@ -13,8 +13,9 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
+import java.util.Map;
 
-public class Scheduling implements Component<Scheduler> {
+public class Scheduling implements SchedulingComponent<Scheduler> {
     public Scheduling(String name, Options options) {
         this.name = name;
         this.numThreads = options.getInt("num_threads", 5);
@@ -52,7 +53,8 @@ public class Scheduling implements Component<Scheduler> {
 
     // options:
     // cron, run_function (takes a Map), data (the Map), at options?
-    public JobKey scheduleJob(String name, Runnable fn, Options options) {
+    public JobKey scheduleJob(String name, Runnable fn, Map<String, Object> opts) {
+        Options options = new Options(opts);
         String cronString = options.getString("cron");
         // Cast and retrieve this here to error early if it's not given
         DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();

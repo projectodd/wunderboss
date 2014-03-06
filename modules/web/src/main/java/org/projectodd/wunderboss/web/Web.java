@@ -17,7 +17,6 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.Headers;
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 
@@ -27,7 +26,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Web implements Component<Undertow> {
+public class Web implements WebComponent<Undertow, HttpHandler> {
 
     public Web(String name, Options opts) {
         this.name = name;
@@ -70,7 +69,7 @@ public class Web implements Component<Undertow> {
                 .build();
     }
 
-    public void registerHttpHandler(final String context, HttpHandler httpHandler, 
+    public void registerHandler(final String context, HttpHandler httpHandler, 
                                     Map<String, Object> opts) {
         Options options = new Options(opts);
         if (options.containsKey("static_dir")) {
@@ -112,7 +111,7 @@ public class Web implements Component<Undertow> {
             if (options.containsKey("static_dir")) {
                 webOptions.put("static_dir", options.getString("static_dir"));
             }
-            registerHttpHandler(context, manager.start(), webOptions);
+            registerHandler(context, manager.start(), webOptions);
             contextRegistrar.put(context, new Runnable() { 
                 public void run() { 
                     try {
