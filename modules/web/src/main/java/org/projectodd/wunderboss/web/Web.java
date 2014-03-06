@@ -65,9 +65,10 @@ public class Web implements Component<Undertow> {
                 .build();
     }
 
-    public void registerHttpHandler(String context, HttpHandler httpHandler, Options options) {
-        if (options != null &&
-                options.containsKey("static_dir")) {
+    public void registerHttpHandler(String context, HttpHandler httpHandler, 
+                                    Map<String, Object> opts) {
+        Options options = new Options(opts);
+        if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         pathHandler.addPrefixPath(context, httpHandler);
@@ -84,7 +85,9 @@ public class Web implements Component<Undertow> {
         log.info("Stopped web context " + context);
     }
 
-    public void registerServlet(String context, Class servletClass, Options options) {
+    public void registerServlet(String context, Class servletClass,
+                                Map<String, Object> opts) {
+        Options options = new Options(opts);
         final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
                 .addMapping("/*");
 

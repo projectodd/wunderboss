@@ -10,6 +10,7 @@ import org.wildfly.extension.undertow.UndertowService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class WildFlyWeb extends Web {
 
@@ -19,9 +20,9 @@ public class WildFlyWeb extends Web {
     }
 
     @Override
-    public void registerHttpHandler(String context, HttpHandler httpHandler, Options options) {
-        if (options != null &&
-                options.containsKey("static_dir")) {
+    public void registerHttpHandler(String context, HttpHandler httpHandler, Map<String, Object> opts) {
+        Options options = new Options(opts);
+        if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         for (Host host : getHosts()) {

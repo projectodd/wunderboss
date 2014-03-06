@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class Options {
+public class Options extends HashMap<String, Object> {
 
     public Options() {
         this(null);
@@ -12,18 +12,12 @@ public class Options {
 
     public Options(Map<String, Object> options) {
         if (options != null) {
-            this.options = options;
-        } else {
-            this.options = new HashMap<>();
+            putAll(options);
         }
     }
 
-    public Object get(String key) {
-        return get(key, null);
-    }
-
     public Object get(String key, Object defaultValue) {
-        return options.get(key) != null ? options.get(key) : defaultValue;
+        return get(key) != null ? get(key) : defaultValue;
     }
 
     public Integer getInt(String key) {
@@ -31,7 +25,7 @@ public class Options {
     }
 
     public Integer getInt(String key, Integer defaultValue) {
-        Object value = options.get(key);
+        Object value = get(key);
         if (value != null) {
             return Integer.parseInt(value.toString());
         }
@@ -43,33 +37,24 @@ public class Options {
     }
 
     public String getString(String key, String defaultValue) {
-        return options.get(key) != null ? options.get(key).toString() : defaultValue;
+        return get(key) != null ? get(key).toString() : defaultValue;
     }
 
     public Options put(String key, Object value) {
-        options.put(key, value);
+        super.put(key, value);
 
         return this;
     }
 
-    public boolean containsKey(String key) {
-        return options.containsKey(key);
-    }
-
-    public Set<String> keySet() {
-        return options.keySet();
-    }
-
     public Options merge(Options otherOptions) {
         Options mergedOptions = new Options();
-        for (String key : this.options.keySet()) {
-            mergedOptions.put(key, this.options.get(key));
+        for (String key : this.keySet()) {
+            mergedOptions.put(key, this.get(key));
         }
-        for (String key : otherOptions.options.keySet()) {
-            mergedOptions.put(key, otherOptions.options.get(key));
+        for (String key : otherOptions.keySet()) {
+            mergedOptions.put(key, otherOptions.get(key));
         }
         return mergedOptions;
     }
-
-    private Map<String, Object> options;
 }
+
