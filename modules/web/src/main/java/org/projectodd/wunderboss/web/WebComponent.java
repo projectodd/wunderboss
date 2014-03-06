@@ -11,26 +11,31 @@ import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.Headers;
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
-import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-public class WebComponent extends Component {
+public class WebComponent extends Component<Undertow> {
     @Override
-    public void boot() {
-        configure(new Options());
+    public void start() {
         // TODO: Configurable non-lazy boot of Undertow
     }
 
     @Override
-    public void shutdown() {
+    public void stop() {
         if (started) {
             undertow.stop();
             log.info("Undertow stopped");
@@ -39,7 +44,12 @@ public class WebComponent extends Component {
     }
 
     @Override
-    public void configure(Options options) {
+    public Undertow backingObject() {
+        return this.undertow;
+    }
+
+    @Override
+    protected void configure(Options options) {
         port = options.getInt("port", 8080);
         host = options.getString("host", "localhost");
         undertow = Undertow.builder()
@@ -48,47 +58,11 @@ public class WebComponent extends Component {
                 .build();
     }
 
-    @Override
-    public ComponentInstance start(Application application, Options options) {
-        String context = options.getString("context");
-        HttpHandler httpHandler = application.coerceObjectToClass(options.get("http_handler"), HttpHandler.class);
-
-        if (options.containsKey("static_dir")) {
-            final ResourceManager resourceManager = new CachingResourceManager(1000, 1L, null,
-                    new FileResourceManager(new File(options.getString("static_dir")), 1 * 1024 * 1024), 250);
-            final ResourceHandler resourceHandler = new ResourceHandler()
-                    .setResourceManager(resourceManager)
-                    .setDirectoryListingEnabled(false);
-            httpHandler = new PredicateHandler(new Predicate() {
-                @Override
-                public boolean resolve(HttpServerExchange value) {
-                    try {
-                        if (value.getRelativePath().length() > 0 && !value.getRelativePath().equals("/")) {
-                            return resourceManager.getResource(value.getRelativePath()) != null;
-                        }
-                        return false;
-                    } catch (IOException ex) {
-                        return false;
-                    }
-                }
-            }, resourceHandler, httpHandler);
+    public void registerHttpHandler(String context, HttpHandler httpHandler, Options options) {
+        if (options != null &&
+                options.containsKey("static_dir")) {
+            httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
-
-        registerHttpHandler(context, httpHandler);
-
-        Options instanceOptions = new Options();
-        instanceOptions.put("context", context);
-        ComponentInstance instance = new ComponentInstance(this, instanceOptions);
-        return instance;
-    }
-
-    @Override
-    public void stop(ComponentInstance instance) {
-        String context = instance.getOptions().getString("context");
-        unregisterHttpHandler(context);
-    }
-
-    protected void registerHttpHandler(String context, HttpHandler httpHandler) {
         pathHandler.addPrefixPath(context, httpHandler);
         if (!started) {
             undertow.start();
@@ -98,9 +72,78 @@ public class WebComponent extends Component {
         log.info("Started web context " + context);
     }
 
-    protected void unregisterHttpHandler(String context) {
+    public void unregisterHttpHandler(String context) {
         pathHandler.removePrefixPath(context);
         log.info("Stopped web context " + context);
+    }
+
+    public void registerServlet(String context, Class servletClass, Options options) {
+        final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
+                .addMapping("/*");
+
+        final DeploymentInfo servletBuilder = Servlets.deployment()
+                .setClassLoader(WunderBoss.class.getClassLoader())
+                .setContextPath(context)
+                .setDeploymentName(context)
+                .addServlet(servlet);
+
+        if (options.containsKey("context_attributes")) {
+            Map<String, Object> contextAttributes = (Map)options.get("context_attributes");
+            for (Map.Entry<String, Object> entry : contextAttributes.entrySet()) {
+                servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());
+            }
+        }
+
+        DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
+        manager.deploy();
+        try {
+            Options webOptions = new Options();
+            if (options.containsKey("static_dir")) {
+                webOptions.put("static_dir", options.getString("static_dir"));
+            }
+            registerHttpHandler(context, manager.start(), webOptions);
+            deploymentManagers.put(context, manager);
+        } catch (ServletException e) {
+            // TODO: something better
+            e.printStackTrace();
+        }
+    }
+
+    public void unregisterServlet(String context) {
+        DeploymentManager manager = this.deploymentManagers.get(context);
+
+        //TODO: handle case when servlet does not exist
+        try {
+            DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
+            manager.stop();
+            manager.undeploy();
+            Servlets.defaultContainer().removeDeployment(deploymentInfo);
+        } catch (ServletException e) {
+            // TODO: something better
+            e.printStackTrace();
+        }
+    }
+
+    protected HttpHandler wrapWithStaticHandler(HttpHandler baseHandler, String path) {
+        final ResourceManager resourceManager =
+                new CachingResourceManager(1000, 1L, null,
+                                           new FileResourceManager(new File(path), 1 * 1024 * 1024), 250);
+        final ResourceHandler resourceHandler = new ResourceHandler()
+                .setResourceManager(resourceManager)
+                .setDirectoryListingEnabled(false);
+
+        return new PredicateHandler(new Predicate() {
+                @Override
+                public boolean resolve(HttpServerExchange value) {
+                    try {
+                        return value.getRelativePath().length() > 0 &&
+                                !value.getRelativePath().equals("/") &&
+                                resourceManager.getResource(value.getRelativePath()) != null;
+                    } catch (IOException ex) {
+                        return false;
+                    }
+                }
+        }, resourceHandler, baseHandler);
     }
 
     private int port;
@@ -108,6 +151,7 @@ public class WebComponent extends Component {
     private Undertow undertow;
     private PathHandler pathHandler = new PathHandler();
     private boolean started;
+    private final Map<String, DeploymentManager> deploymentManagers = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(WebComponent.class);
 }

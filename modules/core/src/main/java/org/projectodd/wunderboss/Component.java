@@ -1,33 +1,22 @@
 package org.projectodd.wunderboss;
 
-public abstract class Component {
+public abstract class Component<T> {
 
-    public String[] getLanguageDependencies() {
-        return new String[]{};
+    protected abstract void configure(Options opts);
+
+    public abstract void start();
+
+    public abstract void stop();
+
+    //TODO: name betterer
+    public abstract T backingObject();
+
+    protected void setName(String name) {
+        this.name = name;
     }
 
-    public String[] getComponentDependencies() {
-        return new String[]{};
-    }
+    public String name() { return name; }
 
-    public void setContainer(WunderBoss container) {
-        this.container = container;
-    }
+    private String name;
 
-    public abstract void boot();
-
-    public abstract void shutdown();
-
-    public abstract void configure(Options options);
-
-    public abstract ComponentInstance start(Application application, Options options);
-
-    public abstract void stop(ComponentInstance instance);
-
-    protected WunderBoss getContainer() {
-        return container;
-    }
-
-    private WunderBoss container;
-    private Application application;
 }

@@ -7,11 +7,15 @@ import java.util.Set;
 public class Options {
 
     public Options() {
-        this.options = new HashMap<>();
+        this(null);
     }
 
     public Options(Map<String, Object> options) {
-        this.options = options;
+        if (options != null) {
+            this.options = options;
+        } else {
+            this.options = new HashMap<>();
+        }
     }
 
     public Object get(String key) {

@@ -5,51 +5,55 @@ import org.apache.log4j.LogManager;
 import org.jboss.logging.Logger;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class WunderBoss {
 
-    public WunderBoss() {
-        this(new Options().put("root", "."));
+    static {
+        init();
     }
 
-    public WunderBoss(Map<String, Object> options) {
-        this(new Options(options));
+    private static void init() {
+        classLoader = new DynamicClassLoader(WunderBoss.class.getClassLoader());
+        locator = new ClassPathLocator(classLoader);
+        options = new Options();
+        options.put("root", ".");
     }
 
-    public WunderBoss(Options options) {
-        this(options, WunderBoss.class.getClassLoader(), new ClassPathLocator());
+    private WunderBoss() {}
+
+    public static Component findOrCreateComponent(String type) {
+        return findOrCreateComponent(type, null);
     }
 
-    public WunderBoss(Options options, ClassLoader loader, Locator locator) {
-        this.options = options;
-        this.classLoader = new DynamicClassLoader(loader);
-        locator.setClassLoader(this.classLoader);
-        this.locator = locator;
+    public static Component findOrCreateComponent(String type, Map<String, Object> options) {
+        Options opts = new Options(options);
+        String name = opts.getString("name", "default");
+        String fullName = type + ":" + name;
+        Component component = components.get(fullName);
+        if (component != null) {
+            log.info("Returning existing component for " + fullName + ", ignoring options.");
+        } else {
+            component = getComponentProvider(type, true).newComponent();
+            component.setName(name);
+            component.configure(opts);
+            components.put(fullName, component);
+        }
 
-        updateClassPath();
+        return component;
     }
 
-    public WunderBoss registerLanguage(String languageName, Language language) {
-        language.initialize(this);
-        languages.put(languageName, language);
-
-        return this;
+    public static Language findLanguage(String name) {
+        return findLanguage(name, true);
     }
 
-    public Language getLanguage(String name) {
-        return getLanguage(name, true);
-    }
-
-    protected Language getLanguage(String name, boolean throwIfMissing) {
+    private static Language findLanguage(String name, boolean throwIfMissing) {
         Language language = languages.get(name);
 
         if (language == null &&
-                (language = this.locator.findLanguage(name)) != null) {
+                (language = locator.findLanguage(name)) != null) {
             registerLanguage(name, language);
         }
 
@@ -61,53 +65,26 @@ public class WunderBoss {
     }
 
 
-    public boolean hasLanguage(String name) {
-        return (getLanguage(name, false) != null);
+    public static void registerLanguage(String languageName, Language language) {
+        language.initialize();
+        languages.put(languageName, language);
     }
 
-    public WunderBoss registerComponent(String componentName, Component component) {
-        for (String dependency : component.getLanguageDependencies()) {
-            if (!hasLanguage(dependency)) {
-                throw new IllegalStateException("Component " + componentName +
-                        " requires the " + dependency + " language");
-            }
-        }
-        for (String dependency : component.getComponentDependencies()) {
-            if (!hasComponent(dependency)) {
-                throw new IllegalStateException("Component " + componentName +
-                        " requires the " + dependency + " component");
-            }
-        }
-        component.setContainer(this);
-        component.boot();
-        components.put(componentName, component);
-
-        return this;
+    public static boolean providesLanguage(String name) {
+        return (findLanguage(name, false) != null);
     }
 
-    public boolean hasComponent(String name) {
-        return getComponent(name, false) != null;
+    public static void registerComponentProvider(String type, ComponentProvider provider) {
+        componentProviders.put(type, provider);
     }
 
-    public WunderBoss configure(String componentName, Map<String, Object> options) {
-        configure(componentName, new Options(options));
-
-        return this;
+    public static boolean providesComponent(String type) {
+        return getComponentProvider(type, false) != null;
     }
 
-    public WunderBoss configure(String componentName, Options options) {
-        getComponent(componentName).configure(options);
-
-        return this;
-    }
-
-    public void stop() {
-        for (Application application : applications) {
-            application.stop();
-        }
-
+    public static void stop() {
         for (Component component : components.values()) {
-            component.shutdown();
+            component.stop();
         }
 
         for (Language language : languages.values()) {
@@ -115,71 +92,66 @@ public class WunderBoss {
         }
     }
 
+    private static ComponentProvider getComponentProvider(String type, boolean throwIfMissing) {
+        ComponentProvider provider = componentProviders.get(type);
 
-    public Application newApplication(String languageName) {
-        return newApplication(languageName, new Options());
-    }
-
-    public Application newApplication(String languageName, Map<String, Object> options) {
-        return newApplication(languageName, new Options(options));
-    }
-
-    public Application newApplication(String languageName, Options options) {
-        Application application = new Application(this, getLanguage(languageName), options);
-        applications.add(application);
-        return application;
-    }
-
-    public Component getComponent(String name) {
-        return getComponent(name, true);
-    }
-
-    protected Component getComponent(String name, boolean throwIfMissing) {
-        Component component = components.get(name);
-
-        if (component == null &&
-                (component = this.locator.findComponent(name)) != null) {
-            registerComponent(name, component);
+        if (provider == null &&
+                (provider = locator.findComponentProvider(type)) != null) {
+            registerComponentProvider(type, provider);
         }
 
         if (throwIfMissing &&
-                component == null) {
-            throw new IllegalArgumentException("Unknown component: " + name);
+                provider == null) {
+            throw new IllegalArgumentException("Unknown component: " + type);
         }
 
-        return component;
+        return provider;
     }
 
-    public Logger getLogger(String name) {
+    public static Logger logger(String name) {
         return Logger.getLogger(name);
     }
 
-    public void setLogLevel(String level) {
+    public static void setLogLevel(String level) {
         LogManager.getRootLogger().setLevel(Level.toLevel(level));
     }
 
-    public Options options() {
-        return this.options;
-    }
-
-    public ClassLoader classLoader() {
-        return this.classLoader;
-    }
-
-    protected void updateClassPath() {
-        List<URL> classpath =
-                new ArrayList<>((List<URL>)this.options.get("classpath", Collections.EMPTY_LIST));
+    public static void updateClassPath(List<URL> classpath) {
         for(URL each : classpath) {
-            this.classLoader.addURL(each);
+            classLoader.addURL(each);
         }
     }
 
-    private final Locator locator;
-    private final Map<String, Language> languages = new HashMap<>();
-    private final Map<String, Component> components = new HashMap<>();
-    private final List<Application> applications = new ArrayList<>();
-    private final Options options;
-    private final DynamicClassLoader classLoader;
+    public static ClassLoader classLoader() {
+        return classLoader;
+    }
 
+    public static Locator locator() {
+        return locator;
+    }
+
+    public static void setLocator(Locator loc) {
+        locator = loc;
+    }
+
+    public static synchronized Options options() {
+        return options;
+    }
+
+    public static synchronized void putOption(String k, Object v) {
+        options.put(k, v);
+    }
+
+    public static synchronized void mergeOptions(Options other) {
+        options = options.merge(other);
+    }
+
+    private static Locator locator;
+    private static Options options;
+    private static final Map<String, Language> languages = new HashMap<>();
+    private static final Map<String, ComponentProvider> componentProviders = new HashMap<>();
+    private static final Map<String, Component> components = new HashMap<>();
+    private static DynamicClassLoader classLoader;
     private static final Logger log = Logger.getLogger(WunderBoss.class);
+
 }

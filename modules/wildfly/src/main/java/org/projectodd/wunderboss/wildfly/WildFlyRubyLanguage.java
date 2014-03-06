@@ -28,8 +28,8 @@ public class WildFlyRubyLanguage extends RubyLanguage {
     }
 
     @Override
-    public void initialize(WunderBoss container) {
-        super.initialize(container);
+    public void initialize() {
+        super.initialize();
 
         File libDir = new File(jrubyHome, "lib");
         if (!libDir.exists()) {

@@ -12,8 +12,7 @@ import java.util.Properties;
 
 public class ClassPathLocator implements Locator {
 
-    @Override
-    public void setClassLoader(ClassLoader loader) {
+    public ClassPathLocator(ClassLoader loader) {
         this.loader = loader;
     }
 
@@ -28,10 +27,10 @@ public class ClassPathLocator implements Locator {
     }
 
     @Override
-    public synchronized Component findComponent(String name) {
-        String comp = findProviderClassName("component", name);
-        if (comp != null) {
-            return (Component)instantiate(comp);
+    public synchronized ComponentProvider findComponentProvider(String name) {
+        String clazz = findProviderClassName("componentProvider", name);
+        if (clazz != null) {
+            return (ComponentProvider)instantiate(clazz);
         } else {
             return null;
         }

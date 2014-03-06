@@ -1,8 +1,6 @@
 package org.projectodd.wunderboss.scheduling;
 
-import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Component;
-import org.projectodd.wunderboss.ComponentInstance;
 import org.projectodd.wunderboss.Options;
 import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
@@ -16,19 +14,18 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
 
-public class SchedulingComponent extends Component {
+public class SchedulingComponent extends Component<Scheduler> {
     @Override
-    public void boot() {
+    public void start() {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
-        configure(new Options());
         // TODO: Configurable non-lazy boot of Quartz
     }
 
     @Override
-    public void shutdown() {
+    public void stop() {
         if (started) {
             try {
-                DirectSchedulerFactory.getInstance().getScheduler().shutdown(true);
+               this.scheduler.shutdown(true);
             }  catch (SchedulerException e) {
                 // TODO: something better
                 e.printStackTrace();
@@ -39,30 +36,33 @@ public class SchedulingComponent extends Component {
     }
 
     @Override
-    public void configure(Options options) {
+    protected void configure(Options options) {
         numThreads = options.getInt("num_threads", 5);
+    }
+
+    @Override
+    public Scheduler backingObject() {
+        return this.scheduler;
     }
 
     // options:
     // cron, run_function (takes a Map), data (the Map), at options?
-    @Override
-    public ComponentInstance start(Application application, Options options) {
+    public JobKey scheduleJob(String name, Runnable fn, Options options) {
         String cronString = options.getString("cron");
         // Cast and retrieve this here to error early if it's not given
-        Runnable runFunction = application.coerceObjectToClass(options.get("run_function"), Runnable.class);
-
         DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
         try {
             if (!started) {
                 factory.createVolatileScheduler(numThreads);
-                factory.getScheduler().start();
+                this.scheduler = factory.getScheduler();
+                this.scheduler.start();
                 started = true;
                 log.info("Quartz started");
             }
 
             JobDataMap jobDataMap = new JobDataMap();
             // TODO: Quartz says only serializable things should be in here
-            jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, runFunction);
+            jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
             JobDetail job = JobBuilder.newJob(RunnableJob.class)
                     .usingJobData(jobDataMap)
                     .build();
@@ -71,13 +71,11 @@ public class SchedulingComponent extends Component {
                     .withSchedule(CronScheduleBuilder.cronSchedule(cronString))
                     .build();
 
-            Scheduler scheduler = factory.getScheduler();
-            scheduler.scheduleJob(job, trigger);
+            this.scheduler.scheduleJob(job, trigger);
 
             Options instanceOptions = new Options();
             instanceOptions.put("scheduler", scheduler);
-            instanceOptions.put("jobKey", job.getKey());
-            return new ComponentInstance(this, instanceOptions);
+            return job.getKey();
         } catch (SchedulerException e) {
             // TODO: something better
             e.printStackTrace();
@@ -85,13 +83,9 @@ public class SchedulingComponent extends Component {
         }
     }
 
-    @Override
-    public void stop(ComponentInstance instance) {
-        Options options = instance.getOptions();
-        Scheduler scheduler = (Scheduler) options.get("scheduler");
-        JobKey jobKey = (JobKey) options.get("jobKey");
+    public void unscheduleJob(JobKey key) {
         try {
-            scheduler.deleteJob(jobKey);
+            this.scheduler.deleteJob(key);
         } catch (SchedulerException e) {
             // TODO: something better
             e.printStackTrace();
@@ -100,6 +94,7 @@ public class SchedulingComponent extends Component {
 
     private int numThreads;
     private boolean started;
+    private Scheduler scheduler;
 
     private static final Logger log = Logger.getLogger(SchedulingComponent.class);
 }

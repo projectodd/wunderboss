@@ -11,14 +11,13 @@ import java.util.Arrays;
 public class RubyLanguage implements Language {
 
     @Override
-    public void initialize(WunderBoss container) {
-        this.container = container;
+    public void initialize() {
     }
 
     @Override
     public synchronized Ruby runtime() {
         if (this.runtime == null) {
-            String root = this.container.options().get("root", ".").toString();
+            String root = WunderBoss.options().get("root", ".").toString();
             this.runtime = createRuntime(root);
             String expandedRoot = this.runtime.evalScriptlet("File.expand_path(%q(" + root + "))").asJavaString();
             this.runtime.setCurrentDirectory(expandedRoot);
@@ -55,6 +54,5 @@ public class RubyLanguage implements Language {
         return (T) object;
     }
 
-    private WunderBoss container;
     private Ruby runtime;
 }

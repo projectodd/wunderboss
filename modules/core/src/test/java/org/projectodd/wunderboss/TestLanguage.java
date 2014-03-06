@@ -2,7 +2,7 @@ package org.projectodd.wunderboss;
 
 public class TestLanguage implements Language {
     @Override
-    public void initialize(WunderBoss container) {
+    public void initialize() {
         registered = true;
     }
 

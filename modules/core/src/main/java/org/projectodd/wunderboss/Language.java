@@ -2,7 +2,7 @@ package org.projectodd.wunderboss;
 
 public interface Language {
 
-    public void initialize(WunderBoss container);
+    public void initialize();
 
     public Object runtime();
 

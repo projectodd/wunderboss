@@ -6,7 +6,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.projectodd.wunderboss.Application;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.wildfly.extension.undertow.UndertowService;
@@ -38,24 +37,18 @@ public class WildFlyService implements Service<WildFlyService> {
         }
         Options options = new Options();
         options.put("root", properties.getProperty("root"));
-        container = new WunderBoss(options);
-        container.registerLanguage("ruby", new WildFlyRubyLanguage(properties.getProperty("jruby.home")));
-        container.registerComponent("web", new WildFlyWebComponent(undertowInjector.getValue()));
+        WunderBoss.mergeOptions(options);
+        WunderBoss.registerLanguage("ruby", new WildFlyRubyLanguage(properties.getProperty("jruby.home")));
+        WunderBoss.registerComponentProvider("web", new WildflyWebComponentProvider(undertowInjector.getValue()));
 
-        System.err.println("!!! Starting Ruby application");
-        application = container.newApplication("ruby");
-        application.start("rack");
+        //System.err.println("!!! Starting Ruby application");
+        //TODO: call some init code here
     }
 
     @Override
     public void stop(StopContext context) {
-        if (application != null) {
-            System.err.println("!!! Stopping Ruby application");
-            application.stop();
-        }
-        if (container != null) {
-            container.stop();
-        }
+        System.err.println("!!! Stopping Ruby application");
+        WunderBoss.stop();
     }
 
     @Override
@@ -68,7 +61,5 @@ public class WildFlyService implements Service<WildFlyService> {
     }
 
     private final String deploymentName;
-    private WunderBoss container;
-    private Application application;
     private InjectedValue<UndertowService> undertowInjector = new InjectedValue<UndertowService>();
 }

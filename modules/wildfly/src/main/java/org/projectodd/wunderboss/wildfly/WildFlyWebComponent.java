@@ -10,6 +10,7 @@ import org.wildfly.extension.undertow.UndertowService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class WildFlyWebComponent extends WebComponent {
 
@@ -18,12 +19,16 @@ public class WildFlyWebComponent extends WebComponent {
     }
 
     @Override
-    public void configure(Options options) {
+    protected void configure(Options options) {
         // no-op since we're using undertow from wildfly
     }
 
     @Override
-    protected void registerHttpHandler(String context, HttpHandler httpHandler) {
+    public void registerHttpHandler(String context, HttpHandler httpHandler, Options options) {
+        if (options != null &&
+                options.containsKey("static_dir")) {
+            httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
+        }
         for (Host host : getHosts()) {
             log.info("Registered HTTP context '" + context + "' for host " + host.getName());
             host.registerHandler(context, httpHandler);
@@ -31,7 +36,7 @@ public class WildFlyWebComponent extends WebComponent {
     }
 
     @Override
-    protected void unregisterHttpHandler(String context) {
+    public void unregisterHttpHandler(String context) {
         for (Host host : getHosts()) {
             log.info("Unregistered HTTP context '" + context + "' for host " + host.getName());
             host.unregisterHandler(context);

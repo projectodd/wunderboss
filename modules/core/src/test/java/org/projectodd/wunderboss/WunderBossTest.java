@@ -13,57 +13,56 @@ public class WunderBossTest {
 
     @Before
     public void setUpContainer() {
-        container = new WunderBoss();
         testLanguage = new TestLanguage();
-        testComponent = new TestComponent();
     }
 
     @Test
     public void testCanRegisterLanguage() {
-        container.registerLanguage("test", testLanguage);
+        WunderBoss.registerLanguage("test", testLanguage);
         assertTrue(testLanguage.registered);
     }
 
     @Test
     public void testCanGetLanguageRegisteredLanguage() {
-        container.registerLanguage("test", testLanguage);
-        assertEquals(container.getLanguage("test"), testLanguage);
+        WunderBoss.registerLanguage("test", testLanguage);
+        assertEquals(WunderBoss.findLanguage("test"), testLanguage);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCantGetUnknownLanguage() {
-        container.getLanguage("test");
+        WunderBoss.findLanguage("not-found");
     }
 
     @Test
     public void testCanRegisterComponent() {
-        container.registerComponent("test", testComponent);
-        assertTrue(testComponent.registered);
-        assertTrue(container.hasComponent("test"));
+        WunderBoss.registerComponentProvider("test-register", new TestComponentProvider());
+        assertTrue(WunderBoss.providesComponent("test-register"));
     }
 
     @Test
-    public void testCanConfigureRegisteredComponent() {
-        Map<String, Object> options = new HashMap<>();
-        options.put("foo", "bar");
-        container.registerComponent("test", testComponent);
-        container.configure("test", options);
-        assertEquals("bar", testComponent.configOptions.get("foo"));
+    public void testCachesComponents() {
+        WunderBoss.registerComponentProvider("test-cache", new TestComponentProvider());
+        Component comp = WunderBoss.findOrCreateComponent("test-cache");
+        assertEquals("default", comp.name());
+        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testCantConfigureUnknownComponent() {
-        container.configure("test", new Options());
+    @Test
+    public void testCachesComponentsWithNames() {
+        WunderBoss.registerComponentProvider("test-cache2", new TestComponentProvider());
+        Map options = new HashMap() {{put("name", "foobar");}};
+        Component comp = WunderBoss.findOrCreateComponent("test-cache2", options);
+        assertEquals("foobar", comp.name());
+        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache2", options));
     }
 
     @Test
     public void testCanStopContainer() {
-        container.registerComponent("test", testComponent);
-        container.stop();
-        assertTrue(testComponent.stopped);
+        WunderBoss.registerComponentProvider("test", new TestComponentProvider());
+        Component comp = WunderBoss.findOrCreateComponent("test");
+        WunderBoss.stop();
+        assertTrue(((TestComponent)comp).stopped);
     }
 
-    private WunderBoss container;
     private TestLanguage testLanguage;
-    private TestComponent testComponent;
 }
