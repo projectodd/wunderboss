@@ -2,11 +2,11 @@ package org.projectodd.wunderboss;
 
 public interface Component<T> {
 
-    public abstract void start();
+    void start();
 
-    public abstract void stop();
+    void stop();
 
-    public abstract T implementation();
+    T implementation();
 
-    public String name();
+    String name();
 }
