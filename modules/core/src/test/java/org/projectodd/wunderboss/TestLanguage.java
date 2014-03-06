@@ -21,6 +21,11 @@ public class TestLanguage implements Language {
         return (T) object;
     }
 
+    @Override
+    public Object eval(String toEval) {
+        return null;
+    }
+
     boolean registered;
     boolean destroyed;
 }

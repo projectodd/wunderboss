@@ -23,6 +23,12 @@ public class ClojureLanguage implements Language {
         //TODO: maybe call shutdown-agents here, but only if this will be called once, at actual shutdown, and not once/"app"
     }
 
+    @Override
+    public Object eval(String strToEval) {
+        return Clojure.var("clojure.core", "eval")
+                .invoke(Clojure.read(strToEval));
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T coerceToClass(Object object, Class<T> toClass) {

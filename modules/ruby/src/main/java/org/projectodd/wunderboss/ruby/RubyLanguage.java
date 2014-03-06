@@ -41,6 +41,11 @@ public class RubyLanguage implements Language {
         this.runtime = null;
     }
 
+    @Override
+    public Object eval(String toEval) {
+        return runtime().evalScriptlet(toEval);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T coerceToClass(Object object, Class<T> toClass) {

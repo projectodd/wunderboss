@@ -8,5 +8,7 @@ public interface Language {
 
     public void shutdown();
 
+    public Object eval(String toEval);
+
     public <T> T coerceToClass(Object object, Class<T> toClass);
 }
