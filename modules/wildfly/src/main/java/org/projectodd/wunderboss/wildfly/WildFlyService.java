@@ -39,7 +39,7 @@ public class WildFlyService implements Service<WildFlyService> {
         options.put("root", properties.getProperty("root"));
         WunderBoss.mergeOptions(options);
         WunderBoss.registerLanguage("ruby", new WildFlyRubyLanguage(properties.getProperty("jruby.home")));
-        WunderBoss.registerComponentProvider("web", new WildflyWebComponentProvider(undertowInjector.getValue()));
+        WunderBoss.registerComponentProvider("web", new WildflyWebProvider(undertowInjector.getValue()));
 
         //System.err.println("!!! Starting Ruby application");
         //TODO: call some init code here

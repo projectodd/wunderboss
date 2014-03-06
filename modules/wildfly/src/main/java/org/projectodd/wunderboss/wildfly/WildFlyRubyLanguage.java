@@ -9,7 +9,6 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.ResourceLoaders;
 import org.jruby.Ruby;
 import org.jruby.RubyInstanceConfig;
-import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.ruby.RubyLanguage;
 
 import java.io.File;

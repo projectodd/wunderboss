@@ -1,6 +1,11 @@
 package org.projectodd.wunderboss;
 
-public class TestComponent extends Component {
+public class TestComponent implements Component {
+
+    public TestComponent(String name, Options opts) {
+        this.name = name;
+        this.configOptions = opts;
+    }
 
     @Override
     public void start() {
@@ -13,18 +18,17 @@ public class TestComponent extends Component {
     }
 
     @Override
-    public Object backingObject() {
+    public Object implementation() {
         return null;
     }
 
     @Override
-    protected void configure(Options options) {
-        configOptions = options;
+    public String name() {
+        return this.name;
     }
 
+    String name;
     boolean registered;
     Options configOptions;
-    Options startOptions;
-    boolean started;
     boolean stopped;
 }

@@ -1,12 +1,9 @@
 package org.projectodd.wunderboss.ruby;
 
 import org.jruby.Ruby;
-import org.jruby.RubyInstanceConfig;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.projectodd.wunderboss.Language;
 import org.projectodd.wunderboss.WunderBoss;
-
-import java.util.Arrays;
 
 public class RubyLanguage implements Language {
 

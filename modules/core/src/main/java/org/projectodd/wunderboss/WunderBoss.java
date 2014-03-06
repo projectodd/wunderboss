@@ -36,9 +36,7 @@ public class WunderBoss {
         if (component != null) {
             log.info("Returning existing component for " + fullName + ", ignoring options.");
         } else {
-            component = getComponentProvider(type, true).newComponent();
-            component.setName(name);
-            component.configure(opts);
+            component = getComponentProvider(type, true).create(name, opts);
             components.put(fullName, component);
         }
 

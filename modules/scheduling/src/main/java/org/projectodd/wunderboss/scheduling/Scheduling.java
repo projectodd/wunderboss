@@ -1,8 +1,8 @@
 package org.projectodd.wunderboss.scheduling;
 
+import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Options;
-import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -14,7 +14,12 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
 
-public class SchedulingComponent extends Component<Scheduler> {
+public class Scheduling implements Component<Scheduler> {
+    public Scheduling(String name, Options options) {
+        this.name = name;
+        this.numThreads = options.getInt("num_threads", 5);
+    }
+
     @Override
     public void start() {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
@@ -36,13 +41,13 @@ public class SchedulingComponent extends Component<Scheduler> {
     }
 
     @Override
-    protected void configure(Options options) {
-        numThreads = options.getInt("num_threads", 5);
+    public Scheduler implementation() {
+        return this.scheduler;
     }
 
     @Override
-    public Scheduler backingObject() {
-        return this.scheduler;
+    public String name() {
+        return this.name;
     }
 
     // options:
@@ -92,9 +97,10 @@ public class SchedulingComponent extends Component<Scheduler> {
         }
     }
 
+    private final String name;
     private int numThreads;
     private boolean started;
     private Scheduler scheduler;
 
-    private static final Logger log = Logger.getLogger(SchedulingComponent.class);
+    private static final Logger log = Logger.getLogger(Scheduling.class);
 }

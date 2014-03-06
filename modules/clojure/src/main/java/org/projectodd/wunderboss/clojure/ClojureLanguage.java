@@ -1,8 +1,8 @@
 package org.projectodd.wunderboss.clojure;
 
 import clojure.java.api.Clojure;
-import org.projectodd.wunderboss.LoaderWrapper;
 import org.projectodd.wunderboss.Language;
+import org.projectodd.wunderboss.LoaderWrapper;
 import org.projectodd.wunderboss.WunderBoss;
 
 import java.util.concurrent.Callable;

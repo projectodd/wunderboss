@@ -21,14 +21,22 @@ import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WebComponent extends Component<Undertow> {
+public class Web implements Component<Undertow> {
+
+    public Web(String name, Options opts) {
+        this.name = name;
+        configure(opts);
+    }
+
+    @Override
+    public String name() { return name; }
+
     @Override
     public void start() {
         // TODO: Configurable non-lazy boot of Undertow
@@ -44,12 +52,11 @@ public class WebComponent extends Component<Undertow> {
     }
 
     @Override
-    public Undertow backingObject() {
+    public Undertow implementation() {
         return this.undertow;
     }
 
-    @Override
-    protected void configure(Options options) {
+    private void configure(Options options) {
         port = options.getInt("port", 8080);
         host = options.getString("host", "localhost");
         undertow = Undertow.builder()
@@ -146,6 +153,7 @@ public class WebComponent extends Component<Undertow> {
         }, resourceHandler, baseHandler);
     }
 
+    private final String name;
     private int port;
     private String host;
     private Undertow undertow;
@@ -153,5 +161,5 @@ public class WebComponent extends Component<Undertow> {
     private boolean started;
     private final Map<String, DeploymentManager> deploymentManagers = new HashMap<>();
 
-    private static final Logger log = Logger.getLogger(WebComponent.class);
+    private static final Logger log = Logger.getLogger(Web.class);
 }

@@ -3,24 +3,19 @@ package org.projectodd.wunderboss.wildfly;
 import io.undertow.server.HttpHandler;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.web.WebComponent;
+import org.projectodd.wunderboss.web.Web;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-public class WildFlyWebComponent extends WebComponent {
+public class WildFlyWeb extends Web {
 
-    public WildFlyWebComponent(UndertowService undertowService) {
+    public WildFlyWeb(String name, UndertowService undertowService) {
+        super(name, null);
         this.undertowService = undertowService;
-    }
-
-    @Override
-    protected void configure(Options options) {
-        // no-op since we're using undertow from wildfly
     }
 
     @Override
@@ -55,5 +50,5 @@ public class WildFlyWebComponent extends WebComponent {
 
     private UndertowService undertowService;
 
-    private static final Logger log = Logger.getLogger(WildFlyWebComponent.class);
+    private static final Logger log = Logger.getLogger(WildFlyWeb.class);
 }
