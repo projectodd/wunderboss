@@ -40,6 +40,11 @@ public class Web implements Component<Undertow> {
     @Override
     public void start() {
         // TODO: Configurable non-lazy boot of Undertow
+        if (!started) {
+            undertow.start();
+            log.info("Undertow listening on " + host + ":" + port);
+            started = true;
+        }
     }
 
     @Override
@@ -72,11 +77,8 @@ public class Web implements Component<Undertow> {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        if (!started) {
-            undertow.start();
-            log.info("Undertow listening on " + host + ":" + port);
-            started = true;
-        }
+        start();
+        
         log.info("Started web context " + context);
     }
 
