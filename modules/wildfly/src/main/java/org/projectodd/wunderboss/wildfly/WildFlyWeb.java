@@ -20,7 +20,7 @@ public class WildFlyWeb extends Web {
     }
 
     @Override
-    public void registerHttpHandler(String context, HttpHandler httpHandler, Map<String, Object> opts) {
+    public void registerHttpHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
         Options options = new Options(opts);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
@@ -29,14 +29,11 @@ public class WildFlyWeb extends Web {
             log.info("Registered HTTP context '" + context + "' for host " + host.getName());
             host.registerHandler(context, httpHandler);
         }
-    }
-
-    @Override
-    public void unregisterHttpHandler(String context) {
-        for (Host host : getHosts()) {
-            log.info("Unregistered HTTP context '" + context + "' for host " + host.getName());
-            host.unregisterHandler(context);
-        }
+        contextRegistrar.put(context, new Runnable() { 
+                public void run() { 
+                    for (Host host : getHosts()) {
+                        host.unregisterHandler(context);
+                    }}});
     }
 
     private List<Host> getHosts() {

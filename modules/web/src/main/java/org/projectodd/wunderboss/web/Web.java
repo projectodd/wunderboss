@@ -70,21 +70,20 @@ public class Web implements Component<Undertow> {
                 .build();
     }
 
-    public void registerHttpHandler(String context, HttpHandler httpHandler, 
+    public void registerHttpHandler(final String context, HttpHandler httpHandler, 
                                     Map<String, Object> opts) {
         Options options = new Options(opts);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         pathHandler.addPrefixPath(context, httpHandler);
+        contextRegistrar.put(context, new Runnable() { 
+                public void run() { 
+                    pathHandler.removePrefixPath(context);
+                }});
         start();
         
         log.info("Started web context " + context);
-    }
-
-    public void unregisterHttpHandler(String context) {
-        pathHandler.removePrefixPath(context);
-        log.info("Stopped web context " + context);
     }
 
     public void registerServlet(String context, Class servletClass,
@@ -106,7 +105,7 @@ public class Web implements Component<Undertow> {
             }
         }
 
-        DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
+        final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
         try {
             Options webOptions = new Options();
@@ -114,25 +113,30 @@ public class Web implements Component<Undertow> {
                 webOptions.put("static_dir", options.getString("static_dir"));
             }
             registerHttpHandler(context, manager.start(), webOptions);
-            deploymentManagers.put(context, manager);
+            contextRegistrar.put(context, new Runnable() { 
+                public void run() { 
+                    try {
+                        manager.stop();
+                        manager.undeploy();
+                        Servlets.defaultContainer().removeDeployment(servletBuilder);
+                    } catch (ServletException e) {
+                        e.printStackTrace();
+                    }}});
         } catch (ServletException e) {
             // TODO: something better
             e.printStackTrace();
         }
     }
 
-    public void unregisterServlet(String context) {
-        DeploymentManager manager = this.deploymentManagers.get(context);
-
-        //TODO: handle case when servlet does not exist
-        try {
-            DeploymentInfo deploymentInfo = manager.getDeployment().getDeploymentInfo();
-            manager.stop();
-            manager.undeploy();
-            Servlets.defaultContainer().removeDeployment(deploymentInfo);
-        } catch (ServletException e) {
-            // TODO: something better
-            e.printStackTrace();
+    public boolean unregister(String context) {
+        Runnable f = contextRegistrar.remove(context);
+        if (f != null) {
+            f.run();
+            log.info("Stopped web context at path " + context);
+            return true;
+        } else {
+            log.warn("No context registered at path " + context);
+            return false;
         }
     }
 
@@ -164,7 +168,8 @@ public class Web implements Component<Undertow> {
     private Undertow undertow;
     private PathHandler pathHandler = new PathHandler();
     private boolean started;
-    private final Map<String, DeploymentManager> deploymentManagers = new HashMap<>();
+
+    protected  final Map<String, Runnable> contextRegistrar = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(Web.class);
 }
