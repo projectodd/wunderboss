@@ -71,8 +71,9 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                 .build();
     }
 
-    public void registerHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
+    public void registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
         Options options = new Options(opts);
+        final String context = getContextPath(options);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
@@ -86,8 +87,9 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         log.info("Started web context " + context);
     }
 
-    public void registerServlet(String context, Servlet servlet, Map<String, Object> opts) {
+    public void registerServlet(Servlet servlet, Map<String, Object> opts) {
         Options options = new Options(opts);
+        String context = getContextPath(options);
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(), 
                                                          servletClass,
@@ -110,11 +112,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
         try {
-            Options webOptions = new Options();
-            if (options.containsKey("static_dir")) {
-                webOptions.put("static_dir", options.getString("static_dir"));
-            }
-            registerHandler(context, manager.start(), webOptions);
+            registerHandler(manager.start(), options);
             contextRegistrar.put(context, new Runnable() { 
                 public void run() { 
                     try {
@@ -162,6 +160,11 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                     }
                 }
         }, resourceHandler, baseHandler);
+    }
+
+    protected static String getContextPath(Options options) {
+        // Maybe accept "context" as a key, too?
+        return options.getString("context-path", "/");
     }
 
     private final String name;

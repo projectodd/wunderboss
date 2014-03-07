@@ -20,8 +20,9 @@ public class WildFlyWeb extends UndertowWeb {
     }
 
     @Override
-    public void registerHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
+    public void registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
         Options options = new Options(opts);
+        final String context = getContextPath(options);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
