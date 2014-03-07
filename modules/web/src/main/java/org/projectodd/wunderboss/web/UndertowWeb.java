@@ -15,11 +15,13 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.util.Headers;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
@@ -69,8 +71,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                 .build();
     }
 
-    public void registerHandler(final String context, HttpHandler httpHandler, 
-                                    Map<String, Object> opts) {
+    public void registerHandler(final String context, HttpHandler httpHandler, Map<String, Object> opts) {
         Options options = new Options(opts);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
@@ -85,17 +86,19 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         log.info("Started web context " + context);
     }
 
-    public void registerServlet(String context, Class servletClass,
-                                Map<String, Object> opts) {
+    public void registerServlet(String context, Servlet servlet, Map<String, Object> opts) {
         Options options = new Options(opts);
-        final ServletInfo servlet = Servlets.servlet(servletClass.getSimpleName(), servletClass)
-                .addMapping("/*");
+        Class servletClass = servlet.getClass();
+        final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(), 
+                                                         servletClass,
+                                                         new ImmediateInstanceFactory(servlet))
+            .addMapping("/*");
 
         final DeploymentInfo servletBuilder = Servlets.deployment()
                 .setClassLoader(WunderBoss.class.getClassLoader())
                 .setContextPath(context)
                 .setDeploymentName(context)
-                .addServlet(servlet);
+                .addServlet(servletInfo);
 
         if (options.containsKey("context_attributes")) {
             Map<String, Object> contextAttributes = (Map)options.get("context_attributes");
