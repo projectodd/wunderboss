@@ -15,7 +15,7 @@ import java.util.Map;
 public class WildFlyWeb extends Web {
 
     public WildFlyWeb(String name, UndertowService undertowService) {
-        super(name, null);
+        super(name, new Options());
         this.undertowService = undertowService;
     }
 
