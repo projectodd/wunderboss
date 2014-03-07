@@ -3,6 +3,7 @@ package org.projectodd.wunderboss.wildfly;
 import io.undertow.server.HttpHandler;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.web.Web;
 import org.projectodd.wunderboss.web.UndertowWeb;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
@@ -20,8 +21,8 @@ public class WildFlyWeb extends UndertowWeb {
     }
 
     @Override
-    public void registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
-        Options options = new Options(opts);
+    public Web registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
+        final Options options = new Options(opts);
         final String context = getContextPath(options);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
@@ -30,11 +31,12 @@ public class WildFlyWeb extends UndertowWeb {
             log.info("Registered HTTP context '" + context + "' for host " + host.getName());
             host.registerHandler(context, httpHandler);
         }
-        contextRegistrar.put(context, new Runnable() { 
+        epilogue(options, new Runnable() { 
                 public void run() { 
                     for (Host host : getHosts()) {
                         host.unregisterHandler(context);
                     }}});
+        return this;
     }
 
     private List<Host> getHosts() {

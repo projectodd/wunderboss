@@ -6,10 +6,10 @@ import javax.servlet.Servlet;
 
 public interface Web<T, S> extends Component<T> {
 
-    void registerHandler(S handler, Map<String, Object> opts);
+    Web registerHandler(S handler, Map<String, Object> opts);
 
-    void registerServlet(Servlet servlet, Map<String, Object> opts);
+    Web registerServlet(Servlet servlet, Map<String, Object> opts);
 
-    boolean unregister(String context);
+    Web unregister(String context);
 
 }

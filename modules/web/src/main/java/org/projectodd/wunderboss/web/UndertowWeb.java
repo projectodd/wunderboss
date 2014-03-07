@@ -71,23 +71,26 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                 .build();
     }
 
-    public void registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
-        Options options = new Options(opts);
+    public Web registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
+        final Options options = new Options(opts);
         final String context = getContextPath(options);
         if (options.containsKey("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        contextRegistrar.put(context, new Runnable() { 
+        if (options.containsKey("init")) {
+            ((Runnable) options.get("init")).run();
+        }
+        epilogue(options, new Runnable() { 
                 public void run() { 
                     pathHandler.removePrefixPath(context);
                 }});
         start();
-        
         log.info("Started web context " + context);
+        return this;
     }
 
-    public void registerServlet(Servlet servlet, Map<String, Object> opts) {
+    public Web registerServlet(Servlet servlet, Map<String, Object> opts) {
         Options options = new Options(opts);
         String context = getContextPath(options);
         Class servletClass = servlet.getClass();
@@ -113,30 +116,51 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         manager.deploy();
         try {
             registerHandler(manager.start(), options);
-            contextRegistrar.put(context, new Runnable() { 
-                public void run() { 
-                    try {
-                        manager.stop();
-                        manager.undeploy();
-                        Servlets.defaultContainer().removeDeployment(servletBuilder);
-                    } catch (ServletException e) {
-                        e.printStackTrace();
-                    }}});
+            epilogue(options, new Runnable() { 
+                    public void run() { 
+                        try {
+                            manager.stop();
+                            manager.undeploy();
+                            Servlets.defaultContainer().removeDeployment(servletBuilder);
+                        } catch (ServletException e) {
+                            e.printStackTrace();
+                        }}});
         } catch (ServletException e) {
             // TODO: something better
             e.printStackTrace();
         }
+        return this;
     }
 
-    public boolean unregister(String context) {
+    public Web unregister(String context) {
         Runnable f = contextRegistrar.remove(context);
         if (f != null) {
             f.run();
             log.info("Stopped web context at path " + context);
-            return true;
+            return this;
         } else {
             log.warn("No context registered at path " + context);
-            return false;
+            return null;
+        }
+    }
+
+    /**
+     * Associate a resource cleanup function with a context path,
+     * invoked in the unregister method. The context is obtained from
+     * the passed options. If the options contain an entry for a
+     * "destroy" function, it will be run as well.
+     */
+    protected void epilogue(Options options, final Runnable cleanup) {
+        String context = getContextPath(options);
+        final Runnable destroy = (Runnable) options.get("destroy");
+        if (destroy != null) {
+            contextRegistrar.put(context, new Runnable() {
+                    public void run() {
+                        cleanup.run();
+                        destroy.run();
+                    }});
+        } else {
+            contextRegistrar.put(context, cleanup);
         }
     }
 
@@ -166,15 +190,14 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         // Maybe accept "context" as a key, too?
         return options.getString("context-path", "/");
     }
-
+    
     private final String name;
     private int port;
     private String host;
     private Undertow undertow;
     private PathHandler pathHandler = new PathHandler();
     private boolean started;
-
-    protected  final Map<String, Runnable> contextRegistrar = new HashMap<>();
+    private Map<String, Runnable> contextRegistrar = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(Web.class);
 }
