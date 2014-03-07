@@ -3,10 +3,10 @@ package org.projectodd.wunderboss.web;
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
 
-public class WebProvider implements ComponentProvider<WebComponent> {
+public class WebProvider implements ComponentProvider<Web> {
 
     @Override
-    public WebComponent create(String name, Options opts) {
-        return new Web(name, opts);
+    public Web create(String name, Options opts) {
+        return new UndertowWeb(name, opts);
     }
 }

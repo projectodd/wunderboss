@@ -3,7 +3,7 @@ package org.projectodd.wunderboss.wildfly;
 import io.undertow.server.HttpHandler;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.web.Web;
+import org.projectodd.wunderboss.web.UndertowWeb;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
 import org.wildfly.extension.undertow.UndertowService;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class WildFlyWeb extends Web {
+public class WildFlyWeb extends UndertowWeb {
 
     public WildFlyWeb(String name, UndertowService undertowService) {
         super(name, new Options());
