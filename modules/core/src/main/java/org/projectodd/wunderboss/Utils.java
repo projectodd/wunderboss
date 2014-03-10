@@ -9,15 +9,23 @@ import java.util.List;
 public class Utils {
     public static List<URL> classpathStringToURLS(String cp) {
         List<URL> urls = new ArrayList<>();
-
         try {
-            for(String each : cp.trim().split(":")) {
-                urls.add(new File(each).toURI().toURL());
+            for (File each : classpathStringToFiles(cp)) {
+                urls.add(each.toURI().toURL());
             }
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
 
         return urls;
+    }
+
+    public static List<File> classpathStringToFiles(String cp) {
+        List<File> files = new ArrayList<>();
+        for(String each : cp.trim().split(":")) {
+            files.add(new File(each));
+        }
+
+        return files;
     }
 }

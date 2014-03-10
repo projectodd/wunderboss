@@ -1,19 +1,25 @@
 package org.projectodd.wunderboss.wildfly;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.Utils;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.ruby.RubyLocator;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class WildFlyService implements Service<WildFlyService> {
@@ -34,22 +40,30 @@ public class WildFlyService implements Service<WildFlyService> {
             try {
                 properties.load(new FileInputStream(configFile));
             } catch (Exception e) {
-                System.err.println("Error loading config file: " + e.getMessage());
+                log.error("Error loading config file: " + configPath);
+                throw new StartException(e);
             }
         }
         WunderBoss.putOption("root", requiredProperty(properties, "root"));
 
-        if (properties.containsKey("classpath")) {
-            WunderBoss.updateClassPath(Utils.classpathStringToURLS(properties.getProperty("classpath")));
-        }
-
         String language = requiredProperty(properties, "language");
+        List<File> classpathAdditions = new ArrayList<>();
 
         if (language.equals("ruby")) {
-            WunderBoss.registerLanguage("ruby", new WildFlyRubyLanguage(requiredProperty(properties, "jruby.home")));
+            classpathAdditions.addAll(RubyLocator.locateLibs(properties.getProperty("jruby.home")));
         }
-        WunderBoss.registerComponentProvider("web", new WildflyWebProvider(undertowInjector.getValue()));
 
+        if (properties.containsKey("classpath")) {
+            classpathAdditions.addAll(Utils.classpathStringToFiles(properties.getProperty("classpath")));
+        }
+
+        try {
+            ModuleUtils.addToModuleClasspath(Module.forClass(WildFlyService.class), classpathAdditions);
+        } catch (IOException | ModuleLoadException e) {
+            throw new StartException(e);
+        }
+
+        WunderBoss.registerComponentProvider("web", new WildflyWebProvider(undertowInjector.getValue()));
 
         log.info("Initializing " + deploymentName + " as " + language);
         WunderBoss.findLanguage(language)

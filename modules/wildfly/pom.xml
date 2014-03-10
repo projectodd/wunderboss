@@ -87,7 +87,7 @@
           <artifactSet>
             <includes>
               <include>org.projectodd.wunderboss:wunderboss-core</include>
-              <include>org.projectodd.wunderboss:wunderboss-ruby</include>
+              <!-- <include>org.projectodd.wunderboss:wunderboss-ruby</include> -->
               <include>org.projectodd.wunderboss:wunderboss-web</include>
             </includes>
           </artifactSet>
