@@ -1,3 +1,9 @@
+test_skip = java.lang.System.getProperty('maven.test.skip')
+if test_skip == 'true'
+  puts "Tests are skipped, not calculating lein classpath"
+  exit
+end
+
 require 'fileutils'
 
 def lein_classpath(dir)

@@ -68,6 +68,7 @@
             <configuration>
               <file>bin/calc-classpaths.rb</file>
               <args>${project.basedir}/src/test/resources/apps/basic ${project.basedir}/target/apps/basic</args>
+              <jrubyJvmArgs>-Dmaven.test.skip=${maven.test.skip}</jrubyJvmArgs>
             </configuration>
           </execution>
         </executions>
