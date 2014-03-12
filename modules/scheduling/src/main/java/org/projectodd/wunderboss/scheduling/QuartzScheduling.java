@@ -95,7 +95,6 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     }
 
     protected void validateOptions(Options opts) throws IllegalArgumentException {
-        //TODO: don't allow cron
         if (opts.has(CRON_OPT)) {
             for(String each : new String[] {AT_OPT, EVERY_OPT, IN_OPT, REPEAT_OPT, UNTIL_OPT}) {
                 if (opts.has(each)) {
