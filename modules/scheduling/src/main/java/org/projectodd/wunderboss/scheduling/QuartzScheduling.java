@@ -17,14 +17,16 @@ import org.quartz.impl.DirectSchedulerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
+
 public class QuartzScheduling implements Scheduling<Scheduler> {
 
     /*
      options: jobstore? threadpool? other scheduler opts?
      */
-    public QuartzScheduling(String name, Options options) {
+    public QuartzScheduling(String name, Options<ComponentOption> options) {
         this.name = name;
-        this.numThreads = options.getInt("num_threads", 5);
+        this.numThreads = options.getInt(ComponentOption.NUM_THREADS, 5);
     }
 
     @Override
@@ -61,8 +63,8 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     }
 
     @Override
-    public synchronized boolean schedule(String name, Runnable fn, Map<String, Object> opts) throws Exception {
-        Options options = new Options(opts);
+    public synchronized boolean schedule(String name, Runnable fn, Map<ScheduleOption, Object> opts) throws Exception {
+        Options<ScheduleOption> options = new Options<>(opts);
         validateOptions(options);
 
         start();
@@ -78,7 +80,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
 
         this.scheduler.scheduleJob(job, initTrigger(name, options));
 
-        this.currentJobs.put("name", job.getKey());
+        this.currentJobs.put(name, job.getKey());
 
         return replacedExisting;
     }
@@ -94,9 +96,9 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         return false;
     }
 
-    protected void validateOptions(Options opts) throws IllegalArgumentException {
-        if (opts.has(CRON_OPT)) {
-            for(String each : new String[] {AT_OPT, EVERY_OPT, IN_OPT, REPEAT_OPT, UNTIL_OPT}) {
+    protected void validateOptions(Options<ScheduleOption> opts) throws IllegalArgumentException {
+        if (opts.has(CRON)) {
+            for(ScheduleOption each : new ScheduleOption[] {AT, EVERY, IN, REPEAT, UNTIL}) {
                 if (opts.has(each)) {
                     throw new IllegalArgumentException("You can't specify both 'cronspec' and '" +
                                                                each + "'");
@@ -104,46 +106,46 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             }
         }
 
-        if (opts.has(AT_OPT) &&
-                opts.has(IN_OPT)) {
+        if (opts.has(AT) &&
+                opts.has(IN)) {
             throw new IllegalArgumentException("You can't specify both 'at' and 'in'");
         }
 
-        if (!opts.has(EVERY_OPT)) {
-            if (opts.has(REPEAT_OPT)) {
+        if (!opts.has(EVERY)) {
+            if (opts.has(REPEAT)) {
                 throw new IllegalArgumentException("You can't specify 'repeat' without 'every'");
             }
-            if (opts.has(UNTIL_OPT)) {
+            if (opts.has(UNTIL)) {
                 throw new IllegalArgumentException("You can't specify 'until' without 'every'");
             }
         }
     }
 
-    protected Trigger initTrigger(String name, Options opts) {
+    protected Trigger initTrigger(String name, Options<ScheduleOption> opts) {
         TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
                 .withIdentity(name, name());
 
-        if (opts.has(CRON_OPT)) {
+        if (opts.has(CRON)) {
             builder.startNow()
-                    .withSchedule(CronScheduleBuilder.cronSchedule(opts.getString(CRON_OPT)))
+                    .withSchedule(CronScheduleBuilder.cronSchedule(opts.getString(CRON)))
                     .build();
         } else {
-            if (opts.has(AT_OPT)) {
-                builder.startAt(opts.getDate(AT_OPT));
+            if (opts.has(AT)) {
+                builder.startAt(opts.getDate(AT));
             } else {
                 builder.startNow();
             }
 
-            if (opts.has(UNTIL_OPT)) {
-                builder.endAt(opts.getDate(UNTIL_OPT));
+            if (opts.has(UNTIL)) {
+                builder.endAt(opts.getDate(UNTIL));
             }
 
-            if (opts.has(EVERY_OPT)) {
+            if (opts.has(EVERY)) {
                 SimpleScheduleBuilder schedule =
                         SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInMilliseconds(opts.getInt(EVERY_OPT));
-                if (opts.has(REPEAT_OPT)) {
-                    schedule.withRepeatCount(opts.getInt(REPEAT_OPT));
+                                .withIntervalInMilliseconds(opts.getInt(EVERY));
+                if (opts.has(REPEAT)) {
+                    schedule.withRepeatCount(opts.getInt(REPEAT));
                 } else {
                     schedule.repeatForever();
                 }

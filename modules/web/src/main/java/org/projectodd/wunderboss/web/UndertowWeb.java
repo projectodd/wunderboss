@@ -28,9 +28,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.projectodd.wunderboss.web.Web.ComponentOption.HOST;
+import static org.projectodd.wunderboss.web.Web.ComponentOption.PORT;
+import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
+
 public class UndertowWeb implements Web<Undertow, HttpHandler> {
 
-    public UndertowWeb(String name, Options opts) {
+    public UndertowWeb(String name, Options<ComponentOption> opts) {
         this.name = name;
         configure(opts);
     }
@@ -62,24 +66,24 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         return this.undertow;
     }
 
-    private void configure(Options options) {
-        port = options.getInt("port", 8080);
-        host = options.getString("host", "localhost");
+    private void configure(Options<ComponentOption> options) {
+        port = options.getInt(PORT, 8080);
+        host = options.getString(HOST, "localhost");
         undertow = Undertow.builder()
                 .addListener(port, host)
                 .setHandler(Handlers.date(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow")))
                 .build();
     }
 
-    public Web registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
-        final Options options = new Options(opts);
+    public Web registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
+        final Options<RegisterOption> options = new Options<>(opts);
         final String context = getContextPath(options);
-        if (options.has("static_dir")) {
-            httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
+        if (options.has(STATIC_DIR)) {
+            httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        if (options.has("init")) {
-            ((Runnable) options.get("init")).run();
+        if (options.has(INIT)) {
+            ((Runnable) options.get(INIT)).run();
         }
         epilogue(options, new Runnable() { 
                 public void run() { 
@@ -90,8 +94,8 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         return this;
     }
 
-    public Web registerServlet(Servlet servlet, Map<String, Object> opts) {
-        Options options = new Options(opts);
+    public Web registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
+        Options<RegisterOption> options = new Options<>(opts);
         String context = getContextPath(options);
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(), 
@@ -104,13 +108,6 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                 .setContextPath(context)
                 .setDeploymentName(context)
                 .addServlet(servletInfo);
-
-        if (options.has("context_attributes")) {
-            Map<String, Object> contextAttributes = (Map)options.get("context_attributes");
-            for (Map.Entry<String, Object> entry : contextAttributes.entrySet()) {
-                servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());
-            }
-        }
 
         final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
@@ -150,10 +147,10 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
      * the passed options. If the options contain an entry for a
      * "destroy" function, it will be run as well.
      */
-    protected void epilogue(Options options, final Runnable cleanup) {
+    protected void epilogue(Options<RegisterOption> options, final Runnable cleanup) {
         String context = getContextPath(options);
-        final Runnable destroy = (Runnable) options.get("destroy");
-        if (destroy != null) {
+        if (options.has(DESTROY)) {
+            final Runnable destroy = (Runnable) options.get(DESTROY);
             contextRegistrar.put(context, new Runnable() {
                     public void run() {
                         cleanup.run();
@@ -186,9 +183,9 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         }, resourceHandler, baseHandler);
     }
 
-    protected static String getContextPath(Options options) {
+    protected static String getContextPath(Options<RegisterOption> options) {
         // Maybe accept "context" as a key, too?
-        return options.getString("context-path", "/");
+        return options.getString(CONTEXT_PATH, "/");
     }
     
     private final String name;

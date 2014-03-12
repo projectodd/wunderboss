@@ -5,17 +5,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.projectodd.wunderboss.WunderBoss;
 
-import javax.net.ssl.SSLContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
+
 public class QuartzSchedulingTest {
     QuartzScheduling scheduler;
-    Map <String, Object> options;
+    Map <Scheduling.ScheduleOption, Object> options;
 
-    //TODO: test validations, all opt permutations?
+    //TODO: test: unschedule, validations, all opt permutations?
 
     @Before
     public void setup() throws Exception {
@@ -32,7 +33,7 @@ public class QuartzSchedulingTest {
     public void testCronSpecWorks() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
 
-        options.put(Scheduling.CRON_OPT, "* * * * * ?");
+        options.put(CRON, "* * * * * ?");
 
         scheduler.schedule("cronnie", new Runnable() {
                                @Override
@@ -48,8 +49,8 @@ public class QuartzSchedulingTest {
     public void testAtStyleWorks() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
 
-        options.put(Scheduling.EVERY_OPT, 100);
-        options.put(Scheduling.REPEAT_OPT, 1);
+        options.put(EVERY, 100);
+        options.put(REPEAT, 1);
 
         scheduler.schedule("attie", new Runnable() {
             @Override

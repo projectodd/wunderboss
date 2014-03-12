@@ -4,12 +4,30 @@ import org.projectodd.wunderboss.Component;
 import java.util.Map;
 
 public interface Scheduling<T> extends Component<T> {
-    static final String CRON_OPT = "cronspec";
-    static final String AT_OPT = "at";
-    static final String EVERY_OPT = "every";
-    static final String IN_OPT = "in";
-    static final String REPEAT_OPT = "repeat";
-    static final String UNTIL_OPT = "until";
+    enum ComponentOption {
+        NUM_THREADS("num_threads");
+
+        ComponentOption(String value) {
+            this.value = value;
+        }
+
+        public String value;
+    }
+
+    enum ScheduleOption {
+        CRON("cronspec"),
+        AT("at"),
+        EVERY("every"),
+        IN("in"),
+        REPEAT("repeat"),
+        UNTIL("until");
+
+        ScheduleOption(String value) {
+            this.value = value;
+        }
+
+        public String value;
+    }
 
     /**
      *
@@ -24,7 +42,7 @@ public interface Scheduling<T> extends Component<T> {
      *                singleton
      * @return true if schedule replaced a job with the same name, throws on failure
      */
-    boolean schedule(String name, Runnable lambda, Map<String, Object> options) throws Exception;
+    boolean schedule(String name, Runnable lambda, Map<ScheduleOption, Object> options) throws Exception;
 
     /**
      *
