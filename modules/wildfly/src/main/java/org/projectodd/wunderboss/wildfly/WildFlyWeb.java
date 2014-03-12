@@ -18,7 +18,7 @@ import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 public class WildFlyWeb extends UndertowWeb {
 
     public WildFlyWeb(String name, UndertowService undertowService) {
-        super(name, new Options());
+        super(name, new Options<CreateOption>());
         this.undertowService = undertowService;
     }
 

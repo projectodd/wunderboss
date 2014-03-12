@@ -6,11 +6,11 @@ import javax.servlet.Servlet;
 import java.util.Map;
 
 public interface Web<T, S> extends Component<T> {
-    enum ComponentOption {
+    enum CreateOption {
         HOST("host"),
         PORT("port");
 
-        ComponentOption(String value) {
+        CreateOption(String value) {
             this.value = value;
         }
 

@@ -59,7 +59,7 @@ public class Options<T> extends HashMap<T, Object> {
         return containsKey(key);
     }
 
-    public Options merge(Options<T> otherOptions) {
+    public Options<T> merge(Options<T> otherOptions) {
         Options mergedOptions = new Options();
         for (T key : this.keySet()) {
             mergedOptions.put(key, this.get(key));

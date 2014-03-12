@@ -4,10 +4,10 @@ import org.projectodd.wunderboss.Component;
 import java.util.Map;
 
 public interface Scheduling<T> extends Component<T> {
-    enum ComponentOption {
+    enum CreateOption {
         NUM_THREADS("num_threads");
 
-        ComponentOption(String value) {
+        CreateOption(String value) {
             this.value = value;
         }
 

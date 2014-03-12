@@ -24,9 +24,9 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     /*
      options: jobstore? threadpool? other scheduler opts?
      */
-    public QuartzScheduling(String name, Options<ComponentOption> options) {
+    public QuartzScheduling(String name, Options<CreateOption> options) {
         this.name = name;
-        this.numThreads = options.getInt(ComponentOption.NUM_THREADS, 5);
+        this.numThreads = options.getInt(CreateOption.NUM_THREADS, 5);
     }
 
     @Override

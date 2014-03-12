@@ -28,13 +28,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.projectodd.wunderboss.web.Web.ComponentOption.HOST;
-import static org.projectodd.wunderboss.web.Web.ComponentOption.PORT;
+import static org.projectodd.wunderboss.web.Web.CreateOption.HOST;
+import static org.projectodd.wunderboss.web.Web.CreateOption.PORT;
 import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 
 public class UndertowWeb implements Web<Undertow, HttpHandler> {
 
-    public UndertowWeb(String name, Options<ComponentOption> opts) {
+    public UndertowWeb(String name, Options<CreateOption> opts) {
         this.name = name;
         configure(opts);
     }
@@ -66,7 +66,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         return this.undertow;
     }
 
-    private void configure(Options<ComponentOption> options) {
+    private void configure(Options<CreateOption> options) {
         port = options.getInt(PORT, 8080);
         host = options.getString(HOST, "localhost");
         undertow = Undertow.builder()

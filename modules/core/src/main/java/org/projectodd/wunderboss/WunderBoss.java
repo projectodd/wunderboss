@@ -18,7 +18,7 @@ public class WunderBoss {
     private static void init() {
         classLoader = new DynamicClassLoader(WunderBoss.class.getClassLoader());
         locator = new ClassPathLocator(classLoader);
-        options = new Options();
+        options = new Options<>();
         options.put("root", ".");
     }
 
@@ -28,15 +28,18 @@ public class WunderBoss {
         return findOrCreateComponent(type, null);
     }
 
-    public static Component findOrCreateComponent(String type, Map<String, Object> options) {
-        Options opts = new Options(options);
-        String name = opts.getString("name", "default");
+    public static Component findOrCreateComponent(String type, Map<Object, Object> options) {
+        String name = (String)options.remove("name");
+        if (name == null) {
+            name = "default";
+        }
+
         String fullName = type + ":" + name;
         Component component = components.get(fullName);
         if (component != null) {
             log.info("Returning existing component for " + fullName + ", ignoring options.");
         } else {
-            component = getComponentProvider(type, true).create(name, opts);
+            component = getComponentProvider(type, true).create(name, new Options<>(options));
             components.put(fullName, component);
         }
 
@@ -140,12 +143,12 @@ public class WunderBoss {
         options.put(k, v);
     }
 
-    public static synchronized void mergeOptions(Options other) {
+    public static synchronized void mergeOptions(Options<String> other) {
         options = options.merge(other);
     }
 
     private static Locator locator;
-    private static Options options;
+    private static Options<String> options;
     private static final Map<String, Language> languages = new HashMap<>();
     private static final Map<String, ComponentProvider> componentProviders = new HashMap<>();
     private static final Map<String, Component> components = new HashMap<>();
