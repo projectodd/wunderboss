@@ -1,5 +1,6 @@
 package org.projectodd.wunderboss;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,10 +41,22 @@ public class Options extends HashMap<String, Object> {
         return get(key) != null ? get(key).toString() : defaultValue;
     }
 
+    public Date getDate(String key) {
+        return getDate(key, null);
+    }
+
+    public Date getDate(String key, Date defaultValue) {
+        return get(key) != null ? (Date)get(key) : defaultValue;
+    }
+
     public Options put(String key, Object value) {
         super.put(key, value);
 
         return this;
+    }
+
+    public boolean has(String key) {
+        return containsKey(key);
     }
 
     public Options merge(Options otherOptions) {

@@ -4,6 +4,12 @@ import org.projectodd.wunderboss.Component;
 import java.util.Map;
 
 public interface Scheduling<T> extends Component<T> {
+    static final String CRON_OPT = "cronspec";
+    static final String AT_OPT = "at";
+    static final String EVERY_OPT = "every";
+    static final String IN_OPT = "in";
+    static final String REPEAT_OPT = "repeat";
+    static final String UNTIL_OPT = "until";
 
     /**
      *

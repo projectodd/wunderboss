@@ -74,11 +74,11 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
     public Web registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
         final Options options = new Options(opts);
         final String context = getContextPath(options);
-        if (options.containsKey("static_dir")) {
+        if (options.has("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        if (options.containsKey("init")) {
+        if (options.has("init")) {
             ((Runnable) options.get("init")).run();
         }
         epilogue(options, new Runnable() { 
@@ -105,7 +105,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
                 .setDeploymentName(context)
                 .addServlet(servletInfo);
 
-        if (options.containsKey("context_attributes")) {
+        if (options.has("context_attributes")) {
             Map<String, Object> contextAttributes = (Map)options.get("context_attributes");
             for (Map.Entry<String, Object> entry : contextAttributes.entrySet()) {
                 servletBuilder.addServletContextAttribute(entry.getKey(), entry.getValue());

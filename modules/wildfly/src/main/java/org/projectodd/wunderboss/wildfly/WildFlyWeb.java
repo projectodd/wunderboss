@@ -24,7 +24,7 @@ public class WildFlyWeb extends UndertowWeb {
     public Web registerHandler(HttpHandler httpHandler, Map<String, Object> opts) {
         final Options options = new Options(opts);
         final String context = getContextPath(options);
-        if (options.containsKey("static_dir")) {
+        if (options.has("static_dir")) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString("static_dir"));
         }
         for (Host host : getHosts()) {

@@ -57,7 +57,7 @@ public class WunderBossTest {
     }
 
     @Test
-    public void testCanStopContainer() {
+    public void testCanStopContainer() throws Exception {
         WunderBoss.registerComponentProvider("test", new TestComponentProvider());
         Component comp = WunderBoss.findOrCreateComponent("test");
         WunderBoss.stop();

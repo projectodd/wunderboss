@@ -2,9 +2,9 @@ package org.projectodd.wunderboss;
 
 public interface Component<T> {
 
-    void start();
+    void start() throws Exception;
 
-    void stop();
+    void stop() throws Exception;
 
     T implementation();
 

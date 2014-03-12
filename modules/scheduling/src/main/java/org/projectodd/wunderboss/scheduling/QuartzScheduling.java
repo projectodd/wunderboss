@@ -9,6 +9,7 @@ import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class QuartzScheduling implements Scheduling<Scheduler> {
+
     /*
      options: jobstore? threadpool? other scheduler opts?
      */
@@ -26,32 +28,23 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     }
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
         DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
-        try {
-            if (!started) {
-                factory.createVolatileScheduler(numThreads);
-                this.scheduler = factory.getScheduler();
-                this.scheduler.start();
-                started = true;
-                log.info("Quartz started");
-            }
-        } catch (SchedulerException e) {
-            throw new RuntimeException(e);
+
+        if (!started) {
+            factory.createVolatileScheduler(numThreads);
+            this.scheduler = factory.getScheduler();
+            this.scheduler.start();
+            started = true;
+            log.info("Quartz started");
         }
     }
 
     @Override
-    public void stop() {
+    public void stop() throws Exception {
         if (started) {
-            try {
-               this.scheduler.shutdown(true);
-            }  catch (SchedulerException e) {
-
-                // TODO: something better
-                e.printStackTrace();
-            }
+            this.scheduler.shutdown(true);
             started = false;
             log.info("Quartz stopped");
         }
@@ -68,28 +61,26 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     }
 
     @Override
-    public synchronized boolean schedule(String name, Runnable fn, Map<String, Object> opts) throws SchedulerException {
+    public synchronized boolean schedule(String name, Runnable fn, Map<String, Object> opts) throws Exception {
         Options options = new Options(opts);
-        String cronString = options.getString("cron");
-        // Cast and retrieve this here to error early if it's not given
-        //TODO: unschedule existing job, returning true
+        validateOptions(options);
+
         start();
+
+        boolean replacedExisting = unschedule(name);
+
         JobDataMap jobDataMap = new JobDataMap();
         // TODO: Quartz says only serializable things should be in here
         jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
         JobDetail job = JobBuilder.newJob(RunnableJob.class)
                 .usingJobData(jobDataMap)
                 .build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .startNow()
-                .withSchedule(CronScheduleBuilder.cronSchedule(cronString))
-                .build();
 
-        this.scheduler.scheduleJob(job, trigger);
+        this.scheduler.scheduleJob(job, initTrigger(name, options));
 
         this.currentJobs.put("name", job.getKey());
 
-        return false;
+        return replacedExisting;
     }
 
     @Override
@@ -101,6 +92,67 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         }
 
         return false;
+    }
+
+    protected void validateOptions(Options opts) throws IllegalArgumentException {
+        //TODO: don't allow cron
+        if (opts.has(CRON_OPT)) {
+            for(String each : new String[] {AT_OPT, EVERY_OPT, IN_OPT, REPEAT_OPT, UNTIL_OPT}) {
+                if (opts.has(each)) {
+                    throw new IllegalArgumentException("You can't specify both 'cronspec' and '" +
+                                                               each + "'");
+                }
+            }
+        }
+
+        if (opts.has(AT_OPT) &&
+                opts.has(IN_OPT)) {
+            throw new IllegalArgumentException("You can't specify both 'at' and 'in'");
+        }
+
+        if (!opts.has(EVERY_OPT)) {
+            if (opts.has(REPEAT_OPT)) {
+                throw new IllegalArgumentException("You can't specify 'repeat' without 'every'");
+            }
+            if (opts.has(UNTIL_OPT)) {
+                throw new IllegalArgumentException("You can't specify 'until' without 'every'");
+            }
+        }
+    }
+
+    protected Trigger initTrigger(String name, Options opts) {
+        TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
+                .withIdentity(name, name());
+
+        if (opts.has(CRON_OPT)) {
+            builder.startNow()
+                    .withSchedule(CronScheduleBuilder.cronSchedule(opts.getString(CRON_OPT)))
+                    .build();
+        } else {
+            if (opts.has(AT_OPT)) {
+                builder.startAt(opts.getDate(AT_OPT));
+            } else {
+                builder.startNow();
+            }
+
+            if (opts.has(UNTIL_OPT)) {
+                builder.endAt(opts.getDate(UNTIL_OPT));
+            }
+
+            if (opts.has(EVERY_OPT)) {
+                SimpleScheduleBuilder schedule =
+                        SimpleScheduleBuilder.simpleSchedule()
+                                .withIntervalInMilliseconds(opts.getInt(EVERY_OPT));
+                if (opts.has(REPEAT_OPT)) {
+                    schedule.withRepeatCount(opts.getInt(REPEAT_OPT));
+                } else {
+                    schedule.repeatForever();
+                }
+                builder.withSchedule(schedule);
+            }
+        }
+
+        return builder.build();
     }
 
     private final String name;

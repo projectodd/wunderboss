@@ -80,7 +80,7 @@ public class WunderBoss {
         return getComponentProvider(type, false) != null;
     }
 
-    public static void stop() {
+    public static void stop() throws Exception {
         for (Component component : components.values()) {
             component.stop();
         }

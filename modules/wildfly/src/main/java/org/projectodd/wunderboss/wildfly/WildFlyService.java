@@ -17,7 +17,6 @@ import org.wildfly.extension.undertow.UndertowService;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -81,7 +80,11 @@ public class WildFlyService implements Service<WildFlyService> {
     @Override
     public void stop(StopContext context) {
         log.debug("!!! Stopping WunderBoss application");
-        WunderBoss.stop();
+        try {
+            WunderBoss.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
