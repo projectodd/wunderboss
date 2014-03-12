@@ -70,8 +70,8 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         port = options.getInt(PORT, 8080);
         host = options.getString(HOST, "localhost");
         undertow = Undertow.builder()
-                .addListener(port, host)
-                .setHandler(Handlers.date(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow")))
+                .addHttpListener(port, host)
+                .setHandler(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow"))
                 .build();
     }
 
