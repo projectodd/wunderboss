@@ -1,7 +1,6 @@
 package org.projectodd.wunderboss.scheduling;
 
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Options;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
@@ -13,9 +12,14 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
+
+import java.util.HashMap;
 import java.util.Map;
 
 public class QuartzScheduling implements Scheduling<Scheduler> {
+    /*
+     options: jobstore? threadpool? other scheduler opts?
+     */
     public QuartzScheduling(String name, Options options) {
         this.name = name;
         this.numThreads = options.getInt("num_threads", 5);
@@ -24,7 +28,18 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
     @Override
     public void start() {
         System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
-        // TODO: Configurable non-lazy boot of Quartz
+        DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
+        try {
+            if (!started) {
+                factory.createVolatileScheduler(numThreads);
+                this.scheduler = factory.getScheduler();
+                this.scheduler.start();
+                started = true;
+                log.info("Quartz started");
+            }
+        } catch (SchedulerException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -33,6 +48,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             try {
                this.scheduler.shutdown(true);
             }  catch (SchedulerException e) {
+
                 // TODO: something better
                 e.printStackTrace();
             }
@@ -51,58 +67,47 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         return this.name;
     }
 
-    // options:
-    // cron, run_function (takes a Map), data (the Map), at options?
-    public JobKey scheduleJob(String name, Runnable fn, Map<String, Object> opts) {
+    @Override
+    public synchronized boolean schedule(String name, Runnable fn, Map<String, Object> opts) throws SchedulerException {
         Options options = new Options(opts);
         String cronString = options.getString("cron");
         // Cast and retrieve this here to error early if it's not given
-        DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
-        try {
-            if (!started) {
-                factory.createVolatileScheduler(numThreads);
-                this.scheduler = factory.getScheduler();
-                this.scheduler.start();
-                started = true;
-                log.info("Quartz started");
-            }
+        //TODO: unschedule existing job, returning true
+        start();
+        JobDataMap jobDataMap = new JobDataMap();
+        // TODO: Quartz says only serializable things should be in here
+        jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
+        JobDetail job = JobBuilder.newJob(RunnableJob.class)
+                .usingJobData(jobDataMap)
+                .build();
+        Trigger trigger = TriggerBuilder.newTrigger()
+                .startNow()
+                .withSchedule(CronScheduleBuilder.cronSchedule(cronString))
+                .build();
 
-            JobDataMap jobDataMap = new JobDataMap();
-            // TODO: Quartz says only serializable things should be in here
-            jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
-            JobDetail job = JobBuilder.newJob(RunnableJob.class)
-                    .usingJobData(jobDataMap)
-                    .build();
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .startNow()
-                    .withSchedule(CronScheduleBuilder.cronSchedule(cronString))
-                    .build();
+        this.scheduler.scheduleJob(job, trigger);
 
-            this.scheduler.scheduleJob(job, trigger);
+        this.currentJobs.put("name", job.getKey());
 
-            Options instanceOptions = new Options();
-            instanceOptions.put("scheduler", scheduler);
-            return job.getKey();
-        } catch (SchedulerException e) {
-            // TODO: something better
-            e.printStackTrace();
-            return null;
-        }
+        return false;
     }
 
-    public void unscheduleJob(JobKey key) {
-        try {
-            this.scheduler.deleteJob(key);
-        } catch (SchedulerException e) {
-            // TODO: something better
-            e.printStackTrace();
+    @Override
+    public synchronized boolean unschedule(String name) throws SchedulerException {
+        if (currentJobs.containsKey(name)) {
+            this.scheduler.deleteJob(currentJobs.get(name));
+
+            return true;
         }
+
+        return false;
     }
 
     private final String name;
     private int numThreads;
     private boolean started;
     private Scheduler scheduler;
+    private final Map<String, JobKey> currentJobs = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(Scheduling.class);
 }
