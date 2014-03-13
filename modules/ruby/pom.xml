@@ -30,12 +30,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-web</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
       <version>${version.jruby}</version>
