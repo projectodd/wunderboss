@@ -52,12 +52,10 @@ public class QuartzSchedulingTest {
         options.put(CRON, "* * * * * ?");
 
         scheduler.schedule("cronnie", new Runnable() {
-                               @Override
-                               public void run() {
-                                   latch.countDown();
-                               }
-                           },
-                           options);
+                public void run() {
+                    latch.countDown();
+                }},
+            options);
         assert(latch.await(5, TimeUnit.SECONDS));
     }
 
@@ -69,12 +67,10 @@ public class QuartzSchedulingTest {
         options.put(REPEAT, 1);
 
         scheduler.schedule("attie", new Runnable() {
-            @Override
-            public void run() {
-                latch.countDown();
-            }
-        },
-                           options);
+                public void run() {
+                    latch.countDown();
+                }},
+            options);
         assert(latch.await(5, TimeUnit.SECONDS));
     }
 }

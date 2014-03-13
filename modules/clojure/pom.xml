@@ -29,19 +29,11 @@
     </dependency>
 
     <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-web</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
       <version>${version.clojure}</version>
       <scope>provided</scope>
     </dependency>
-
-
   </dependencies>
 
   <build>
