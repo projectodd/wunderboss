@@ -13,14 +13,14 @@ import java.util.concurrent.TimeUnit;
 import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
 
 public class QuartzSchedulingTest {
-    QuartzScheduling scheduler;
+    Scheduling scheduler;
     Map <Scheduling.ScheduleOption, Object> options;
 
     //TODO: test: unschedule, validations, all opt permutations?
 
     @Before
     public void setup() throws Exception {
-        scheduler = (QuartzScheduling)WunderBoss.findOrCreateComponent("scheduling");
+        scheduler = WunderBoss.findOrCreateComponent(Scheduling.class);
         options = new HashMap<>();
     }
 

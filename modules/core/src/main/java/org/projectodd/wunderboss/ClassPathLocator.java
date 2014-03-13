@@ -27,10 +27,10 @@ public class ClassPathLocator implements Locator {
     }
 
     @Override
-    public synchronized ComponentProvider findComponentProvider(String name) {
-        String clazz = findProviderClassName("componentProvider", name);
-        if (clazz != null) {
-            return (ComponentProvider)instantiate(clazz);
+    public synchronized ComponentProvider findComponentProvider(Class<? extends Component> clazz) {
+        Class<?> providerClass = findProviderClass("componentProvider", clazz);
+        if (providerClass != null) {
+            return (ComponentProvider)instantiate(providerClass);
         } else {
             return null;
         }
@@ -39,29 +39,13 @@ public class ClassPathLocator implements Locator {
     protected String findProviderClassName(String type, String name) {
         log.debug("Looking for provider " + type + ":" + name);
         try {
-            Enumeration<URL> urls =
-                    this.loader.getResources("META-INF/wunderboss.properties");
+            Enumeration<URL> urls = getWunderBossPropertyUrls();
 
             while(urls.hasMoreElements()) {
                 URL url = urls.nextElement();
                 log.debug("checking " + url);
 
-                Properties props;
-
-                if (this.propertiesCache.containsKey(url)) {
-                    props = this.propertiesCache.get(url);
-                    log.debug("Found CACHED props: " + props);
-                } else {
-                    props = new Properties();
-                    InputStream propsStream = url.openStream();
-                    try {
-                        props.load(propsStream);
-                    } finally {
-                        propsStream.close();
-                    }
-                    this.propertiesCache.put(url, props);
-                    log.debug("Found props: " + props);
-                }
+                Properties props = findPropertiesForUrl(url);
 
                 String cName;
                 if ((cName = props.getProperty(type + "." + name)) != null) {
@@ -76,11 +60,71 @@ public class ClassPathLocator implements Locator {
         return null;
     }
 
+    protected Class<?> findProviderClass(String type, Class<?> clazz) {
+        log.debug("Looking for provider " + type + ":" + clazz.getName());
+        try {
+            Enumeration<URL> urls = getWunderBossPropertyUrls();
+
+            while(urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                log.debug("checking " + url);
+
+                Properties props = findPropertiesForUrl(url);
+                String providerClassName = props.getProperty(type);
+                if (providerClassName != null) {
+                    Class providerClass = this.loader.loadClass(providerClassName);
+                    if (clazz.isAssignableFrom(WunderBoss.getProvidedType(providerClass))) {
+                        return providerClass;
+                    }
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            //TODO: something better
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    protected Enumeration<URL> getWunderBossPropertyUrls() throws IOException {
+        return this.loader.getResources("META-INF/wunderboss.properties");
+    }
+
+    protected Properties findPropertiesForUrl(URL url) throws IOException {
+        Properties props;
+
+        if (this.propertiesCache.containsKey(url)) {
+            props = this.propertiesCache.get(url);
+            log.debug("Found CACHED props: " + props);
+        } else {
+            props = new Properties();
+            InputStream propsStream = url.openStream();
+            try {
+                props.load(propsStream);
+            } finally {
+                propsStream.close();
+            }
+            this.propertiesCache.put(url, props);
+            log.debug("Found props: " + props);
+        }
+        return props;
+    }
+
     private Object instantiate(String cName) {
         try {
             Class clazz = this.loader.loadClass(cName);
+            return instantiate(clazz);
+        } catch (ClassNotFoundException e) {
+            //TODO: something better
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private Object instantiate(Class clazz) {
+        try {
             return clazz.newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             //TODO: something better
             e.printStackTrace();
             return null;

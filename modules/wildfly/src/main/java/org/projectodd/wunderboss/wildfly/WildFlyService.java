@@ -62,7 +62,7 @@ public class WildFlyService implements Service<WildFlyService> {
             throw new StartException(e);
         }
 
-        WunderBoss.registerComponentProvider("web", new WildflyWebProvider(undertowInjector.getValue()));
+        WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
 
         log.info("Initializing " + deploymentName + " as " + language);
         WunderBoss.findLanguage(language)

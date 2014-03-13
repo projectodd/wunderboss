@@ -35,32 +35,33 @@ public class WunderBossTest {
 
     @Test
     public void testCanRegisterComponent() {
-        WunderBoss.registerComponentProvider("test-register", new TestComponentProvider());
-        assertTrue(WunderBoss.providesComponent("test-register"));
+        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        assertTrue(WunderBoss.providesComponent(TestComponent.class));
     }
 
     @Test
     public void testCachesComponents() {
-        WunderBoss.registerComponentProvider("test-cache", new TestComponentProvider());
-        Component comp = WunderBoss.findOrCreateComponent("test-cache");
+        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        Component comp = WunderBoss.findOrCreateComponent(TestComponent.class);
         assertEquals("default", comp.name());
-        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache"));
+        assertEquals(comp, WunderBoss.findOrCreateComponent(TestComponent.class));
+        WunderBoss.findOrCreateComponent(TestComponent.class);
     }
 
     @Test
     public void testCachesComponentsWithNames() {
-        WunderBoss.registerComponentProvider("test-cache2", new TestComponentProvider());
-        Component comp = WunderBoss.findOrCreateComponent("test-cache2", "foobar", null);
+        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        Component comp = WunderBoss.findOrCreateComponent(TestComponent.class, "foobar", null);
         assertEquals("foobar", comp.name());
-        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache2", "foobar", null));
+        assertEquals(comp, WunderBoss.findOrCreateComponent(TestComponent.class, "foobar", null));
     }
 
     @Test
     public void testCanStopContainer() throws Exception {
-        WunderBoss.registerComponentProvider("test", new TestComponentProvider());
-        Component comp = WunderBoss.findOrCreateComponent("test");
+        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        TestComponent comp = WunderBoss.findOrCreateComponent(TestComponent.class);
         WunderBoss.stop();
-        assertTrue(((TestComponent)comp).stopped);
+        assertTrue(comp.stopped);
     }
 
     private TestLanguage testLanguage;

@@ -1,9 +1,9 @@
 package org.projectodd.wunderboss;
 
-public class TestComponentProvider implements ComponentProvider {
+public class TestComponentProvider implements ComponentProvider<TestComponent> {
 
     @Override
-    public Component create(String name, Options opts) {
+    public TestComponent create(String name, Options opts) {
         return new TestComponent(name, opts);
     }
 }
