@@ -22,8 +22,9 @@ import org.jboss.logging.Logger;
 
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -112,9 +113,12 @@ public class WunderBoss {
 
     private static <T extends Component<?>> ComponentProvider<T> getComponentProvider(Class<T> clazz, boolean throwIfMissing) {
         ComponentProvider<T> provider = null;
-        for (ComponentProvider<?> providerCandidate : componentProviders) {
+        Iterator<ComponentProvider<?>> iterator = componentProviders.descendingIterator();
+        while (iterator.hasNext()) {
+            ComponentProvider<?> providerCandidate = iterator.next();
             if (clazz.isAssignableFrom(getProvidedType(providerCandidate.getClass()))) {
                 provider = (ComponentProvider<T>) providerCandidate;
+                break;
             }
         }
 
@@ -183,7 +187,7 @@ public class WunderBoss {
     private static Locator locator;
     private static Options<String> options;
     private static final Map<String, Language> languages = new HashMap<>();
-    private static final List<ComponentProvider> componentProviders = new ArrayList<>();
+    private static final LinkedList<ComponentProvider<?>> componentProviders = new LinkedList<>();
     private static final Map<String, Component> components = new HashMap<>();
     private static DynamicClassLoader classLoader;
     private static final Logger log = Logger.getLogger(WunderBoss.class);

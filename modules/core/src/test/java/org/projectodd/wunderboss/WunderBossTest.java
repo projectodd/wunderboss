@@ -56,6 +56,21 @@ public class WunderBossTest {
     }
 
     @Test
+    public void testLastRegisteredComponentWins() {
+        final TestComponent myComponent = new TestComponent("mine", null);
+        ComponentProvider<TestComponent> myProvider = new ComponentProvider<TestComponent>() {
+            @Override
+            public TestComponent create(String name, Options options) {
+                return myComponent;
+            }
+        };
+        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        WunderBoss.registerComponentProvider(myProvider);
+        TestComponent testComponent = WunderBoss.findOrCreateComponent(TestComponent.class, "uniquename123", null);
+        assertEquals(testComponent, myComponent);
+    }
+
+    @Test
     public void testCachesComponents() {
         WunderBoss.registerComponentProvider(new TestComponentProvider());
         Component comp = WunderBoss.findOrCreateComponent(TestComponent.class);
