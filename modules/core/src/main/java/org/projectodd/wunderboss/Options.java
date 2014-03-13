@@ -49,6 +49,10 @@ public class Options<T> extends HashMap<T, Object> {
         return get(key) != null ? (Date)get(key) : defaultValue;
     }
 
+    public String removeString(T key, String defaultValue) {
+        return get(key) != null ? remove(key).toString() : defaultValue;
+    }
+
     public Options put(T key, Object value) {
         super.put(key, value);
 
