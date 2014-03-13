@@ -25,19 +25,20 @@ public class WunderBoss {
     private WunderBoss() {}
 
     public static Component findOrCreateComponent(String type) {
-        return findOrCreateComponent(type, null);
+        return findOrCreateComponent(type, null, null);
     }
 
-    public static Component findOrCreateComponent(String type, Map<Object, Object> opts) {
-        Options<Object> options = new Options<>(opts);
-        String name = options.removeString("name", "default");
+    public static Component findOrCreateComponent(String type, String name, Map<Object, Object> options) {
+        if (name == null) {
+            name = "default";
+        }
 
         String fullName = type + ":" + name;
         Component component = components.get(fullName);
         if (component != null) {
             log.info("Returning existing component for " + fullName + ", ignoring options.");
         } else {
-            component = getComponentProvider(type, true).create(name, options);
+            component = getComponentProvider(type, true).create(name, new Options<>(options));
             components.put(fullName, component);
         }
 

@@ -50,10 +50,9 @@ public class WunderBossTest {
     @Test
     public void testCachesComponentsWithNames() {
         WunderBoss.registerComponentProvider("test-cache2", new TestComponentProvider());
-        Map options = new HashMap() {{put("name", "foobar");}};
-        Component comp = WunderBoss.findOrCreateComponent("test-cache2", options);
+        Component comp = WunderBoss.findOrCreateComponent("test-cache2", "foobar", null);
         assertEquals("foobar", comp.name());
-        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache2", options));
+        assertEquals(comp, WunderBoss.findOrCreateComponent("test-cache2", "foobar", null));
     }
 
     @Test
