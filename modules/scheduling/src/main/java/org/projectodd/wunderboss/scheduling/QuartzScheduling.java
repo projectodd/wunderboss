@@ -114,10 +114,10 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
 
     protected void validateOptions(Options<ScheduleOption> opts) throws IllegalArgumentException {
         if (opts.has(CRON)) {
-            for(ScheduleOption each : new ScheduleOption[] {AT, EVERY, IN, REPEAT, UNTIL}) {
+            for(ScheduleOption each : new ScheduleOption[] {EVERY, REPEAT}) {
                 if (opts.has(each)) {
                     throw new IllegalArgumentException("You can't specify both 'cronspec' and '" +
-                                                               each + "'");
+                                                               each.value + "'");
                 }
             }
         }
@@ -131,8 +131,9 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             if (opts.has(REPEAT)) {
                 throw new IllegalArgumentException("You can't specify 'repeat' without 'every'");
             }
-            if (opts.has(UNTIL)) {
-                throw new IllegalArgumentException("You can't specify 'until' without 'every'");
+            if (opts.has(UNTIL) &&
+                    !opts.has(CRON)) {
+                throw new IllegalArgumentException("You can't specify 'until' without 'every' or 'cronspec'");
             }
         }
     }
@@ -141,34 +142,30 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         TriggerBuilder<Trigger> builder = TriggerBuilder.newTrigger()
                 .withIdentity(name, name());
 
-        if (opts.has(CRON)) {
-            builder.startNow()
-                    .withSchedule(CronScheduleBuilder.cronSchedule(opts.getString(CRON)))
-                    .build();
+        if (opts.has(AT)) {
+            builder.startAt(opts.getDate(AT));
+        } else if (opts.has(IN)) {
+            builder.startAt(new java.util.Date(System.currentTimeMillis() + opts.getLong(IN)));
         } else {
-            if (opts.has(AT)) {
-                builder.startAt(opts.getDate(AT));
-            } else if (opts.has(IN)) {
-                builder.startAt(new java.util.Date(System.currentTimeMillis() + opts.getLong(IN)));
+            builder.startNow();
+        }
+
+        if (opts.has(UNTIL)) {
+            builder.endAt(opts.getDate(UNTIL));
+        }
+
+        if (opts.has(CRON)) {
+            builder.withSchedule(CronScheduleBuilder.cronSchedule(opts.getString(CRON)));
+        } else if (opts.has(EVERY)) {
+            SimpleScheduleBuilder schedule =
+                    SimpleScheduleBuilder.simpleSchedule()
+                            .withIntervalInMilliseconds(opts.getInt(EVERY));
+            if (opts.has(REPEAT)) {
+                schedule.withRepeatCount(opts.getInt(REPEAT));
             } else {
-                builder.startNow();
+                schedule.repeatForever();
             }
-
-            if (opts.has(UNTIL)) {
-                builder.endAt(opts.getDate(UNTIL));
-            }
-
-            if (opts.has(EVERY)) {
-                SimpleScheduleBuilder schedule =
-                        SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInMilliseconds(opts.getInt(EVERY));
-                if (opts.has(REPEAT)) {
-                    schedule.withRepeatCount(opts.getInt(REPEAT));
-                } else {
-                    schedule.repeatForever();
-                }
-                builder.withSchedule(schedule);
-            }
+            builder.withSchedule(schedule);
         }
 
         return builder.build();

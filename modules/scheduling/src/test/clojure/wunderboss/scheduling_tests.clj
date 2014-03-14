@@ -77,11 +77,40 @@
       (Thread/sleep 200)
       (is (= 1 @q)))))
 
-(deftest cron-jobs-should-work
-  (let [q (atom 0)]
-    (with-job #(swap! q inc) {:cronspec "*/1 * * * * ?"}
-      (Thread/sleep 3000)
-      (is (> @q 2)))))
+(testing "cron jobs"
+  (deftest cron-jobs-should-work
+    (let [q (atom 0)]
+      (with-job #(swap! q inc) {:cronspec "*/1 * * * * ?"}
+        (Thread/sleep 3000)
+        (is (> @q 2)))))
+
+  (deftest in-with-cron-should-should-start-near-x-ms
+    (let [q (atom 0)]
+      (with-job #(swap! q inc) {:in 2000
+                                :cronspec "*/1 * * * * ?"}
+        (Thread/sleep 1000)
+        (is (= 0 @q))
+        (Thread/sleep 1000)
+        (is (> @q 0)))))
+  
+  (deftest at-with-cron-should-should-start-near-x
+    (let [q (atom 0)]
+      (with-job #(swap! q inc) {:at (Date. (+ 2000 (System/currentTimeMillis)))
+                                :cronspec "*/1 * * * * ?"}
+        (Thread/sleep 1000)
+        (is (= 0 @q))
+        (Thread/sleep 1000)
+        (is (> @q 0)))))
+  
+  (deftest until-with-cron-should-run-until
+    (let [q (atom 0)]
+      (with-job #(swap! q inc) {:until (Date. (+ 2000 (System/currentTimeMillis)))
+                                :cronspec "*/1 * * * * ?"}
+        (Thread/sleep 3000)
+        (let [curr @q]
+          (is (> curr 0))
+          (Thread/sleep 1000)
+          (is (= curr @q)))))))
 
 (testing "at jobs"
   (deftest in-should-fire-once-in-x-ms
@@ -143,7 +172,7 @@
           IllegalArgumentException
           (with-job* (fn []) {:repeat 5} (fn [])))))
 
-  (deftest until-without-every-should-throw
+  (deftest until-without-every-or-cron-should-throw
     (is (thrown?
           IllegalArgumentException
           (with-job* (fn []) {:until 5} (fn []))))))
