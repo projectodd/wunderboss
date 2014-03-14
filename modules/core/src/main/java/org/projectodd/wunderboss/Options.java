@@ -49,6 +49,18 @@ public class Options<T> extends HashMap<T, Object> {
         return defaultValue;
     }
 
+    public Long getLong(T key) {
+        return getLong(key, null);
+    }
+
+    public Long getLong(T key, Long defaultValue) {
+        Object value = get(key);
+        if (value != null) {
+            return Long.parseLong(value.toString());
+        }
+        return defaultValue;
+    }
+
     public String getString(T key) {
         return getString(key, null);
     }
