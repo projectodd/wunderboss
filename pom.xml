@@ -52,11 +52,11 @@
       <distributionManagement>
         <snapshotRepository>
           <id>bees-snapshots-repository-dav</id>
-          <url>dav:https://repository-projectodd.forge.cloudbees.com/snapshot/</url>
+          <url>https://repository-projectodd.forge.cloudbees.com/snapshot/</url>
         </snapshotRepository>
         <repository>
           <id>bees-release-repository-dav</id>
-          <url>dav:https://repository-projectodd.forge.cloudbees.com/release/</url>
+          <url>https://repository-projectodd.forge.cloudbees.com/release/</url>
         </repository>
       </distributionManagement>
     </profile>
