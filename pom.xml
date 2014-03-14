@@ -53,6 +53,14 @@
   </repositories>
 
   <profiles>
+    <profile>
+      <id>bees</id>
+      <distributionManagement>
+        <repository>
+          <id>jboss-snapshots-repository</id>
+        </repository>
+      </distributionManagement>
+    </profile>
   </profiles>
     
   <dependencyManagement>
