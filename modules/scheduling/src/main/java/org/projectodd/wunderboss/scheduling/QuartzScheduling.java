@@ -148,12 +148,10 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         } else {
             if (opts.has(AT)) {
                 builder.startAt(opts.getDate(AT));
+            } else if (opts.has(IN)) {
+                builder.startAt(new java.util.Date(System.currentTimeMillis() + opts.getLong(IN)));
             } else {
-                if (opts.has(IN)) {
-                    builder.startAt(new java.util.Date(System.currentTimeMillis() + opts.getLong(IN)));
-                } else {
-                    builder.startNow();
-                }
+                builder.startNow();
             }
 
             if (opts.has(UNTIL)) {
