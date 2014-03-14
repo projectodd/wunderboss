@@ -18,7 +18,8 @@
   <packaging>jar</packaging>
 
   <properties>
-    <version.clojure>1.6.0-beta2</version.clojure>
+    <version.clojure>1.6.0-RC1</version.clojure>
+    <version.lein>2.3.4</version.lein>
   </properties>
 
   <dependencies>
@@ -32,6 +33,13 @@
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
       <version>${version.clojure}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>leiningen-core</groupId>
+      <artifactId>leiningen-core</artifactId>
+      <version>${version.lein}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -48,19 +56,18 @@
 
     <plugins>
       <plugin>
-        <groupId>de.saumya.mojo</groupId>
-        <artifactId>jruby-maven-plugin</artifactId>
+        <groupId>com.theoryinpractise</groupId>
+        <artifactId>clojure-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>calculate-test-classpaths</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>jruby</goal>
+              <goal>run</goal>
             </goals>
             <configuration>
-              <file>bin/calc-classpaths.rb</file>
-              <args>${project.basedir}/src/test/resources/apps/basic ${project.basedir}/target/apps/basic</args>
-              <jrubyJvmArgs>-Dmaven.test.skip=${maven.test.skip}</jrubyJvmArgs>
+              <script>src/test/clojure/build/calc_classpaths.clj</script>
+              <args>${project.basedir}/src/test/resources/apps/basic ${project.basedir}/target/apps/basic</args>              
             </configuration>
           </execution>
         </executions>

@@ -44,6 +44,14 @@
     <version.junit>4.11</version.junit>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <name>Clojure Jars</name>
+      <url>http://clojars.org/repo/</url>
+    </repository>
+  </repositories>
+
   <profiles>
   </profiles>
     
