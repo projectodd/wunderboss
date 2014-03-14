@@ -57,8 +57,7 @@
       <id>bees</id>
       <distributionManagement>
         <repository>
-          <id>jboss-snapshots-repository</id>
-          <url>dav:https://repository-projectodd.forge.cloudbees.com/snapshot/</url>
+          <id>bees-snapshots-repository-dav</id>
         </repository>
       </distributionManagement>
     </profile>
