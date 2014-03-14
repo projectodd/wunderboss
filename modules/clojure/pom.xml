@@ -67,7 +67,7 @@
             </goals>
             <configuration>
               <script>src/test/clojure/build/calc_classpaths.clj</script>
-              <args>${project.basedir}/src/test/resources/apps/basic ${project.basedir}/target/apps/basic</args>              
+              <args>${project.basedir}/src/test/resources/apps/basic ${project.basedir}/target/apps/basic target/wunderboss-clojure.jar</args>              
             </configuration>
           </execution>
         </executions>

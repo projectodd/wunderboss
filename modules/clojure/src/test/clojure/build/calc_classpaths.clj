@@ -4,7 +4,7 @@
             [clojure.java.io :as io]
             [clojure.string :as str]))
 
-(let [[app-dir dest-dir] *command-line-args*]
+(let [[app-dir dest-dir & extra-entries] *command-line-args*]
   (println "Calculating lein classpath for" app-dir)
   (spit
     (io/file
@@ -15,4 +15,6 @@
       (-> app-dir
         (str "/project.clj")
         project/read
-        cp/get-classpath))))
+        cp/get-classpath
+        (concat (map #(-> % io/file .getAbsolutePath)
+                  extra-entries))))))
