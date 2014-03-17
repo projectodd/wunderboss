@@ -64,7 +64,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         // TODO: Configurable non-lazy boot of Undertow
         if (!started) {
             undertow.start();
-            log.info("Undertow listening on " + host + ":" + port);
+            log.infof("Undertow listening on %s:%s", host, port);
             started = true;
         }
     }
@@ -110,8 +110,8 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
 
         if (autoStart) {
             start();
-            log.info("Started web context " + context);
         }
+        log.infof("Registered web context %s", context);
         return this;
     }
 
@@ -154,10 +154,10 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         Runnable f = contextRegistrar.remove(context);
         if (f != null) {
             f.run();
-            log.info("Stopped web context at path " + context);
+            log.infof("Unregistered web context at path %s", context);
             return this;
         } else {
-            log.warn("No context registered at path " + context);
+            log.warnf("No context registered at path %s", context);
             return null;
         }
     }
