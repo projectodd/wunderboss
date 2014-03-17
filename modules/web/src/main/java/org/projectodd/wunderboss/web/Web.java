@@ -24,7 +24,8 @@ import java.util.Map;
 public interface Web<T, S> extends Component<T> {
     enum CreateOption {
         HOST("host"),
-        PORT("port");
+        PORT("port"),
+        AUTO_START("auto_start");
 
         CreateOption(String value) {
             this.value = value;

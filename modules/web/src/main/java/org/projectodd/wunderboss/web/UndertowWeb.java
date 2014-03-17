@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.projectodd.wunderboss.web.Web.CreateOption.AUTO_START;
 import static org.projectodd.wunderboss.web.Web.CreateOption.HOST;
 import static org.projectodd.wunderboss.web.Web.CreateOption.PORT;
 import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
@@ -83,6 +84,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
     }
 
     private void configure(Options<CreateOption> options) {
+        autoStart = options.getBoolean(AUTO_START, true);
         port = options.getInt(PORT, 8080);
         host = options.getString(HOST, "localhost");
         undertow = Undertow.builder()
@@ -98,15 +100,18 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        if (options.has(INIT)) {
+        if (options.get(INIT) != null) {
             ((Runnable) options.get(INIT)).run();
         }
         epilogue(options, new Runnable() { 
                 public void run() { 
                     pathHandler.removePrefixPath(context);
                 }});
-        start();
-        log.info("Started web context " + context);
+
+        if (autoStart) {
+            start();
+            log.info("Started web context " + context);
+        }
         return this;
     }
 
@@ -208,6 +213,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
     private int port;
     private String host;
     private Undertow undertow;
+    private boolean autoStart;
     private PathHandler pathHandler = new PathHandler();
     private boolean started;
     private Map<String, Runnable> contextRegistrar = new HashMap<>();

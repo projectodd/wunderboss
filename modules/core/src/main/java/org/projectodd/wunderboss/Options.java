@@ -37,6 +37,18 @@ public class Options<T> extends HashMap<T, Object> {
         return get(key) != null ? get(key) : defaultValue;
     }
 
+    public Boolean getBoolean(T key) {
+        return getBoolean(key, null);
+    }
+
+    public Boolean getBoolean(T key, Boolean defaultValue) {
+        Object value = get(key);
+        if (value != null) {
+            return Boolean.parseBoolean(value.toString());
+        }
+        return defaultValue;
+    }
+
     public Integer getInt(T key) {
         return getInt(key, null);
     }
