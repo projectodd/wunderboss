@@ -53,7 +53,8 @@
     (with-job #(swap! q inc) {:every 100}
       (Thread/sleep 500)
       (is (> @q 0))
-      (.unschedule default "a-job")
+      (is (.unschedule default "a-job"))
+      (is (not (.unschedule default "a-job")))
       (Thread/sleep 500)
       (let [curr @q]
         (Thread/sleep 500)
