@@ -117,8 +117,8 @@
   (deftest in-should-fire-once-in-x-ms
     (let [q (promise)]
       (with-job #(deliver q "ping") {:in 1000}
-        (is (nil? (deref q 900 nil)))
-        (is (= "ping" (deref q 200 :fail))))))
+        (is (nil? (deref q 800 nil)))
+        (is (= "ping" (deref q 300 :fail))))))
 
   (deftest at-should-fire-once-then
     (let [q (promise)]
