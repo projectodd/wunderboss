@@ -36,7 +36,7 @@ public class WildFlyServiceActivator implements ServiceActivator {
         ServiceName parentServiceName = ServiceName.JBOSS.append("deployment").append("unit").append(deploymentName);
 
         ServiceName serviceName = ServiceName.of(parentServiceName, "wunderboss");
-        WildFlyService service = new WildFlyService(deploymentName);
+        WildFlyService service = new WildFlyService(deploymentName, serviceActivatorContext.getServiceRegistry());
         serviceActivatorContext.getServiceTarget().addService(serviceName, service)
                 .addDependency(UndertowService.UNDERTOW, UndertowService.class, service.getUndertowInjector())
                 .setInitialMode(ServiceController.Mode.ACTIVE)

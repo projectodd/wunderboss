@@ -38,7 +38,18 @@ public class ClojureLanguage implements Language {
 
     @Override
     public void shutdown() {
-        //TODO: maybe call shutdown-agents here, but only if this will be called once, at actual shutdown, and not once/"app"
+        this.runtime.callInLoader(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                Clojure.var("clojure.core", "require")
+                        .invoke(Clojure.var("clojure.core", "symbol")
+                                        .invoke("wunderboss.util"));
+                Clojure.var("wunderboss.util", "exit!").invoke();
+                Clojure.var("clojure.core", "shutdown-agents").invoke();
+
+                return null;
+            }
+        });
     }
 
     @Override

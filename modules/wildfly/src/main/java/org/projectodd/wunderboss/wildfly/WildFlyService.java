@@ -21,6 +21,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -39,8 +40,9 @@ import java.util.Properties;
 
 public class WildFlyService implements Service<WildFlyService> {
 
-    public WildFlyService(String deploymentName) {
+    public WildFlyService(String deploymentName, ServiceRegistry registry) {
         this.deploymentName = deploymentName;
+        this.registry = registry;
     }
 
     @Override
@@ -59,6 +61,7 @@ public class WildFlyService implements Service<WildFlyService> {
                 throw new StartException(e);
             }
         }
+        WunderBoss.putOption("service-registry", this.registry);
         WunderBoss.putOption("root", requiredProperty(properties, "root"));
 
         String language = requiredProperty(properties, "language");
@@ -113,6 +116,7 @@ public class WildFlyService implements Service<WildFlyService> {
     }
 
     private final String deploymentName;
+    private final ServiceRegistry registry;
     private InjectedValue<UndertowService> undertowInjector = new InjectedValue<UndertowService>();
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
