@@ -8,3 +8,4 @@
 target/
 *.swp
 Gemfile.lock
+modules/wildfly/dependency-reduced-pom.xml
