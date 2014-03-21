@@ -86,11 +86,16 @@ public class ClassPathLocator implements Locator {
                 log.debug("checking " + url);
 
                 Properties props = findPropertiesForUrl(url);
-                String providerClassName = props.getProperty(type);
-                if (providerClassName != null) {
-                    Class providerClass = this.loader.loadClass(providerClassName);
-                    if (clazz.isAssignableFrom(WunderBoss.getProvidedType(providerClass))) {
-                        return providerClass;
+                for(String each : props.stringPropertyNames()) {
+                    if (each.startsWith(type)) {
+                        String providerClassName = props.getProperty(each);
+                        if (providerClassName != null) {
+                            Class providerClass = this.loader.loadClass(providerClassName);
+                            if (clazz.isAssignableFrom(WunderBoss.getProvidedType(providerClass))) {
+
+                                return providerClass;
+                            }
+                        }
                     }
                 }
             }
