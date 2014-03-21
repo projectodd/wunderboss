@@ -81,14 +81,14 @@
 (testing "cron jobs"
   (deftest cron-jobs-should-work
     (let [q (atom 0)]
-      (with-job #(swap! q inc) {:cronspec "*/1 * * * * ?"}
+      (with-job #(swap! q inc) {:cron "*/1 * * * * ?"}
         (Thread/sleep 3000)
         (is (> @q 2)))))
 
   (deftest in-with-cron-should-should-start-near-x-ms
     (let [q (atom 0)]
       (with-job #(swap! q inc) {:in 2000
-                                :cronspec "*/1 * * * * ?"}
+                                :cron "*/1 * * * * ?"}
         (Thread/sleep 1000)
         (is (= 0 @q))
         (Thread/sleep 1000)
@@ -97,7 +97,7 @@
   (deftest at-with-cron-should-should-start-near-x
     (let [q (atom 0)]
       (with-job #(swap! q inc) {:at (Date. (+ 2000 (System/currentTimeMillis)))
-                                :cronspec "*/1 * * * * ?"}
+                                :cron "*/1 * * * * ?"}
         (Thread/sleep 1000)
         (is (= 0 @q))
         (Thread/sleep 1000)
@@ -106,7 +106,7 @@
   (deftest until-with-cron-should-run-until
     (let [q (atom 0)]
       (with-job #(swap! q inc) {:until (Date. (+ 2000 (System/currentTimeMillis)))
-                                :cronspec "*/1 * * * * ?"}
+                                :cron "*/1 * * * * ?"}
         (Thread/sleep 3000)
         (let [curr @q]
           (is (> curr 0))

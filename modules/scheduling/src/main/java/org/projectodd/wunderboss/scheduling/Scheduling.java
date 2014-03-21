@@ -31,7 +31,7 @@ public interface Scheduling<T> extends Component<T> {
     }
 
     enum ScheduleOption {
-        CRON("cronspec"),
+        CRON("cron"),
         AT("at"),
         EVERY("every"),
         IN("in"),
@@ -49,7 +49,7 @@ public interface Scheduling<T> extends Component<T> {
      *
      * @param name
      * @param lambda
-     * @param options cronspec - String
+     * @param options cron - String
      *                at - java.util.Date
      *                every - ms
      *                in - ms

@@ -116,7 +116,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         if (opts.has(CRON)) {
             for(ScheduleOption each : new ScheduleOption[] {EVERY, REPEAT}) {
                 if (opts.has(each)) {
-                    throw new IllegalArgumentException("You can't specify both 'cronspec' and '" +
+                    throw new IllegalArgumentException("You can't specify both 'cron' and '" +
                                                                each.value + "'");
                 }
             }
@@ -133,7 +133,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             }
             if (opts.has(UNTIL) &&
                     !opts.has(CRON)) {
-                throw new IllegalArgumentException("You can't specify 'until' without 'every' or 'cronspec'");
+                throw new IllegalArgumentException("You can't specify 'until' without 'every' or 'cron'");
             }
         }
     }
