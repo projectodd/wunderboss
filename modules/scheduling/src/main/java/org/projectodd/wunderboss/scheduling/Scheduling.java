@@ -36,7 +36,8 @@ public interface Scheduling<T> extends Component<T> {
         EVERY("every"),
         IN("in"),
         REPEAT("repeat"),
-        UNTIL("until");
+        UNTIL("until"),
+        SINGLETON("singleton");
 
         ScheduleOption(String value) {
             this.value = value;

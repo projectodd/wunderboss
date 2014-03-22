@@ -18,6 +18,8 @@ package org.projectodd.wunderboss.scheduling;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.SingletonContext;
+import org.projectodd.wunderboss.WunderBoss;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -88,6 +90,11 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         boolean replacedExisting = unschedule(name);
 
         JobDataMap jobDataMap = new JobDataMap();
+
+        if (options.getBoolean(SINGLETON, false)) {
+            fn = WunderBoss.findOrCreateComponent(SingletonContext.class, name, null).runnable(fn);
+        }
+
         // TODO: Quartz says only serializable things should be in here
         jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
         JobDetail job = JobBuilder.newJob(RunnableJob.class)

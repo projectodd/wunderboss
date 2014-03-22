@@ -64,7 +64,9 @@
               <Dependencies>
                 io.undertow.core,
                 org.jboss.modules,
-                org.wildfly.extension.undertow
+                org.wildfly.extension.undertow,
+                org.jboss.as.clustering.jgroups optional,
+                org.jgroups optional
               </Dependencies>
             </manifestEntries>
           </archive>

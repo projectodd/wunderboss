@@ -44,4 +44,8 @@ public class Utils {
 
         return files;
     }
+
+    public static boolean inContainer() {
+        return WunderBoss.options().has("deployment-name");
+    }
 }

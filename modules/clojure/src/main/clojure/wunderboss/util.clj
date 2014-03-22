@@ -28,4 +28,6 @@
 
 (defn get-from-registry [k]
   (.getService (get (WunderBoss/options) "service-registry")
-    (ServiceName/parse k)))
+    (if (instance? ServiceName k)
+      k
+      (ServiceName/parse k))))

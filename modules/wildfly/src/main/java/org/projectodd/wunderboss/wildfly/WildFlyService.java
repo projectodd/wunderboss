@@ -16,16 +16,21 @@
 
 package org.projectodd.wunderboss.wildfly;
 
+import org.apache.log4j.lf5.viewer.categoryexplorer.CategoryExplorerTree;
+import org.jboss.as.clustering.jgroups.ChannelFactory;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jgroups.Channel;
+import org.jgroups.protocols.CENTRAL_LOCK;
 import org.projectodd.wunderboss.Utils;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.ruby.RubyLocator;
@@ -39,6 +44,12 @@ import java.util.List;
 import java.util.Properties;
 
 public class WildFlyService implements Service<WildFlyService> {
+
+    public static ServiceName serviceName(String deploymentName) {
+        ServiceName parentServiceName = ServiceName.JBOSS.append("deployment").append("unit").append(deploymentName);
+
+        return ServiceName.of(parentServiceName, "wunderboss");
+    }
 
     public WildFlyService(String deploymentName, ServiceRegistry registry) {
         this.deploymentName = deploymentName;
@@ -61,7 +72,9 @@ public class WildFlyService implements Service<WildFlyService> {
                 throw new StartException(e);
             }
         }
+        WunderBoss.putOption("deployment-name", this.deploymentName);
         WunderBoss.putOption("service-registry", this.registry);
+        WunderBoss.putOption("wildfly-service", this);
         WunderBoss.putOption("root", requiredProperty(properties, "root"));
 
         String language = requiredProperty(properties, "language");
@@ -82,6 +95,7 @@ public class WildFlyService implements Service<WildFlyService> {
         }
 
         WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
+        WunderBoss.registerComponentProvider(new SingletonContextProvider());
 
         log.info("Initializing " + deploymentName + " as " + language);
         WunderBoss.findLanguage(language)
@@ -115,9 +129,18 @@ public class WildFlyService implements Service<WildFlyService> {
         return undertowInjector;
     }
 
+    public Injector<ChannelFactory> getChannelFactoryInjector() {
+        return channelFactoryInjector;
+    }
+
+    public ChannelFactory channelFactory() {
+        return this.channelFactoryInjector.getValue();
+    }
+
     private final String deploymentName;
     private final ServiceRegistry registry;
-    private InjectedValue<UndertowService> undertowInjector = new InjectedValue<UndertowService>();
+    private InjectedValue<UndertowService> undertowInjector = new InjectedValue<>();
+    private InjectedValue<ChannelFactory> channelFactoryInjector = new InjectedValue<>();
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
 }
