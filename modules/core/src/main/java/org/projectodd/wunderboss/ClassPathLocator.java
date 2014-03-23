@@ -83,11 +83,10 @@ public class ClassPathLocator implements Locator {
 
             while(urls.hasMoreElements()) {
                 URL url = urls.nextElement();
-                log.info("checking " + url);
+                log.debug("checking " + url);
 
                 Properties props = findPropertiesForUrl(url);
                 for(String each : props.stringPropertyNames()) {
-                    log.info(each);
                     if (each.startsWith(type)) {
                         String providerClassName = props.getProperty(each);
                         if (providerClassName != null) {
