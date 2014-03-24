@@ -121,7 +121,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
 
     protected void validateOptions(Options<ScheduleOption> opts) throws IllegalArgumentException {
         if (opts.has(CRON)) {
-            for(ScheduleOption each : new ScheduleOption[] {EVERY, REPEAT}) {
+            for(ScheduleOption each : new ScheduleOption[] {EVERY, LIMIT}) {
                 if (opts.has(each)) {
                     throw new IllegalArgumentException("You can't specify both 'cron' and '" +
                                                                each.value + "'");
@@ -135,8 +135,8 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         }
 
         if (!opts.has(EVERY)) {
-            if (opts.has(REPEAT)) {
-                throw new IllegalArgumentException("You can't specify 'repeat' without 'every'");
+            if (opts.has(LIMIT)) {
+                throw new IllegalArgumentException("You can't specify 'limit' without 'every'");
             }
             if (opts.has(UNTIL) &&
                     !opts.has(CRON)) {
@@ -167,8 +167,8 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             SimpleScheduleBuilder schedule =
                     SimpleScheduleBuilder.simpleSchedule()
                             .withIntervalInMilliseconds(opts.getInt(EVERY));
-            if (opts.has(REPEAT)) {
-                schedule.withRepeatCount(opts.getInt(REPEAT));
+            if (opts.has(LIMIT)) {
+                schedule.withRepeatCount(opts.getInt(LIMIT) - 1);
             } else {
                 schedule.repeatForever();
             }

@@ -133,9 +133,9 @@
           (Thread/sleep (if (zero? i) 20 100))
           (is (= (inc i) @q))))))
 
-  (deftest every-with-repeat-should-fire-immediately-x-times
+  (deftest every-with-limit-should-fire-immediately-x-times
     (let [q (atom 0)]
-      (with-job #(swap! q inc) {:every 100 :repeat 1}
+      (with-job #(swap! q inc) {:every 100 :limit 2}
         (Thread/sleep 20)
         (is (= 1 @q))
         (dotimes [_ 2]
@@ -151,6 +151,18 @@
         (dotimes [i 5]
           (Thread/sleep (if (zero? i) 520 100))
           (is (= (inc i) @q))))))
+
+  (deftest until-overrides-limit
+    (let [q (atom 0)
+          step 222]
+      (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
+                                :every step
+                                :limit 9999}
+        (dotimes [i 5]
+          (Thread/sleep (if (zero? i) 20 step))
+          (is (= (inc i) @q)))
+        (Thread/sleep step)
+        (is (= 5 @q)))))
 
   (deftest until-with-every-should-repeat-until-until
     (let [q (atom 0)
@@ -168,10 +180,10 @@
           IllegalArgumentException
           (with-job* (fn []) {:at 5 :in 5} (fn [])))))  
 
-  (deftest repeat-without-every-should-throw
+  (deftest limit-without-every-should-throw
     (is (thrown?
           IllegalArgumentException
-          (with-job* (fn []) {:repeat 5} (fn [])))))
+          (with-job* (fn []) {:limit 5} (fn [])))))
 
   (deftest until-without-every-or-cron-should-throw
     (is (thrown?

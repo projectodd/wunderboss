@@ -35,7 +35,7 @@ public interface Scheduling<T> extends Component<T> {
         AT("at"),
         EVERY("every"),
         IN("in"),
-        REPEAT("repeat"),
+        LIMIT("limit"),
         UNTIL("until"),
         SINGLETON("singleton");
 
@@ -54,7 +54,7 @@ public interface Scheduling<T> extends Component<T> {
      *                at - java.util.Date
      *                every - ms
      *                in - ms
-     *                repeat - int
+     *                limit - int
      *                until - java.util.Date
      *                singleton
      * @return true if schedule replaced a job with the same name, throws on failure
