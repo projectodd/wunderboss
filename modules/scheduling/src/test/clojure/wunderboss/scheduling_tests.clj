@@ -152,7 +152,7 @@
           (Thread/sleep (if (zero? i) 520 100))
           (is (= (inc i) @q))))))
 
-  (deftest until-overrides-limit
+  (deftest short-until-overrides-limit
     (let [q (atom 0)
           step 222]
       (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
@@ -163,6 +163,18 @@
           (is (= (inc i) @q)))
         (Thread/sleep step)
         (is (= 5 @q)))))
+
+  (deftest short-limit-overrides-until
+    (let [q (atom 0)
+          step 222]
+      (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
+                                :every step
+                                :limit 1}
+        (dotimes [i 3]
+          (Thread/sleep (if (zero? i) 20 step))
+          (is (= 1 @q)))
+        (Thread/sleep step)
+        (is (= 1 @q)))))
 
   (deftest until-with-every-should-repeat-until-until
     (let [q (atom 0)
