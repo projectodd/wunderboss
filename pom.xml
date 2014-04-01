@@ -55,12 +55,17 @@
           <url>dav:https://repository-projectodd.forge.cloudbees.com/snapshot/</url>
         </snapshotRepository>
         <repository>
-          <id>bees-release-repository-dav</id>
-          <url>dav:https://repository-projectodd.forge.cloudbees.com/release/</url>
-        </repository>
-        <repository>
           <id>bees-incremental-repository-dav</id>
           <url>dav:https://repository-projectodd.forge.cloudbees.com/incremental/</url>
+        </repository>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>bees-release</id>
+      <distributionManagement>
+        <repository>
+          <id>bees-release-repository-dav</id>
+          <url>dav:https://repository-projectodd.forge.cloudbees.com/release/</url>
         </repository>
       </distributionManagement>
     </profile>
