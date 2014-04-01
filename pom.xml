@@ -58,6 +58,10 @@
           <id>bees-release-repository-dav</id>
           <url>dav:https://repository-projectodd.forge.cloudbees.com/release/</url>
         </repository>
+        <repository>
+          <id>bees-incremental-repository-dav</id>
+          <url>dav:https://repository-projectodd.forge.cloudbees.com/incremental/</url>
+        </repository>
       </distributionManagement>
     </profile>
   </profiles>
