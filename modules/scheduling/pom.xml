@@ -59,6 +59,12 @@
       <groupId>org.jboss.slf4j</groupId>
       <artifactId>slf4j-jboss-logging</artifactId>
       <version>${version.jboss-logging-slf4j}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
