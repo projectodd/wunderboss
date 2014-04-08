@@ -1,11 +1,11 @@
 ;; Copyright 2014 Red Hat, Inc, and individual contributors.
-;; 
+;;
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
 ;; You may obtain a copy of the License at
-;; 
+;;
 ;; http://www.apache.org/licenses/LICENSE-2.0
-;; 
+;;
 ;; Unless required by applicable law or agreed to in writing, software
 ;; distributed under the License is distributed on an "AS IS" BASIS,
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,9 +13,7 @@
 ;; limitations under the License.
 
 (ns wunderboss.util
-  (:import org.projectodd.wunderboss.WunderBoss
-           org.jboss.msc.service.ServiceName))
-
+  (:import org.projectodd.wunderboss.WunderBoss))
 
 (defonce ^:private exit-tasks (atom []))
 
@@ -26,8 +24,11 @@
   (doseq [f @exit-tasks]
     (f)))
 
-(defn get-from-registry [k]
-  (.getService (get (WunderBoss/options) "service-registry")
-    (if (instance? ServiceName k)
-      k
-      (ServiceName/parse k))))
+(defn service-registry []
+  (get (WunderBoss/options) "service-registry"))
+
+(defn in-container? []
+  (not (nil? (service-registry))))
+
+(if-not (in-container?)
+  (.addShutdownHook (Runtime/getRuntime) (Thread. exit!)))
