@@ -25,6 +25,7 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
@@ -42,7 +43,9 @@ import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.projectodd.wunderboss.web.Web.CreateOption.AUTO_START;
 import static org.projectodd.wunderboss.web.Web.CreateOption.HOST;
@@ -119,7 +122,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         Options<RegisterOption> options = new Options<>(opts);
         String context = getContextPath(options);
         Class servletClass = servlet.getClass();
-        final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(), 
+        final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(),
                                                          servletClass,
                                                          new ImmediateInstanceFactory(servlet))
             .addMapping("/*");
@@ -186,22 +189,47 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         final ResourceManager resourceManager =
                 new CachingResourceManager(1000, 1L, null,
                                            new FileResourceManager(new File(path), 1 * 1024 * 1024), 250);
+        String[] welcomeFiles = new String[] { "index.html", "index.html", "default.html", "default.htm" };
+        final List<String> welcomeFileList = new CopyOnWriteArrayList<>(welcomeFiles);
         final ResourceHandler resourceHandler = new ResourceHandler()
                 .setResourceManager(resourceManager)
+                .setWelcomeFiles(welcomeFiles)
                 .setDirectoryListingEnabled(false);
 
         return new PredicateHandler(new Predicate() {
                 @Override
                 public boolean resolve(HttpServerExchange value) {
                     try {
-                        return value.getRelativePath().length() > 0 &&
-                                !value.getRelativePath().equals("/") &&
-                                resourceManager.getResource(value.getRelativePath()) != null;
+                        Resource resource = resourceManager.getResource(value.getRelativePath());
+                        if (resource == null) {
+                            return false;
+                        }
+                        if (resource.isDirectory()) {
+                            Resource indexResource = getIndexFiles(resourceManager, resource.getPath(), welcomeFileList);
+                            return indexResource != null;
+                        }
+                        return true;
                     } catch (IOException ex) {
                         return false;
                     }
                 }
         }, resourceHandler, baseHandler);
+    }
+
+    protected Resource getIndexFiles(ResourceManager resourceManager, final String base, List<String> possible) throws IOException {
+        String realBase;
+        if (base.endsWith("/")) {
+            realBase = base;
+        } else {
+            realBase = base + "/";
+        }
+        for (String possibility : possible) {
+            Resource index = resourceManager.getResource(realBase + possibility);
+            if (index != null) {
+                return index;
+            }
+        }
+        return null;
     }
 
     protected static String getContextPath(Options<RegisterOption> options) {
