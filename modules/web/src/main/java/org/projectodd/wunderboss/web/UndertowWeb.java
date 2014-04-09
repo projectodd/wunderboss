@@ -75,10 +75,6 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
     @Override
     public void stop() {
         if (started) {
-            String[] contexts = contextRegistrar.keySet().toArray(new String[]{});
-            for (String context : contexts) {
-                unregister(context);
-            }
             undertow.stop();
             log.info("Undertow stopped");
             started = false;
