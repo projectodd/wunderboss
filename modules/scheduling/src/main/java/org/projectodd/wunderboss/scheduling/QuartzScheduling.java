@@ -49,10 +49,10 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
 
     @Override
     public void start() throws Exception {
-        System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
-        DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
-
         if (!started) {
+            System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
+            DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
+
             factory.createVolatileScheduler(numThreads);
             this.scheduler = factory.getScheduler();
             this.scheduler.start();
