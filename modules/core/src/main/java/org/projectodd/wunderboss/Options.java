@@ -19,7 +19,6 @@ package org.projectodd.wunderboss;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class Options<T> extends HashMap<T, Object> {
 
@@ -99,8 +98,11 @@ public class Options<T> extends HashMap<T, Object> {
         return this;
     }
 
+    /**
+     * Returns true if key has a *non-null value* in the map, false otherwise.
+     */
     public boolean has(T key) {
-        return containsKey(key);
+        return get(key) != null;
     }
 
     public Options<T> merge(Options<T> otherOptions) {
