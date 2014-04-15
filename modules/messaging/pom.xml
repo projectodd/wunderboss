@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>org.projectodd.wunderboss</groupId>
+    <artifactId>wunderboss-modules</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.projectodd.wunderboss</groupId>
+  <artifactId>wunderboss-messaging</artifactId>
+  <name>WunderBoss Messaging Module</name>
+
+  <packaging>jar</packaging>
+
+  <properties>
+    <version.hornetq>2.4.1.Final</version.hornetq>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-server</artifactId>
+      <version>${version.hornetq}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-jms-server</artifactId>
+      <version>${version.hornetq}</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.theoryinpractise</groupId>
+        <artifactId>clojure-maven-plugin</artifactId>
+        <executions>
+          <execution>
+          <id>test</id>
+          <phase>test</phase>
+          <goals>
+            <goal>test</goal>
+          </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

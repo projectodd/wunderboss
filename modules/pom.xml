@@ -20,6 +20,7 @@
 
   <modules>
     <module>core</module>
+    <module>messaging</module>
     <module>scheduling</module>
     <module>web</module>
     <module>wildfly</module>
