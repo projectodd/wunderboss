@@ -34,6 +34,7 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.util.Headers;
+import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
@@ -124,14 +125,24 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(),
                                                          servletClass,
-                                                         new ImmediateInstanceFactory(servlet))
-            .addMapping("/*");
+                                                         new ImmediateInstanceFactory(servlet));
+        servletInfo.addMapping("/*");
+        // LoadOnStartup is required for any websocket Endpoints to work
+        servletInfo.setLoadOnStartup(1);
+        // Support async servlets
+        servletInfo.setAsyncSupported(true);
 
         final DeploymentInfo servletBuilder = Servlets.deployment()
                 .setClassLoader(WunderBoss.class.getClassLoader())
                 .setContextPath(context)
+                // actually flush the response when we ask for it
+                .setIgnoreFlush(false)
                 .setDeploymentName(context)
                 .addServlet(servletInfo);
+
+        // Required for any websocket support in undertow
+        final WebSocketDeploymentInfo wsInfo = new WebSocketDeploymentInfo();
+        servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, wsInfo);
 
         final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();

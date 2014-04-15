@@ -40,6 +40,12 @@
       <artifactId>undertow-servlet</artifactId>
       <version>${version.undertow}</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-websockets-jsr</artifactId>
+      <version>${version.undertow}</version>
+    </dependency>
   </dependencies>
 
 </project>
