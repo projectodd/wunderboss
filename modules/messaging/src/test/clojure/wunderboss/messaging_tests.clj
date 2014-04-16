@@ -17,28 +17,31 @@
   (:import org.projectodd.wunderboss.WunderBoss
            org.projectodd.wunderboss.messaging.Messaging
            org.projectodd.wunderboss.messaging.Messaging$CreateQueueOption
+           org.projectodd.wunderboss.messaging.Messaging$ListenOption
            java.util.EnumSet
            javax.jms.Session))
 
 (def default (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
 
-(let [avail-options (->> Messaging$CreateQueueOption
-                      EnumSet/allOf
-                      (map #(vector (keyword (.value %)) %))
-                      (into {}))]
-  (defn coerce-options [opts]
-    (reduce (fn [m [k v]]
-              (assoc m
-                (if-let [enum (avail-options k)]
-                  enum
-                  (throw (IllegalArgumentException. (str k " is not a valid option."))))
-                v))
-      {}
-      opts)))
+(defn create-opts-fn [enum]
+  (let [avail-options (->> enum
+                        EnumSet/allOf
+                        (map #(vector (keyword (.value %)) %))
+                        (into {}))]
+    (fn [opts]
+      (reduce (fn [m [k v]]
+                (assoc m
+                  (if-let [enum (avail-options k)]
+                    enum
+                    (throw (IllegalArgumentException. (str k " is not a valid option."))))
+                  v))
+        {}
+        opts))))
 
+(def coerce-listen-options (create-opts-fn Messaging$ListenOption))
 
-(deftest the-whole-enchillada
-  (with-open [connection (doto (.createConnection default) (.start))]
+(deftest queue-creation-publish-receive-release
+  (with-open [connection (doto (.createConnection default nil) (.start))]
     (let [queue (.findOrCreateQueue default "a-queue" nil)
           session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
           producer (.createProducer session queue)
@@ -56,3 +59,22 @@
       (.send producer (.createTextMessage session "hi"))
       (is (thrown? javax.jms.IllegalStateException
             (.receive consumer 100))))))
+
+(deftest listen
+  (with-open [connection (doto (.createConnection default nil) (.start))]
+    (let [queue (.findOrCreateQueue default "listen-queue" nil)
+          session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
+          producer (.createProducer session queue)
+          called (atom (promise))
+          id (.listen default queue
+               (reify javax.jms.MessageListener
+                 (onMessage [_ msg]
+                   (deliver @called (.getText msg))))
+               nil)]
+      (.send producer (.createTextMessage session "hi"))
+      (is (= "hi" (deref @called 1000 :failure)))
+
+      (reset! called (promise))
+      (.unlisten default id)
+      (.send producer (.createTextMessage session "hi"))
+      (is (= :success (deref @called 1000 :success))))))

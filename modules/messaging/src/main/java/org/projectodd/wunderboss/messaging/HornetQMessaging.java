@@ -13,11 +13,14 @@ import org.hornetq.core.server.impl.HornetQServerImpl;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
+import org.hornetq.utils.UUIDGenerator;
 import org.projectodd.wunderboss.Options;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
 import javax.jms.JMSException;
+import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Topic;
 import java.util.ArrayList;
@@ -26,12 +29,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HornetQMessaging implements Messaging<JMSServerManager> {
 
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
-        //TODO: honor/use options
+        this.options = options;
+        this.xa = options.getBoolean(CreateOption.XA, false);
     }
 
     @Override
@@ -57,7 +62,7 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
             config.setSecurityEnabled(false);
 
             //TODO: setting this to true allows persisting destination configs. Do we want this?
-            // My gut currently says "no", but in the container, we maybe be fighting this
+            // My gut currently says "no", but in the container, we may be fighting this
             config.setPersistenceEnabled(false);
 
             //TODO: mbean server
@@ -69,7 +74,12 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
             List<String> connectorNames = new ArrayList<>();
             connectorNames.add("in-vm");
 
-            this.jmsServerManager.createConnectionFactory("cf", false, JMSFactoryType.XA_CF, connectorNames, "cf");
+            this.jmsServerManager.createConnectionFactory("cf", false,
+                                                          JMSFactoryType.CF,
+                                                          connectorNames, "cf");
+            this.jmsServerManager.createConnectionFactory("xa-cf", false,
+                                                          JMSFactoryType.XA_CF,
+                                                          connectorNames, "xa-cf");
 
             this.started = true;
         }
@@ -99,8 +109,14 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
     }
 
     @Override
-    public Connection createConnection() throws JMSException {
-        ConnectionFactory cf = (ConnectionFactory)lookup("cf");
+    public Connection createConnection(Map<CreateConnectionOption, Object> options) throws JMSException {
+        Options<CreateConnectionOption> opts = new Options<>(options);
+        ConnectionFactory cf;
+        if (opts.getBoolean(CreateConnectionOption.XA, isXaDefault())) {
+            cf = (ConnectionFactory)lookup("xa-cf");
+        } else {
+            cf = (ConnectionFactory)lookup("cf");
+        }
 
         return cf.createConnection();
     }
@@ -147,13 +163,48 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
         return this.jmsServerManager.destroyTopic(name, removeConsumers);
     }
 
+    @Override
+    public String listen(Destination destination, MessageListener listener,
+                         Map<ListenOption, Object> options) throws Exception {
+        Options<ListenOption> opts = new Options<>(options);
+        String id = opts.getString(ListenOption.LISTENER_ID);
+        if (id == null) {
+            id = UUIDGenerator.getInstance().generateStringUUID();
+        }
+
+        unlisten(id);
+
+        this.listenerGroups.put(id, new ListenerGroup(this, listener, destination, opts).start());
+
+        return id;
+    }
+
+    @Override
+    public boolean unlisten(String id) {
+        if (this.listenerGroups.containsKey(id)) {
+            this.listenerGroups.remove(id).stop();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean isXaDefault() {
+        return this.xa;
+    }
+
     protected Object lookup(String name) {
         return this.jmsServerManager.getRegistry().lookup(name);
     }
 
     private final String name;
+    private final Options<CreateOption> options;
+    private final boolean xa;
     private boolean started = false;
     private JMSServerManager jmsServerManager;
+    private final Map<String, ListenerGroup> listenerGroups = new ConcurrentHashMap<>();
 
 
 }
