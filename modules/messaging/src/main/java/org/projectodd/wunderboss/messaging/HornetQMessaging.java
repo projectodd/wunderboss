@@ -159,8 +159,18 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
     }
 
     @Override
+    public boolean releaseQueue(Queue queue, boolean removeConsumers) throws Exception {
+        return releaseQueue(queue.getQueueName(), removeConsumers);
+    }
+
+    @Override
     public boolean releaseTopic(String name, boolean removeConsumers) throws Exception {
         return this.jmsServerManager.destroyTopic(name, removeConsumers);
+    }
+
+    @Override
+    public boolean releaseTopic(Topic topic, boolean removeConsumers) throws Exception {
+        return releaseTopic(topic.getTopicName(), removeConsumers);
     }
 
     @Override

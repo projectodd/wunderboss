@@ -74,7 +74,6 @@ public class TransactionalListener implements MessageListener, MessageHandler {
         }
     }
 
-
     /**
      * This entire method is essentially a copy of HornetQ's
      * JMSMessageListenerWrapper onMessage but with hooks for preparing

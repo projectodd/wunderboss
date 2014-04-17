@@ -49,9 +49,7 @@ public class ListenerGroup {
             }
 
             this.started = true;
-
         }
-
 
         return this;
     }
@@ -92,7 +90,7 @@ public class ListenerGroup {
                                      destination + " is not a topic - ignoring.");
                 }
             } else {
-                throw new IllegalArgumentException("Durable topic processors require a client_id.");
+                throw new IllegalArgumentException("Durable topic listeners require a client_id.");
             }
         }
 
