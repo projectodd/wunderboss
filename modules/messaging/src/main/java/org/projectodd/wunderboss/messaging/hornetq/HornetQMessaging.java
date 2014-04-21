@@ -1,4 +1,4 @@
-package org.projectodd.wunderboss.messaging;
+package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.jms.JMSFactoryType;
@@ -13,16 +13,14 @@ import org.hornetq.core.server.impl.HornetQServerImpl;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
-import org.hornetq.utils.UUIDGenerator;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Messaging;
 
-import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.JMSException;
-import javax.jms.MessageListener;
-import javax.jms.Queue;
-import javax.jms.Topic;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HornetQMessaging implements Messaging<JMSServerManager> {
+public class HornetQMessaging implements Messaging<JMSServerManager, Destination, javax.jms.Connection> {
 
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
@@ -118,86 +116,35 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
             cf = (ConnectionFactory)lookup("cf");
         }
 
-        return cf.createConnection();
+        javax.jms.Connection connection = cf.createConnection();
+        connection.start();
+
+        return new HornetQConnection(this, connection);
     }
 
     @Override
-    public synchronized Queue findOrCreateQueue(String name,
-                                                Map<CreateQueueOption, Object> options) throws Exception {
-        Options<CreateQueueOption> opts = new Options<>(options);
-        String jndiName = "queue:" + name;
-        Queue queue = (Queue)lookup(jndiName);
-        if (queue == null) {
-            this.jmsServerManager.createQueue(true, name,
-                                              opts.getString(CreateQueueOption.SELECTOR, ""),
-                                              opts.getBoolean(CreateQueueOption.DURABLE, true),
-                                              jndiName);
-            queue = (Queue)lookup(jndiName);
+    public synchronized Endpoint findOrCreateEndpoint(String name,
+                                                   Map<CreateEndpointOption, Object> options) throws Exception {
+        Options<CreateEndpointOption> opts = new Options<>(options);
+        boolean topic = opts.getBoolean(CreateEndpointOption.BROADCAST, false);
+        String jndiName = (topic ? "topic:" : "queue:") + name;
+        Destination dest = (Destination)lookup(jndiName);
+        boolean durable = false;
+        if (dest == null) {
+            if (topic) {
+                this.jmsServerManager.createTopic(true, name, jndiName);
+            } else {
+                durable = opts.getBoolean(CreateEndpointOption.DURABLE,
+                                          (Boolean)CreateEndpointOption.DURABLE.defaultValue);
+                this.jmsServerManager.createQueue(true, name,
+                                                  opts.getString(CreateEndpointOption.SELECTOR, ""),
+                                                  durable,
+                                                  jndiName);
+            }
+            dest = (Destination)lookup(jndiName);
         }
 
-        return queue;
-    }
-
-    @Override
-    public synchronized Topic findOrCreateTopic(String name) throws Exception {
-        String jndiName = "topic:" + name;
-        Topic topic = (Topic)lookup(jndiName);
-        if (topic == null) {
-            this.jmsServerManager.createTopic(true, name, jndiName);
-            topic = (Topic)lookup(jndiName);
-        }
-
-        return topic;
-    }
-
-    /*
-    TODO: in-container should be smarter, and only destroy queues this instance created
-     */
-    @Override
-    public boolean releaseQueue(String name, boolean removeConsumers) throws Exception {
-        return this.jmsServerManager.destroyQueue(name, removeConsumers);
-    }
-
-    @Override
-    public boolean releaseQueue(Queue queue, boolean removeConsumers) throws Exception {
-        return releaseQueue(queue.getQueueName(), removeConsumers);
-    }
-
-    @Override
-    public boolean releaseTopic(String name, boolean removeConsumers) throws Exception {
-        return this.jmsServerManager.destroyTopic(name, removeConsumers);
-    }
-
-    @Override
-    public boolean releaseTopic(Topic topic, boolean removeConsumers) throws Exception {
-        return releaseTopic(topic.getTopicName(), removeConsumers);
-    }
-
-    @Override
-    public String listen(Destination destination, MessageListener listener,
-                         Map<ListenOption, Object> options) throws Exception {
-        Options<ListenOption> opts = new Options<>(options);
-        String id = opts.getString(ListenOption.LISTENER_ID);
-        if (id == null) {
-            id = UUIDGenerator.getInstance().generateStringUUID();
-        }
-
-        unlisten(id);
-
-        this.listenerGroups.put(id, new ListenerGroup(this, listener, destination, opts).start());
-
-        return id;
-    }
-
-    @Override
-    public boolean unlisten(String id) {
-        if (this.listenerGroups.containsKey(id)) {
-            this.listenerGroups.remove(id).stop();
-
-            return true;
-        }
-
-        return false;
+        return new HornetQEndpoint(dest, this.jmsServerManager, durable);
     }
 
     @Override
@@ -214,7 +161,7 @@ public class HornetQMessaging implements Messaging<JMSServerManager> {
     private final boolean xa;
     private boolean started = false;
     private JMSServerManager jmsServerManager;
-    private final Map<String, ListenerGroup> listenerGroups = new ConcurrentHashMap<>();
+    private final Map<String, MessageHandlerGroup> listenerGroups = new ConcurrentHashMap<>();
 
 
 }

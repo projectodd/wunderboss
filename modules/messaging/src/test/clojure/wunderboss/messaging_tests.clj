@@ -14,19 +14,18 @@
 
 (ns wunderboss.messaging-tests
   (:require [clojure.test :refer :all])
-  (:import org.projectodd.wunderboss.WunderBoss
-           org.projectodd.wunderboss.messaging.Messaging
-           org.projectodd.wunderboss.messaging.Messaging$CreateQueueOption
-           org.projectodd.wunderboss.messaging.Messaging$ListenOption
-           java.util.EnumSet
-           javax.jms.Session))
+  (:import [org.projectodd.wunderboss Option WunderBoss]
+           [org.projectodd.wunderboss.messaging Messaging
+            Connection Connection$ListenOption Connection$ReceiveOption Connection$SendOption
+            MessageHandler]
+           java.util.concurrent.TimeUnit))
 
 (def default (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
 
-(defn create-opts-fn [enum]
-  (let [avail-options (->> enum
-                        EnumSet/allOf
-                        (map #(vector (keyword (.value %)) %))
+(defn create-opts-fn [class]
+  (let [avail-options (->> class
+                        Option/optsFor
+                        (map #(vector (keyword (.name %)) %))
                         (into {}))]
     (fn [opts]
       (reduce (fn [m [k v]]
@@ -38,43 +37,68 @@
         {}
         opts))))
 
-(def coerce-listen-options (create-opts-fn Messaging$ListenOption))
+(def coerce-listen-options (create-opts-fn Connection$ListenOption))
+(def coerce-receive-options (create-opts-fn Connection$ReceiveOption))
+(def coerce-send-options (create-opts-fn Connection$SendOption))
 
-(deftest queue-creation-publish-receive-release
-  (with-open [connection (doto (.createConnection default nil) (.start))]
-    (let [queue (.findOrCreateQueue default "a-queue" nil)
-          session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
-          producer (.createProducer session queue)
-          consumer (.createConsumer session queue)]
+(deftest queue-creation-publish-receive-close
+  (with-open [connection (.createConnection default nil)
+              endpoint (.findOrCreateEndpoint default "a-queue" nil)]
 
-      ;; findOrCreateQueue should return the same queue for the same name
-      (is (= queue (.findOrCreateQueue default "a-queue" nil)))
+    ;; findOrCreateEndpoint should return the same queue for the same name
+    (is (= (.implementation endpoint)
+          (.implementation (.findOrCreateEndpoint default "a-queue" nil))))
 
-      ;; we should be able to send and rcv
-      (.send producer (.createTextMessage session "hi"))
-      (is (= "hi" (.getText (.receive consumer 100))))
+    ;; we should be able to send and rcv
+    (.send connection endpoint "hi" nil nil)
+    (let [msg (.receive connection endpoint (coerce-receive-options {:timeout 1000}))]
+      (is msg)
+      (is (= "hi" (.body msg String))))
 
-      ;; a released queue should no longer be avaiable
-      (.releaseQueue default "a-queue" true)
-      (.send producer (.createTextMessage session "hi"))
-      (is (thrown? javax.jms.IllegalStateException
-            (.receive consumer 100))))))
+    ;; a closed endpoint should no longer be avaiable
+    (.close endpoint)
+    (is (thrown? javax.jms.InvalidDestinationException
+          (.receive connection endpoint (coerce-receive-options {:timeout 1}))))))
 
 (deftest listen
-  (with-open [connection (doto (.createConnection default nil) (.start))]
-    (let [queue (.findOrCreateQueue default "listen-queue" nil)
-          session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
-          producer (.createProducer session queue)
-          called (atom (promise))
-          id (.listen default queue
-               (reify javax.jms.MessageListener
-                 (onMessage [_ msg]
-                   (deliver @called (.getText msg))))
-               nil)]
-      (.send producer (.createTextMessage session "hi"))
+  (with-open [connection (.createConnection default nil)
+              queue (.findOrCreateEndpoint default "listen-queue" nil)]
+    (let [called (atom (promise))
+          listener (.listen connection queue
+                     (reify MessageHandler
+                       (onMessage [_ msg]
+                         (deliver @called (.body msg String))))
+                     nil)]
+      (.send connection queue "hi" nil nil)
       (is (= "hi" (deref @called 1000 :failure)))
 
       (reset! called (promise))
-      (.unlisten default id)
-      (.send producer (.createTextMessage session "hi"))
+      (.close listener)
+      (.send connection queue "hi" nil nil)
       (is (= :success (deref @called 1000 :success))))))
+
+(deftest request-response
+  (with-open [connection (.createConnection default nil)
+              queue (.findOrCreateEndpoint default "listen-queue" nil)
+              listener (.respond connection queue
+                         (reify MessageHandler
+                           (onMessage [_ msg]
+                             (.reply msg (.body msg String) nil nil)))
+                         nil)]
+    (let [response (.request connection queue "hi" nil nil)]
+      (is (= "hi" (.body (.get response) String)))
+      ;; result should be cached
+      (is (= "hi" (.body (.get response) String))))))
+
+(deftest request-response-with-ttl
+  (with-open [connection (.createConnection default nil)
+              queue (.findOrCreateEndpoint default "rr-queue" nil)
+              listener (.respond connection queue
+                     (reify MessageHandler
+                       (onMessage [_ msg]
+                         (.reply msg (.body msg String) nil
+                           (coerce-send-options {:ttl 1}))))
+                     nil)]
+    (let [response (.request connection queue "nope" nil nil)]
+      (Thread/sleep 100)
+      (is (nil? (.get response 1 TimeUnit/MILLISECONDS))))))

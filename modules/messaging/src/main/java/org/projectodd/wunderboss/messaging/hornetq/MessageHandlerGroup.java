@@ -1,15 +1,18 @@
-package org.projectodd.wunderboss.messaging;
+package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Connection.ListenOption;
+import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Listener;
+import org.projectodd.wunderboss.messaging.MessageHandler;
+import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Messaging.CreateConnectionOption;
-import org.projectodd.wunderboss.messaging.Messaging.ListenOption;
 
-import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.XAConnection;
@@ -17,19 +20,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class ListenerGroup {
+public class MessageHandlerGroup implements Listener {
 
-    public ListenerGroup(Messaging broker,
-                         MessageListener listener,
-                         Destination destination,
-                         Options<ListenOption> options) {
+    public MessageHandlerGroup(Messaging broker,
+                               MessageHandler handler,
+                               Endpoint<Destination> endpoint,
+                               Options<ListenOption> options) {
         this.broker = broker;
-        this.listener = listener;
-        this.destination = destination;
+        this.handler = handler;
+        this.endpoint = endpoint;
         this.options = options;
     }
 
-    public synchronized ListenerGroup start() {
+    public synchronized MessageHandlerGroup start() {
         if (!this.started) {
             try {
                 startConnection();
@@ -37,7 +40,10 @@ public class ListenerGroup {
                 int concurrency = this.options.getInt(ListenOption.CONCURRENCY, 1);
                 while(concurrency-- > 0) {
                     Session session = createSession();
-                    listeners.add(new TransactionalListener(this.listener, session,
+                    listeners.add(new TransactionalListener(this.handler,
+                                                            this.endpoint,
+                                                            this.connection,
+                                                            session,
                                                             createConsumer(session),
                                                             isXAEnabled(),
                                                             //TODO: a transaction manager
@@ -45,7 +51,7 @@ public class ListenerGroup {
                 }
 
             } catch (Exception e) {
-                log.error("Failed to start listener group: ", e);
+                log.error("Failed to start handler group: ", e);
             }
 
             this.started = true;
@@ -54,19 +60,16 @@ public class ListenerGroup {
         return this;
     }
 
-    public synchronized void stop() {
+    @Override
+    public synchronized void close() throws Exception {
         if (this.started) {
-            try {
-                this.connection.close();
+            this.connection.close();
 
-                for(TransactionalListener each : this.listeners) {
-                    each.stop();
-                }
-
-                this.listeners.clear();
-            } catch (Exception e) {
-                log.error("Failed to stop listener group: ", e);
+            for(TransactionalListener each : this.listeners) {
+                each.stop();
             }
+
+            this.listeners.clear();
 
             this.started = false;
         }
@@ -82,40 +85,37 @@ public class ListenerGroup {
         String clientID = this.options.getString(ListenOption.CLIENT_ID);
         if (isDurable()) {
             if (clientID != null) {
-                if (this.destination instanceof Topic) {
+                if (this.endpoint instanceof Topic) {
                     log.info("Setting clientID to " + clientID);
-                    this.connection.setClientID(clientID);
+                    this.connection.implementation().setClientID(clientID);
                 } else {
-                    log.warn("ClientID set for listener but " +
-                                     destination + " is not a topic - ignoring.");
+                    log.warn("ClientID set for handler but " +
+                                     endpoint + " is not a topic - ignoring.");
                 }
             } else {
                 throw new IllegalArgumentException("Durable topic listeners require a client_id.");
             }
         }
-
-        this.connection.start();
     }
 
     protected Session createSession() throws JMSException {
         if (isXAEnabled()) {
-            return ((XAConnection)this.connection).createXASession();
+            return ((XAConnection)this.connection.implementation()).createXASession();
         } else {
             // Use local transactions for non-XA message processors
-            return this.connection.createSession(true, Session.SESSION_TRANSACTED);
+            return this.connection.implementation().createSession(true, Session.SESSION_TRANSACTED);
         }
     }
 
     protected MessageConsumer createConsumer(Session session) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
         String name = this.options.getString(ListenOption.SUBSCRIBER_NAME,
-                                             this.options.getString(ListenOption.LISTENER_ID,
-                                                                    this.options.getString(ListenOption.CLIENT_ID)));
-        if (isDurable() && this.destination instanceof Topic) {
-            return session.createDurableSubscriber((Topic) destination,
+                                             this.options.getString(ListenOption.CLIENT_ID));
+        if (isDurable() && this.endpoint instanceof Topic) {
+            return session.createDurableSubscriber((Topic) endpoint,
                                                    name, selector, false);
         } else {
-            return session.createConsumer(destination, selector);
+            return session.createConsumer(endpoint.implementation(), selector);
         }
 
     }
@@ -124,17 +124,16 @@ public class ListenerGroup {
     }
 
     protected boolean isDurable() {
-        return this.options.getBoolean(ListenOption.DURABLE, false);
+        return this.options.getBoolean(ListenOption.DURABLE, (Boolean)ListenOption.DURABLE.defaultValue);
     }
 
     private final Messaging broker;
-    private final MessageListener listener;
-    private final Destination destination;
+    private final MessageHandler handler;
+    private final Endpoint<Destination> endpoint;
     private final Options<ListenOption> options;
-    private Connection connection;
+    private Connection<javax.jms.Connection> connection;
     private final List<TransactionalListener> listeners = new ArrayList<>();
     private boolean started = false;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");
-
 }

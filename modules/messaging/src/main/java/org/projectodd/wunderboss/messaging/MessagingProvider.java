@@ -18,6 +18,7 @@ package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
 
 public class MessagingProvider implements ComponentProvider<Messaging> {
     @Override

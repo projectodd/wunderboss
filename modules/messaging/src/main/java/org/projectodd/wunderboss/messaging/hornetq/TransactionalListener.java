@@ -1,14 +1,16 @@
-package org.projectodd.wunderboss.messaging;
+package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.hornetq.api.core.HornetQException;
 import org.hornetq.api.core.client.ClientConsumer;
 import org.hornetq.api.core.client.ClientMessage;
 import org.hornetq.api.core.client.ClientSession;
-import org.hornetq.api.core.client.MessageHandler;
 import org.hornetq.jms.client.HornetQMessage;
 import org.hornetq.jms.client.HornetQMessageConsumer;
 import org.hornetq.jms.client.HornetQSession;
 import org.jboss.logging.Logger;
+import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.MessageHandler;
 
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -18,10 +20,15 @@ import javax.jms.XASession;
 import javax.transaction.TransactionManager;
 import java.lang.reflect.Field;
 
-public class TransactionalListener implements MessageListener, MessageHandler {
-    public TransactionalListener(MessageListener listener, Session session,
+public class TransactionalListener implements MessageListener, org.hornetq.api.core.client.MessageHandler {
+    public TransactionalListener(MessageHandler handler,
+                                 Endpoint endpoint,
+                                 Connection connection,
+                                 Session session,
                                  MessageConsumer consumer, boolean xa, TransactionManager tm) {
-        this.listener = listener;
+        this.handler = handler;
+        this.endpoint = endpoint;
+        this.connection = connection;
         this.session = session;
         this.consumer = consumer;
         this.xa = xa;
@@ -34,7 +41,7 @@ public class TransactionalListener implements MessageListener, MessageHandler {
                 // Use HornetQ's Core API for message consumers where possible so we
                 // get proper XA support. Otherwise, fall back to standard JMS.
                 if (consumer instanceof HornetQMessageConsumer) {
-                    log.trace("Using HornetQ Core API for listener");
+                    log.trace("Using HornetQ Core API for handler");
                     Field sessionField = consumer.getClass().getDeclaredField("session");
                     sessionField.setAccessible(true);
                     this.hornetQSession = (HornetQSession) sessionField.get( consumer );
@@ -51,7 +58,7 @@ public class TransactionalListener implements MessageListener, MessageHandler {
                     consumer.setMessageListener( this );
                 }
             } catch (Exception e) {
-                log.error("Failed to start listener: ", e);
+                log.error("Failed to start handler: ", e);
             }
 
             this.started = true;
@@ -67,7 +74,7 @@ public class TransactionalListener implements MessageListener, MessageHandler {
                 this.consumer.close();
                 //TODO: do we need to close the hornetQSession and clientConsumer?
             } catch (Exception e) {
-                log.error("Failed to stop listener: ", e);
+                log.error("Failed to stop handler: ", e);
             }
 
             this.started = false;
@@ -142,7 +149,9 @@ public class TransactionalListener implements MessageListener, MessageHandler {
     public void onMessage(Message message) {
         try {
             try {
-                this.listener.onMessage(message);
+                this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
+                                                                                                      this.endpoint,
+                                                                                                      this.connection));
                 if (this.xa) {
                     this.tm.commit();
                 }
@@ -169,7 +178,9 @@ public class TransactionalListener implements MessageListener, MessageHandler {
         }
     }
 
-    private final MessageListener listener;
+    private final MessageHandler handler;
+    private final Endpoint endpoint;
+    private final Connection connection;
     private final Session session;
     private final MessageConsumer consumer;
     private final boolean xa;
