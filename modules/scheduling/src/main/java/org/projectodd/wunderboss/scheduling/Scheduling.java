@@ -17,33 +17,23 @@
 package org.projectodd.wunderboss.scheduling;
 
 import org.projectodd.wunderboss.Component;
+import org.projectodd.wunderboss.Option;
+
 import java.util.Map;
 
 public interface Scheduling<T> extends Component<T> {
-    enum CreateOption {
-        NUM_THREADS("num_threads");
-
-        CreateOption(String value) {
-            this.value = value;
-        }
-
-        public String value;
+    class CreateOption extends Option {
+        public static final CreateOption NUM_THREADS = opt("num_threads", 5, CreateOption.class);
     }
 
-    enum ScheduleOption {
-        CRON("cron"),
-        AT("at"),
-        EVERY("every"),
-        IN("in"),
-        LIMIT("limit"),
-        UNTIL("until"),
-        SINGLETON("singleton");
-
-        ScheduleOption(String value) {
-            this.value = value;
-        }
-
-        public String value;
+    class ScheduleOption extends Option {
+        public static final ScheduleOption CRON      = opt("cron", ScheduleOption.class);
+        public static final ScheduleOption AT        = opt("at", ScheduleOption.class);
+        public static final ScheduleOption EVERY     = opt("every", ScheduleOption.class);
+        public static final ScheduleOption IN        = opt("in", ScheduleOption.class);
+        public static final ScheduleOption LIMIT     = opt("limit", ScheduleOption.class);
+        public static final ScheduleOption UNTIL     = opt("until", ScheduleOption.class);
+        public static final ScheduleOption SINGLETON = opt("singleton", ScheduleOption.class);
     }
 
     /**

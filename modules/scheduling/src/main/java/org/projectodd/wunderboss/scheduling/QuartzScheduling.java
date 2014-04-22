@@ -44,7 +44,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
      */
     public QuartzScheduling(String name, Options<CreateOption> options) {
         this.name = name;
-        this.numThreads = options.getInt(CreateOption.NUM_THREADS, 5);
+        this.numThreads = options.getInt(CreateOption.NUM_THREADS, (Integer)CreateOption.NUM_THREADS.defaultValue);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
             for(ScheduleOption each : new ScheduleOption[] {EVERY, LIMIT}) {
                 if (opts.has(each)) {
                     throw new IllegalArgumentException("You can't specify both 'cron' and '" +
-                                                               each.value + "'");
+                                                               each.name + "'");
                 }
             }
         }

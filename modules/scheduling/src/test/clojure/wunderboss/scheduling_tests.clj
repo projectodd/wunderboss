@@ -1,11 +1,11 @@
 ;; Copyright 2014 Red Hat, Inc, and individual contributors.
-;; 
+;;
 ;; Licensed under the Apache License, Version 2.0 (the "License");
 ;; you may not use this file except in compliance with the License.
 ;; You may obtain a copy of the License at
-;; 
+;;
 ;; http://www.apache.org/licenses/LICENSE-2.0
-;; 
+;;
 ;; Unless required by applicable law or agreed to in writing, software
 ;; distributed under the License is distributed on an "AS IS" BASIS,
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,16 +14,15 @@
 
 (ns wunderboss.scheduling-tests
   (:require [clojure.test :refer :all])
-  (:import org.projectodd.wunderboss.WunderBoss
-           org.projectodd.wunderboss.scheduling.Scheduling
-           org.projectodd.wunderboss.scheduling.Scheduling$ScheduleOption
-           [java.util Date EnumSet]))
+  (:import [org.projectodd.wunderboss Option WunderBoss]
+           [org.projectodd.wunderboss.scheduling Scheduling Scheduling$ScheduleOption]
+           java.util.Date))
 
 (def default (WunderBoss/findOrCreateComponent Scheduling))
 
 (let [avail-options (->> Scheduling$ScheduleOption
-                      EnumSet/allOf
-                      (map #(vector (keyword (.value %)) %))
+                      Option/optsFor
+                      (map #(vector (keyword (.name %)) %))
                       (into {}))]
   (defn coerce-options [opts]
     (reduce (fn [m [k v]]
@@ -93,7 +92,7 @@
         (is (= 0 @q))
         (Thread/sleep 1000)
         (is (> @q 0)))))
-  
+
   (deftest at-with-cron-should-should-start-near-x
     (let [q (atom 0)]
       (with-job #(swap! q inc) {:at (Date. (+ 2000 (System/currentTimeMillis)))
@@ -102,7 +101,7 @@
         (is (= 0 @q))
         (Thread/sleep 1000)
         (is (> @q 0)))))
-  
+
   (deftest until-with-cron-should-run-until
     (let [q (atom 0)]
       (with-job #(swap! q inc) {:until (Date. (+ 2000 (System/currentTimeMillis)))
@@ -122,7 +121,7 @@
 
   (deftest at-should-fire-once-then
     (let [q (promise)]
-      (with-job  #(deliver q "ping") {:at (Date. (+ 1000 (System/currentTimeMillis)))} 
+      (with-job  #(deliver q "ping") {:at (Date. (+ 1000 (System/currentTimeMillis)))}
         (is (nil? (deref q 900 nil)))
         (is (= "ping" (deref q 200 :fail))))))
 
@@ -190,7 +189,7 @@
   (deftest at-with-in-should-throw
     (is (thrown?
           IllegalArgumentException
-          (with-job* (fn []) {:at 5 :in 5} (fn [])))))  
+          (with-job* (fn []) {:at 5 :in 5} (fn [])))))
 
   (deftest limit-without-every-should-throw
     (is (thrown?
@@ -201,4 +200,3 @@
     (is (thrown?
           IllegalArgumentException
           (with-job* (fn []) {:until 5} (fn []))))))
-

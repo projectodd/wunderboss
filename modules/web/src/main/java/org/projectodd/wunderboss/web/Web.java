@@ -17,34 +17,23 @@
 package org.projectodd.wunderboss.web;
 
 import org.projectodd.wunderboss.Component;
+import org.projectodd.wunderboss.Option;
 
 import javax.servlet.Servlet;
 import java.util.Map;
 
 public interface Web<T, S> extends Component<T> {
-    enum CreateOption {
-        HOST("host"),
-        PORT("port"),
-        AUTO_START("auto_start");
-
-        CreateOption(String value) {
-            this.value = value;
-        }
-
-        public String value;
+    class CreateOption extends Option {
+        public static final CreateOption HOST       = opt("host", "localhost", CreateOption.class);
+        public static final CreateOption PORT       = opt("port", 8080, CreateOption.class);
+        public static final CreateOption AUTO_START = opt("auto_start", true, CreateOption.class);
     }
 
-    enum RegisterOption {
-        CONTEXT_PATH("context_path"),
-        DESTROY("destroy"),
-        INIT("init"),
-        STATIC_DIR("static_dir");
-
-        RegisterOption(String value) {
-            this.value = value;
-        }
-
-        public String value;
+    class RegisterOption extends Option {
+        public static final RegisterOption CONTEXT_PATH = opt("context_path", "/", RegisterOption.class);
+        public static final RegisterOption DESTROY      = opt("destroy", RegisterOption.class);
+        public static final RegisterOption INIT         = opt("init", RegisterOption.class);
+        public static final RegisterOption STATIC_DIR   = opt("static_dir", RegisterOption.class);
     }
 
 

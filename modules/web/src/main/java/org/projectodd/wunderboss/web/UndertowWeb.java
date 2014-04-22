@@ -88,9 +88,9 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
     }
 
     private void configure(Options<CreateOption> options) {
-        autoStart = options.getBoolean(AUTO_START, true);
-        port = options.getInt(PORT, 8080);
-        host = options.getString(HOST, "localhost");
+        autoStart = options.getBoolean(AUTO_START, (Boolean)AUTO_START.defaultValue);
+        port = options.getInt(PORT, (Integer)PORT.defaultValue);
+        host = options.getString(HOST, (String)HOST.defaultValue);
         undertow = Undertow.builder()
                 .addHttpListener(port, host)
                 .setHandler(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow"))
@@ -245,7 +245,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
 
     protected static String getContextPath(Options<RegisterOption> options) {
         // Maybe accept "context" as a key, too?
-        return options.getString(CONTEXT_PATH, "/");
+        return options.getString(CONTEXT_PATH, (String)CONTEXT_PATH.defaultValue);
     }
     
     private final String name;
