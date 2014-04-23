@@ -16,6 +16,7 @@
   (:require [clojure.test :refer :all])
   (:import [org.projectodd.wunderboss Option WunderBoss]
            [org.projectodd.wunderboss.scheduling Scheduling Scheduling$ScheduleOption]
+           org.quartz.TriggerUtils
            java.util.Date))
 
 (def default (WunderBoss/findOrCreateComponent Scheduling))
@@ -47,144 +48,153 @@
 (defmacro with-job [job options & body]
   `(with-job* ~job ~options (fn [] ~@body)))
 
+(defn trigger-for-job
+  ([]
+     (trigger-for-job default "a-job"))
+  ([scheduler name]
+     (let [job-key (.lookupJob scheduler name)]
+       (first (.getTriggersOfJob (.scheduler scheduler) job-key)))))
+
+(defn fire-times-for-job
+  ([count]
+     (fire-times-for-job default "a-job" count))
+  ([scheduler name count]
+     (let [trigger (trigger-for-job scheduler name)]
+       (TriggerUtils/computeFireTimes trigger, nil, count))))
+
 (deftest unschedule
-  (let [q (atom 0)]
-    (with-job #(swap! q inc) {:every 100}
-      (Thread/sleep 500)
-      (is (> @q 0))
+  (let [started? (promise),
+        should-run? (atom true)]
+    (with-job
+      (fn []
+        (is @should-run?)
+        (deliver started? true))
+      {:every 100}
+      (is (deref started? 5000 false))
       (is (.unschedule default "a-job"))
       (is (not (.unschedule default "a-job")))
-      (Thread/sleep 500)
-      (let [curr @q]
-        (Thread/sleep 500)
-        (is (= curr @q))))))
+      (reset! should-run? false))))
 
 (deftest rescheduling
-  (let [q1 (atom 0)
-        q2 (atom 0)]
-    (with-job #(swap! q1 inc) {:every 100}
-      (Thread/sleep 500)
-      (is (> @q1 0))
-      (with-job #(swap! q2 inc) {:every 100}
-        (let [curr1 @q1]
-          (Thread/sleep 500)
-          (is (> @q2 0))
-          (is (= curr1 @q1)))))))
+  (let [started1? (promise)
+        should-run1? (atom true)
+        started2? (promise)]
+    (with-job 
+      (fn [] 
+        (is @should-run1?)
+        (deliver started1? true))
+      {:every 100}
+      (is (deref started1? 5000 false))
+      (with-job #(deliver started2? true) {:every 100}
+        (reset! should-run1? false)
+        (is (deref started2? 5000 false))))))
 
 (deftest no-options-should-fire-once
-  (let [q (atom 0)]
-    (with-job #(swap! q inc) {}
-      (Thread/sleep 200)
-      (is (= 1 @q)))))
+  (let [started? (promise)]
+    (with-job
+      (fn []
+        (is (not (realized? started?)))
+        (deliver started? true))
+      {}
+      (is (deref started? 5000 false)))))
 
 (testing "cron jobs"
   (deftest cron-jobs-should-work
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:cron "*/1 * * * * ?"}
-        (Thread/sleep 3000)
-        (is (> @q 2)))))
+    (with-job #() {:cron "*/1 * * * * ?"}
+      (let [fire-times (fire-times-for-job 3)]
+        (doseq [[t1 t2] (partition 2 1 fire-times)]
+          (is (= 1000 (- (.getTime t2) (.getTime t1))))))))
 
   (deftest in-with-cron-should-should-start-near-x-ms
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:in 2000
-                                :cron "*/1 * * * * ?"}
-        (Thread/sleep 1000)
-        (is (= 0 @q))
-        (Thread/sleep 1000)
-        (is (> @q 0)))))
+    (let [now (System/currentTimeMillis)]
+      (with-job #() {:in 2000
+                     :cron "*/1 * * * * ?"}
+        (let [fire-times (fire-times-for-job 3)
+              trigger-start (.getTime (.getStartTime (trigger-for-job)))]
+          (is (<= 1000 (- trigger-start now)))
+          (is (>= 2000 (- trigger-start now)))
+          (doseq [[t1 t2] (partition 2 1 fire-times)]
+            (is (= 1000 (- (.getTime t2) (.getTime t1)))))))))
 
   (deftest at-with-cron-should-should-start-near-x
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:at (Date. (+ 2000 (System/currentTimeMillis)))
-                                :cron "*/1 * * * * ?"}
-        (Thread/sleep 1000)
-        (is (= 0 @q))
-        (Thread/sleep 1000)
-        (is (> @q 0)))))
+    (let [start (+ 2000 (System/currentTimeMillis))]
+      (with-job #() {:at (Date. start)
+                     :cron "*/1 * * * * ?"}
+        (let [trigger-start (.getTime (.getStartTime (trigger-for-job)))]
+          (is (< (- start trigger-start) 1000))))))
 
   (deftest until-with-cron-should-run-until
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:until (Date. (+ 2000 (System/currentTimeMillis)))
-                                :cron "*/1 * * * * ?"}
-        (Thread/sleep 3000)
-        (let [curr @q]
-          (is (> curr 0))
-          (Thread/sleep 1000)
-          (is (= curr @q)))))))
+    (let [end (+ 2000 (System/currentTimeMillis))]
+      (with-job #() {:until (Date. end)
+                     :cron "*/1 * * * * ?"}
+        (is (= end (.getTime (.getEndTime (trigger-for-job)))))))))
 
 (testing "at jobs"
   (deftest in-should-fire-once-in-x-ms
-    (let [q (promise)]
-      (with-job #(deliver q "ping") {:in 1000}
-        (is (nil? (deref q 800 nil)))
-        (is (= "ping" (deref q 300 :fail))))))
+    (with-job #() {:in 30000}
+      (let [fire-times (fire-times-for-job 3)
+            now (System/currentTimeMillis),
+            first-fire (.getTime (first fire-times))]
+        (is (<= 29000 (- first-fire now)))
+        (is (>= 30000 (- first-fire now)))
+        (is (= 1 (count fire-times))))))
 
   (deftest at-should-fire-once-then
-    (let [q (promise)]
-      (with-job  #(deliver q "ping") {:at (Date. (+ 1000 (System/currentTimeMillis)))}
-        (is (nil? (deref q 900 nil)))
-        (is (= "ping" (deref q 200 :fail))))))
+    (let [start (+ 30000 (System/currentTimeMillis))]
+      (with-job  #() {:at (Date. start)}
+        (let [fire-times (fire-times-for-job 3)
+              first-fire (.getTime (first fire-times))]
+          (is (>= 1000 (- first-fire start)))
+          (is (= 1 (count fire-times)))))))
 
   (deftest every-should-fire-immediately-and-continuously
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:every 100}
-        (dotimes [i 5]
-          (Thread/sleep (if (zero? i) 20 100))
-          (is (= (inc i) @q))))))
+    (with-job #() {:every 100}
+      (let [fire-times (fire-times-for-job 10)
+            trigger-end (.getEndTime (trigger-for-job))]
+        (doseq [[t1 t2] (partition 2 1 fire-times)]
+          (is (= 100 (- (.getTime t2) (.getTime t1)))))
+        (is (= 10 (count fire-times)))
+        (is (= nil trigger-end)))))
 
   (deftest every-with-limit-should-fire-immediately-x-times
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:every 100 :limit 2}
-        (Thread/sleep 20)
-        (is (= 1 @q))
-        (dotimes [_ 2]
-          (Thread/sleep 100)
-          (is (= 2 @q))))))
+    (let [now (System/currentTimeMillis)]
+      (with-job #() {:every 100 :limit 2}
+        (let [trigger (trigger-for-job)]
+          (is (= 1 (.getRepeatCount trigger)))
+          (is (= 100 (.getRepeatInterval trigger)))))))
 
   (deftest at-with-every-should-fire-immediately-and-continuously-starting-at-at
-    (let [q (atom 0)]
-      (with-job #(swap! q inc) {:at (Date. (+ 1000 (System/currentTimeMillis)))
-                                :every 100}
-        (Thread/sleep 500)
-        (= (zero? @q))
-        (dotimes [i 5]
-          (Thread/sleep (if (zero? i) 520 100))
-          (is (= (inc i) @q))))))
+    (let [start (+ 30000 (System/currentTimeMillis))]
+      (with-job #() {:at (Date. start)
+                     :every 100}
+        (let [fire-times (fire-times-for-job 10)
+              first-fire (.getTime (first fire-times))
+              trigger-end (.getEndTime (trigger-for-job))]
+          (is (= 10 (count fire-times)))
+          (is (>= 1000 (- first-fire start)))
+          (is (= nil trigger-end))))))
 
   (deftest short-until-overrides-limit
-    (let [q (atom 0)
-          step 222]
-      (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
-                                :every step
-                                :limit 9999}
-        (dotimes [i 5]
-          (Thread/sleep (if (zero? i) 20 step))
-          (is (= (inc i) @q)))
-        (Thread/sleep step)
-        (is (= 5 @q)))))
+    (with-job #() {:until (Date. (+ 31000 (System/currentTimeMillis)))
+                   :in 30000
+                   :every 222
+                   :limit 9999}
+      (is (= 5 (count (fire-times-for-job 10))))))
 
   (deftest short-limit-overrides-until
-    (let [q (atom 0)
-          step 222]
-      (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
-                                :every step
-                                :limit 1}
-        (dotimes [i 3]
-          (Thread/sleep (if (zero? i) 20 step))
-          (is (= 1 @q)))
-        (Thread/sleep step)
-        (is (= 1 @q)))))
+    (with-job #() {:until (Date. (+ 31000 (System/currentTimeMillis)))
+                   :in 30000
+                   :every 222
+                   :limit 1}
+      (is (= 1 (count (fire-times-for-job 10))))))
 
   (deftest until-with-every-should-repeat-until-until
-    (let [q (atom 0)
-          step 222]
-      (with-job #(swap! q inc) {:until (Date. (+ 1000 (System/currentTimeMillis)))
-                                :every step}
-        (dotimes [i 5]
-          (Thread/sleep (if (zero? i) 20 step))
-          (is (= (inc i) @q)))
-        (Thread/sleep step)
-        (is (= 5 @q)))))
+    (let [end (+ 31000 (System/currentTimeMillis))]
+      (with-job #() {:until (Date. end)
+                     :in 30000
+                     :every 222}
+        (is (= 5 (count (fire-times-for-job 10))))
+        (is (= end (.getTime (.getEndTime (trigger-for-job))))))))
 
   (deftest at-with-in-should-throw
     (is (thrown?

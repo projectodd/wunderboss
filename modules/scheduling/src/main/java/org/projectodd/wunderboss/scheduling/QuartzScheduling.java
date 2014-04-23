@@ -118,6 +118,10 @@ public class QuartzScheduling implements Scheduling {
         return false;
     }
 
+    public synchronized JobKey lookupJob(String name) {
+        return currentJobs.get(name);
+    }
+
     protected void validateOptions(Options<ScheduleOption> opts) throws IllegalArgumentException {
         if (opts.has(CRON)) {
             for(ScheduleOption each : new ScheduleOption[] {EVERY, LIMIT}) {
