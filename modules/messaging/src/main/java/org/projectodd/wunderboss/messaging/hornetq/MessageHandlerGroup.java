@@ -98,18 +98,15 @@ public class MessageHandlerGroup implements Listener {
                     put(Messaging.CreateConnectionOption.XA, isXAEnabled());
                 }});
 
-        String clientID = this.options.getString(ListenOption.CLIENT_ID);
+
         if (isDurable()) {
-            if (clientID != null) {
-                if (this.endpoint instanceof Topic) {
-                    log.info("Setting clientID to " + clientID);
-                    this.connection.implementation().setClientID(clientID);
-                } else {
-                    log.warn("ClientID set for handler but " +
-                                     endpoint + " is not a topic - ignoring.");
-                }
+            if (this.endpoint instanceof Topic) {
+                String clientID = this.options.getString(ListenOption.CLIENT_ID);
+                log.info("Setting clientID to " + clientID);
+                this.connection.implementation().setClientID(clientID);
             } else {
-                throw new IllegalArgumentException("Durable topic listeners require a client_id.");
+                log.warn("ClientID set for handler but " +
+                                 endpoint + " is not a topic - ignoring.");
             }
         }
     }
@@ -135,12 +132,13 @@ public class MessageHandlerGroup implements Listener {
         }
 
     }
+
     protected boolean isXAEnabled() {
         return this.options.getBoolean(ListenOption.XA, this.broker.isXaDefault());
     }
 
     protected boolean isDurable() {
-        return this.options.getBoolean(ListenOption.DURABLE, (Boolean)ListenOption.DURABLE.defaultValue);
+        return this.options.has(ListenOption.CLIENT_ID);
     }
 
     private final Messaging broker;

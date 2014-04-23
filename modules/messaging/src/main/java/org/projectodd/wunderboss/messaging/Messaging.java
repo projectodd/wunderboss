@@ -31,7 +31,6 @@ public interface Messaging<T, E, C> extends Component<T> {
          * Specifies if xa is on by default. Defaults to false.
          */
         public static final CreateOption XA = opt("xa", false, CreateOption.class);
-
     }
 
     class CreateEndpointOption extends Option {

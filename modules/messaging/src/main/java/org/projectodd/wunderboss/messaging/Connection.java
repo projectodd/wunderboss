@@ -29,11 +29,9 @@ public interface Connection<T> extends Implementation<T>, Closeable {
          * The client-id for durable topic subscriptions. Ignored for queues.
          */
         public static final ListenOption CLIENT_ID   = opt("client_id", ListenOption.class);
+
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
-        /**
-         * Signifies a durable topic listener. Ignored for queues.
-         */
-        public static final ListenOption DURABLE     = opt("durable", false, ListenOption.class);
+
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         /**
          * subscriber-name for durable topic subscriptions. Ignored for queues. Defaults to
