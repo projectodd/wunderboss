@@ -21,7 +21,7 @@ import org.projectodd.wunderboss.Option;
 
 import java.util.Map;
 
-public interface Scheduling<T> extends Component<T> {
+public interface Scheduling extends Component {
     class CreateOption extends Option {
         public static final CreateOption NUM_THREADS = opt("num_threads", 5, CreateOption.class);
     }

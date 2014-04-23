@@ -45,11 +45,6 @@ public class AlwaysRunContext implements SingletonContext {
     }
 
     @Override
-    public Void implementation() {
-        return null;
-    }
-
-    @Override
     public String name() {
         return this.name;
     }

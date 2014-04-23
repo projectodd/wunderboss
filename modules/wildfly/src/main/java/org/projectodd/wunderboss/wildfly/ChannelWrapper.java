@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
-public class ChannelWrapper  extends ReceiverAdapter implements RequestHandler, Component<Channel> {
+public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, Component {
     public ChannelWrapper(String name) {
         this.name = name;
     }
@@ -62,8 +62,7 @@ public class ChannelWrapper  extends ReceiverAdapter implements RequestHandler, 
         }
     }
 
-    @Override
-    public Channel implementation() {
+    public Channel channel() {
         if (this.channel == null) {
             try {
                 start();

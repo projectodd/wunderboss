@@ -18,7 +18,7 @@ package org.projectodd.wunderboss.messaging;
 
 import java.util.Map;
 
-public interface ReplyableMessage<T> extends Message<T> {
+public interface ReplyableMessage extends Message {
 
     Response reply(String content, String contentType,
                    Map<Connection.SendOption, Object> options) throws Exception;

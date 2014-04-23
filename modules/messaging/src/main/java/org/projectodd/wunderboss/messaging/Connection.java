@@ -17,12 +17,11 @@
 package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.Closeable;
-import org.projectodd.wunderboss.Implementation;
 import org.projectodd.wunderboss.Option;
 
 import java.util.Map;
 
-public interface Connection<T> extends Implementation<T>, Closeable {
+public interface Connection extends Closeable {
 
     class ListenOption extends Option {
         /**

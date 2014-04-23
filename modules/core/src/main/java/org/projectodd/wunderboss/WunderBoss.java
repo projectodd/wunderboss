@@ -43,11 +43,11 @@ public class WunderBoss {
 
     private WunderBoss() {}
 
-    public static <T extends Component<?>> T findOrCreateComponent(Class<T> clazz) {
+    public static <T extends Component> T findOrCreateComponent(Class<T> clazz) {
         return findOrCreateComponent(clazz, null, null);
     }
 
-    public static <T extends Component<?>> T findOrCreateComponent(Class<T> clazz, String name, Map<Object, Object> options) {
+    public static <T extends Component> T findOrCreateComponent(Class<T> clazz, String name, Map<Object, Object> options) {
         if (name == null) {
             name = "default";
         }
@@ -102,7 +102,7 @@ public class WunderBoss {
     }
 
     public static void stop() throws Exception {
-        for (Component<?> component : components.values()) {
+        for (Component component : components.values()) {
             component.stop();
         }
 
@@ -111,7 +111,7 @@ public class WunderBoss {
         }
     }
 
-    private static <T extends Component<?>> ComponentProvider<T> getComponentProvider(Class<T> clazz, boolean throwIfMissing) {
+    private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> clazz, boolean throwIfMissing) {
         ComponentProvider<T> provider = null;
         Iterator<ComponentProvider<?>> iterator = componentProviders.descendingIterator();
         while (iterator.hasNext()) {

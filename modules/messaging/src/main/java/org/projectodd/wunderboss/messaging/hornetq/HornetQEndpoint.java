@@ -33,7 +33,7 @@ public class HornetQEndpoint extends DestinationEndpoint {
     @Override
     public void close() throws Exception {
         if (!this.closed) {
-            Destination dest = this.implementation();
+            Destination dest = this.destination();
             if (dest instanceof Queue) {
                 this.jmsServerManager.destroyQueue(((Queue) dest).getQueueName(), true);
             } else {

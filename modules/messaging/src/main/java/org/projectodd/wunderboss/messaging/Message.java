@@ -16,11 +16,9 @@
 
 package org.projectodd.wunderboss.messaging;
 
-import org.projectodd.wunderboss.Implementation;
-
 import java.util.Map;
 
-public interface Message<T> extends Implementation<T> {
+public interface Message {
     String contentType();
 
     Map<String, Object> headers();

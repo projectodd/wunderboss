@@ -21,7 +21,7 @@ import org.projectodd.wunderboss.messaging.Endpoint;
 import javax.jms.Destination;
 import javax.jms.Topic;
 
-public abstract class DestinationEndpoint implements Endpoint<Destination> {
+public abstract class DestinationEndpoint implements Endpoint {
 
     public DestinationEndpoint(Destination dest, boolean durable) {
         this.destination = dest;
@@ -38,8 +38,7 @@ public abstract class DestinationEndpoint implements Endpoint<Destination> {
         return this.durable;
     }
 
-    @Override
-    public Destination implementation() {
+    public Destination destination() {
         return this.destination;
     }
 

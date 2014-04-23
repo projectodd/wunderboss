@@ -18,15 +18,14 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Connection.ListenOption;
 import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Messaging.CreateConnectionOption;
+import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
@@ -40,11 +39,11 @@ public class MessageHandlerGroup implements Listener {
 
     public MessageHandlerGroup(Messaging broker,
                                MessageHandler handler,
-                               Endpoint<Destination> endpoint,
+                               Endpoint endpoint,
                                Options<ListenOption> options) {
         this.broker = broker;
         this.handler = handler;
-        this.endpoint = endpoint;
+        this.endpoint = (DestinationEndpoint)endpoint;
         this.options = options;
     }
 
@@ -94,7 +93,7 @@ public class MessageHandlerGroup implements Listener {
     protected void startConnection() throws Exception {
 
         this.connection =
-                broker.createConnection(new HashMap<CreateConnectionOption, Object>() {{
+                (HornetQConnection)broker.createConnection(new HashMap<CreateConnectionOption, Object>() {{
                     put(Messaging.CreateConnectionOption.XA, isXAEnabled());
                 }});
 
@@ -103,7 +102,7 @@ public class MessageHandlerGroup implements Listener {
             if (this.endpoint instanceof Topic) {
                 String clientID = this.options.getString(ListenOption.CLIENT_ID);
                 log.info("Setting clientID to " + clientID);
-                this.connection.implementation().setClientID(clientID);
+                this.connection.jmsConnection().setClientID(clientID);
             } else {
                 log.warn("ClientID set for handler but " +
                                  endpoint + " is not a topic - ignoring.");
@@ -113,10 +112,10 @@ public class MessageHandlerGroup implements Listener {
 
     protected Session createSession() throws JMSException {
         if (isXAEnabled()) {
-            return ((XAConnection)this.connection.implementation()).createXASession();
+            return ((XAConnection)this.connection.jmsConnection()).createXASession();
         } else {
             // Use local transactions for non-XA message processors
-            return this.connection.implementation().createSession(true, Session.SESSION_TRANSACTED);
+            return this.connection.jmsConnection().createSession(true, Session.SESSION_TRANSACTED);
         }
     }
 
@@ -128,7 +127,7 @@ public class MessageHandlerGroup implements Listener {
             return session.createDurableSubscriber((Topic) endpoint,
                                                    name, selector, false);
         } else {
-            return session.createConsumer(endpoint.implementation(), selector);
+            return session.createConsumer(endpoint.destination(), selector);
         }
 
     }
@@ -143,9 +142,9 @@ public class MessageHandlerGroup implements Listener {
 
     private final Messaging broker;
     private final MessageHandler handler;
-    private final Endpoint<Destination> endpoint;
+    private final DestinationEndpoint endpoint;
     private final Options<ListenOption> options;
-    private Connection<javax.jms.Connection> connection;
+    private HornetQConnection connection;
     private final List<TransactionalListener> listeners = new ArrayList<>();
     private boolean started = false;
 

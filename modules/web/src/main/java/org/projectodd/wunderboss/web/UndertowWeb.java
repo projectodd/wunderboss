@@ -53,7 +53,7 @@ import static org.projectodd.wunderboss.web.Web.CreateOption.HOST;
 import static org.projectodd.wunderboss.web.Web.CreateOption.PORT;
 import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 
-public class UndertowWeb implements Web<Undertow, HttpHandler> {
+public class UndertowWeb implements Web<HttpHandler> {
 
     public UndertowWeb(String name, Options<CreateOption> opts) {
         this.name = name;
@@ -82,8 +82,7 @@ public class UndertowWeb implements Web<Undertow, HttpHandler> {
         }
     }
 
-    @Override
-    public Undertow implementation() {
+    public Undertow undertow() {
         return this.undertow;
     }
 

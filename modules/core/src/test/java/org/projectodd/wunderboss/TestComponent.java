@@ -34,11 +34,6 @@ public class TestComponent implements Component {
     }
 
     @Override
-    public Object implementation() {
-        return null;
-    }
-
-    @Override
     public String name() {
         return this.name;
     }

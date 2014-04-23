@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HornetQMessaging implements Messaging<JMSServerManager, Destination, javax.jms.Connection> {
+public class HornetQMessaging implements Messaging {
 
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
@@ -108,8 +108,7 @@ public class HornetQMessaging implements Messaging<JMSServerManager, Destination
         }
     }
 
-    @Override
-    public JMSServerManager implementation() {
+    public JMSServerManager jmsServerManager() {
         if (this.started) {
             return this.jmsServerManager;
         }

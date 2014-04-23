@@ -16,7 +16,7 @@
 
 package org.projectodd.wunderboss;
 
-public interface Component<T> extends Implementation<T> {
+public interface Component {
 
     void start() throws Exception;
 

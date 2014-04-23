@@ -22,7 +22,7 @@ import org.projectodd.wunderboss.Option;
 import javax.servlet.Servlet;
 import java.util.Map;
 
-public interface Web<T, S> extends Component<T> {
+public interface Web<S> extends Component {
     class CreateOption extends Option {
         public static final CreateOption HOST       = opt("host", "localhost", CreateOption.class);
         public static final CreateOption PORT       = opt("port", 8080, CreateOption.class);

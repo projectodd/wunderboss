@@ -21,7 +21,7 @@ import org.projectodd.wunderboss.Option;
 
 import java.util.Map;
 
-public interface Messaging<T, E, C> extends Component<T> {
+public interface Messaging extends Component {
 
     class CreateOption extends Option {
         public static final CreateOption HOST = opt("host", CreateOption.class);
@@ -39,8 +39,8 @@ public interface Messaging<T, E, C> extends Component<T> {
         public static final CreateEndpointOption SELECTOR  = opt("selector", CreateEndpointOption.class);
     }
 
-    Endpoint<E> findOrCreateEndpoint(String name,
-                                     Map<CreateEndpointOption, Object> options) throws Exception;
+    Endpoint findOrCreateEndpoint(String name,
+                                  Map<CreateEndpointOption, Object> options) throws Exception;
 
     class CreateConnectionOption extends Option {
         /**
@@ -51,7 +51,7 @@ public interface Messaging<T, E, C> extends Component<T> {
     }
 
     //TODO: remote connections?
-    Connection<C> createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
+    Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
 
     boolean isXaDefault();
 }

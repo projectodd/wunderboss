@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQMessage implements ReplyableMessage<javax.jms.Message> {
+public class HornetQMessage implements ReplyableMessage {
 
     public HornetQMessage(javax.jms.Message message, Endpoint endpoint, Connection connection) {
         this.baseMessage = message;
@@ -99,7 +99,7 @@ public class HornetQMessage implements ReplyableMessage<javax.jms.Message> {
         return new HornetQResponse(this.connection, this.baseMessage, this.endpoint);
     }
 
-    protected Options<? extends SendOption> replyOptions(Map<SendOption, Object> options) throws Exception {
+    protected Options<SendOption> replyOptions(Map<SendOption, Object> options) throws Exception {
         Options<SendOption> opts = new Options<>(options);
         Map<String, Object> headers = (Map<String, Object>)opts.get(SendOption.HEADERS);
         if (headers == null) {
@@ -113,8 +113,7 @@ public class HornetQMessage implements ReplyableMessage<javax.jms.Message> {
         return opts;
     }
 
-    @Override
-    public javax.jms.Message implementation() {
+    public javax.jms.Message jmsMessage() {
         return this.baseMessage;
     }
 

@@ -24,11 +24,11 @@ import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Response;
+import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -38,7 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQConnection implements org.projectodd.wunderboss.messaging.Connection<Connection> {
+public class HornetQConnection implements org.projectodd.wunderboss.messaging.Connection {
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
     protected static final String SYNC_ATTRIBUTE = "synchronous";
 
@@ -113,13 +113,13 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         return this.jmsConnection.createSession();
     }
 
-    protected void send(Session session, Endpoint<Destination> endpoint,
+    protected void send(Session session, Endpoint endpoint,
                         javax.jms.Message message, String contentType,
                         Map<SendOption, Object> options) throws Exception {
         Options<SendOption> opts = new Options<>(options);
         message.setStringProperty(CONTENT_TYPE_PROPERTY, contentType);
         fillInHeaders(message, (Map<String, Object>)opts.get(SendOption.HEADERS, Collections.emptyMap()));
-        MessageProducer producer = session.createProducer(endpoint.implementation());
+        MessageProducer producer = session.createProducer(((DestinationEndpoint)endpoint).destination());
         producer.send(message,
                       (opts.getBoolean(SendOption.PERSISTENT, (Boolean)SendOption.PERSISTENT.defaultValue) ?
                               DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT),
@@ -158,7 +158,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         Options<ReceiveOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT, (Integer)ReceiveOption.TIMEOUT.defaultValue);
         try (Session session = this.jmsConnection.createSession()) {
-            javax.jms.Message message = session.createConsumer((Destination)endpoint.implementation())
+            javax.jms.Message message = session.createConsumer(((DestinationEndpoint)endpoint).destination())
                     .receive(timeout);
 
             if (message != null) {
@@ -177,8 +177,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         this.jmsConnection.close();
     }
 
-    @Override
-    public Connection implementation() {
+    public Connection jmsConnection() {
         return this.jmsConnection;
     }
 

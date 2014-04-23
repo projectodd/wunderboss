@@ -38,7 +38,7 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
     public ClusteredSingletonContext(String name) {
         super(name);
         this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class);
-        this.channel = (JChannel)this.channelWrapper.implementation();
+        this.channel = (JChannel)this.channelWrapper.channel();
         this.channelWrapper.registerHandler(name, this).addMembershipListener(this);
     }
 

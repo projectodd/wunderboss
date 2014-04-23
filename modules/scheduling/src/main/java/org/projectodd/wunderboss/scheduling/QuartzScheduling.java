@@ -37,7 +37,7 @@ import java.util.Map;
 
 import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
 
-public class QuartzScheduling implements Scheduling<Scheduler> {
+public class QuartzScheduling implements Scheduling {
 
     /*
      options: jobstore? threadpool? other scheduler opts?
@@ -70,8 +70,7 @@ public class QuartzScheduling implements Scheduling<Scheduler> {
         }
     }
 
-    @Override
-    public Scheduler implementation() {
+    public Scheduler scheduler() {
         return this.scheduler;
     }
 
