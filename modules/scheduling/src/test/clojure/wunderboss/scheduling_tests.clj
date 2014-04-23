@@ -52,15 +52,15 @@
   ([]
      (trigger-for-job default "a-job"))
   ([scheduler name]
-     (let [job-key (.lookupJob scheduler name)]
-       (first (.getTriggersOfJob (.scheduler scheduler) job-key)))))
+     (-> (.scheduler scheduler)
+       (.getTriggersOfJob (.lookupJob scheduler name))
+       first)))
 
 (defn fire-times-for-job
   ([count]
      (fire-times-for-job default "a-job" count))
   ([scheduler name count]
-     (let [trigger (trigger-for-job scheduler name)]
-       (TriggerUtils/computeFireTimes trigger, nil, count))))
+     (TriggerUtils/computeFireTimes (trigger-for-job scheduler name), nil, count)))
 
 (deftest unschedule
   (let [started? (promise),
@@ -101,26 +101,24 @@
 (testing "cron jobs"
   (deftest cron-jobs-should-work
     (with-job #() {:cron "*/1 * * * * ?"}
-      (let [fire-times (fire-times-for-job 3)]
-        (doseq [[t1 t2] (partition 2 1 fire-times)]
-          (is (= 1000 (- (.getTime t2) (.getTime t1))))))))
+      (doseq [[t1 t2] (partition 2 1 (fire-times-for-job 3))]
+        (is (= 1000 (- (.getTime t2) (.getTime t1)))))))
 
   (deftest in-with-cron-should-should-start-near-x-ms
     (let [now (System/currentTimeMillis)]
       (with-job #() {:in 2000
                      :cron "*/1 * * * * ?"}
-        (let [fire-times (fire-times-for-job 3)
-              trigger-start (.getTime (.getStartTime (trigger-for-job)))]
+        (let [trigger-start (.. (trigger-for-job) getStartTime getTime)]
           (is (<= 1000 (- trigger-start now)))
           (is (>= 2000 (- trigger-start now)))
-          (doseq [[t1 t2] (partition 2 1 fire-times)]
+          (doseq [[t1 t2] (partition 2 1 (fire-times-for-job 3))]
             (is (= 1000 (- (.getTime t2) (.getTime t1)))))))))
 
   (deftest at-with-cron-should-should-start-near-x
     (let [start (+ 2000 (System/currentTimeMillis))]
       (with-job #() {:at (Date. start)
                      :cron "*/1 * * * * ?"}
-        (let [trigger-start (.getTime (.getStartTime (trigger-for-job)))]
+        (let [trigger-start (.. (trigger-for-job) getStartTime getTime)]
           (is (< (- start trigger-start) 1000))))))
 
   (deftest until-with-cron-should-run-until
@@ -194,7 +192,7 @@
                      :in 30000
                      :every 222}
         (is (= 5 (count (fire-times-for-job 10))))
-        (is (= end (.getTime (.getEndTime (trigger-for-job))))))))
+        (is (= end (.. (trigger-for-job) getEndTime getTime))))))
 
   (deftest at-with-in-should-throw
     (is (thrown?
