@@ -31,6 +31,11 @@
     </dependency>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-messaging</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-web</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -65,6 +70,7 @@
                 io.undertow.core,
                 org.jboss.modules,
                 org.wildfly.extension.undertow,
+                org.hornetq optional,
                 org.jboss.as.clustering.jgroups optional,
                 org.jgroups optional
               </Dependencies>
@@ -91,6 +97,7 @@
               <artifactSet>
                 <includes>
                   <include>org.projectodd.wunderboss:wunderboss-core</include>
+                  <include>org.projectodd.wunderboss:wunderboss-messaging</include>
                   <include>org.projectodd.wunderboss:wunderboss-ruby</include>
                   <include>org.projectodd.wunderboss:wunderboss-web</include>
                 </includes>

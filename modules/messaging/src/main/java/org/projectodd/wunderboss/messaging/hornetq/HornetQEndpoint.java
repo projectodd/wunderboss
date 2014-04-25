@@ -33,17 +33,23 @@ public class HornetQEndpoint extends DestinationEndpoint {
     @Override
     public void close() throws Exception {
         if (!this.closed) {
-            Destination dest = this.destination();
-            if (dest instanceof Queue) {
-                this.jmsServerManager.destroyQueue(((Queue) dest).getQueueName(), true);
-            } else {
-                this.jmsServerManager.destroyTopic(((Topic)dest).getTopicName(), true);
+            if (shouldDestroyOnClose) {
+                Destination dest = this.destination();
+                if (dest instanceof Queue) {
+                    this.jmsServerManager.destroyQueue(((Queue) dest).getQueueName(), true);
+                } else {
+                    this.jmsServerManager.destroyTopic(((Topic)dest).getTopicName(), true);
+                }
             }
-
             this.closed = true;
         }
     }
 
+    public void destroyOnClose(boolean shouldDestroyOnClose) {
+        this.shouldDestroyOnClose = shouldDestroyOnClose;
+    }
+
     private boolean closed = false;
+    private boolean shouldDestroyOnClose = true;
     private final JMSServerManager jmsServerManager;
 }

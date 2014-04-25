@@ -26,6 +26,8 @@ import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.server.impl.HornetQServerImpl;
+import org.hornetq.jms.client.HornetQQueue;
+import org.hornetq.jms.client.HornetQTopic;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
@@ -90,10 +92,10 @@ public class HornetQMessaging implements Messaging {
 
             this.jmsServerManager.createConnectionFactory("cf", false,
                                                           JMSFactoryType.CF,
-                                                          connectorNames, "cf");
+                                                          connectorNames, "java:/ConnectionFactory");
             this.jmsServerManager.createConnectionFactory("xa-cf", false,
                                                           JMSFactoryType.XA_CF,
-                                                          connectorNames, "xa-cf");
+                                                          connectorNames, "java:/JmsXA");
 
             this.started = true;
         }
@@ -126,9 +128,9 @@ public class HornetQMessaging implements Messaging {
         Options<CreateConnectionOption> opts = new Options<>(options);
         ConnectionFactory cf;
         if (opts.getBoolean(CreateConnectionOption.XA, isXaDefault())) {
-            cf = (ConnectionFactory)lookup("xa-cf");
+            cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
         } else {
-            cf = (ConnectionFactory)lookup("cf");
+            cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
         }
 
         javax.jms.Connection connection = cf.createConnection();
@@ -138,28 +140,35 @@ public class HornetQMessaging implements Messaging {
     }
 
     @Override
-    public synchronized Endpoint findOrCreateEndpoint(String name,
+    public synchronized HornetQEndpoint findOrCreateEndpoint(String name,
                                                    Map<CreateEndpointOption, Object> options) throws Exception {
         Options<CreateEndpointOption> opts = new Options<>(options);
         boolean topic = opts.getBoolean(CreateEndpointOption.BROADCAST, false);
         String jndiName = (topic ? "topic:" : "queue:") + name;
-        Destination dest = (Destination)lookup(jndiName);
+        Destination dest = topic ? lookupTopic(name) : lookupQueue(name);
         boolean durable = false;
         if (dest == null) {
             if (topic) {
-                this.jmsServerManager.createTopic(true, name, jndiName);
+                createTopic(name, jndiName);
+                dest = lookupTopic(name);
             } else {
                 durable = opts.getBoolean(CreateEndpointOption.DURABLE,
                                           (Boolean)CreateEndpointOption.DURABLE.defaultValue);
-                this.jmsServerManager.createQueue(true, name,
-                                                  opts.getString(CreateEndpointOption.SELECTOR, ""),
-                                                  durable,
-                                                  jndiName);
+                String selector = opts.getString(CreateEndpointOption.SELECTOR, "");
+                createQueue(name, jndiName, selector, durable);
+                dest = lookupQueue(name);
             }
-            dest = (Destination)lookup(jndiName);
         }
 
         return new HornetQEndpoint(dest, this.jmsServerManager, durable);
+    }
+
+    protected void createTopic(String name, String jndiName) throws Exception {
+        this.jmsServerManager.createTopic(false, name, jndiName);
+    }
+
+    protected void createQueue(String name, String jndiName, String selector, boolean durable) throws Exception {
+        this.jmsServerManager.createQueue(false, name, selector, durable, jndiName);
     }
 
     @Override
@@ -167,15 +176,37 @@ public class HornetQMessaging implements Messaging {
         return this.xa;
     }
 
-    protected Object lookup(String name) {
-        return this.jmsServerManager.getRegistry().lookup(name);
+    protected HornetQTopic lookupTopic(String name) {
+        String[] jndiNames = jmsServerManager.getJNDIOnTopic(name);
+        for (String jndiName : jndiNames) {
+            Object jndiObject = lookupJNDI(jndiName);
+            if (jndiObject != null) {
+                return (HornetQTopic) jndiObject;
+            }
+        }
+        return null;
+    }
+
+    protected HornetQQueue lookupQueue(String name) {
+        String[] jndiNames = jmsServerManager.getJNDIOnQueue(name);
+        for (String jndiName : jndiNames) {
+            Object jndiObject = lookupJNDI(jndiName);
+            if (jndiObject != null) {
+                return (HornetQQueue) jndiObject;
+            }
+        }
+        return null;
+    }
+
+    protected Object lookupJNDI(String jndiName) {
+        return jmsServerManager.getRegistry().lookup(jndiName);
     }
 
     private final String name;
     private final Options<CreateOption> options;
     private final boolean xa;
-    private boolean started = false;
-    private JMSServerManager jmsServerManager;
+    protected boolean started = false;
+    protected JMSServerManager jmsServerManager;
     private final Map<String, MessageHandlerGroup> listenerGroups = new ConcurrentHashMap<>();
 
 

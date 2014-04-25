@@ -23,7 +23,6 @@ import org.jboss.msc.service.ServiceActivator;
 import org.jboss.msc.service.ServiceActivatorContext;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
 import org.wildfly.extension.undertow.UndertowService;
 
@@ -40,10 +39,11 @@ public class WildFlyServiceActivator implements ServiceActivator {
         serviceActivatorContext.getServiceTarget()
                 .addService(WildFlyService.serviceName(deploymentName), service)
                 .addDependency(UndertowService.UNDERTOW, UndertowService.class, service.getUndertowInjector())
+                .addDependency(ServiceBuilder.DependencyType.OPTIONAL, WildFlyMessaging.JMS_MANAGER_SERVICE_NAME)
                 .addDependency(ServiceBuilder.DependencyType.OPTIONAL,
-                               ChannelFactoryService.getServiceName(null),
-                               ChannelFactory.class,
-                               service.getChannelFactoryInjector())
+                        ChannelFactoryService.getServiceName(null),
+                        ChannelFactory.class,
+                        service.getChannelFactoryInjector())
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .install();
     }

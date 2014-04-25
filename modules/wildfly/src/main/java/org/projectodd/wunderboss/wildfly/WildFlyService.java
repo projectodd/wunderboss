@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.apache.log4j.lf5.viewer.categoryexplorer.CategoryExplorerTree;
 import org.jboss.as.clustering.jgroups.ChannelFactory;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -29,8 +28,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jgroups.Channel;
-import org.jgroups.protocols.CENTRAL_LOCK;
 import org.projectodd.wunderboss.Utils;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.ruby.RubyLocator;
@@ -95,6 +92,7 @@ public class WildFlyService implements Service<WildFlyService> {
         }
 
         WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
+        WunderBoss.registerComponentProvider(new WildFlyMessagingProvider());
         WunderBoss.registerComponentProvider(new SingletonContextProvider());
 
         log.info("Initializing " + deploymentName + " as " + language);
