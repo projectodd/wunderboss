@@ -20,7 +20,7 @@ import javax.websocket.MessageHandler;
 
 public class Util {
 
-    // Overcomes the problem of Clojure's reify being compatible with
+    // Overcomes the problem of Clojure's reify being incompatible with
     // generics and Undertow's dependence on ParameterizedType
     static public MessageHandler.Whole<String> createTextHandler(final MessageHandler.Whole proxy) {
         return new MessageHandler.Whole<String>() {
@@ -29,7 +29,7 @@ public class Util {
             }};
     }
 
-    // The binary version of createStringHandler 
+    // The binary version of createTextHandler
     static public MessageHandler.Whole<byte[]> createBinaryHandler(final MessageHandler.Whole proxy) {
         return new MessageHandler.Whole<byte[]>() {
             public void onMessage(byte[] msg) {
