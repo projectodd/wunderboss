@@ -101,14 +101,16 @@ public class WunderBoss {
         return getComponentProvider(clazz, false) != null;
     }
 
-    public static void stop() throws Exception {
+    public static void shutdownAndReset() throws Exception {
         for (Component component : components.values()) {
             component.stop();
         }
+        components.clear();
 
         for (Language language : languages.values()) {
             language.shutdown();
         }
+        languages.clear();
     }
 
     private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> clazz, boolean throwIfMissing) {

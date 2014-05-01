@@ -19,9 +19,6 @@ package org.projectodd.wunderboss;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -91,7 +88,7 @@ public class WunderBossTest {
     public void testCanStopContainer() throws Exception {
         WunderBoss.registerComponentProvider(new TestComponentProvider());
         TestComponent comp = WunderBoss.findOrCreateComponent(TestComponent.class);
-        WunderBoss.stop();
+        WunderBoss.shutdownAndReset();
         assertTrue(comp.stopped);
     }
 

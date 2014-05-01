@@ -112,7 +112,7 @@ public class WildFlyService implements Service<WildFlyService> {
     public void stop(StopContext context) {
         log.debug("!!! Stopping WunderBoss application");
         try {
-            WunderBoss.stop();
+            WunderBoss.shutdownAndReset();
         } catch (Exception e) {
             e.printStackTrace();
         }
