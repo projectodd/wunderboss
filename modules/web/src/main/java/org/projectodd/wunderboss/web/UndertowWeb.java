@@ -46,11 +46,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.projectodd.wunderboss.web.Web.CreateOption.AUTO_START;
-import static org.projectodd.wunderboss.web.Web.CreateOption.HOST;
-import static org.projectodd.wunderboss.web.Web.CreateOption.PORT;
+import static org.projectodd.wunderboss.web.Web.CreateOption.*;
 import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 
 public class UndertowWeb implements Web<HttpHandler> {
@@ -173,6 +172,10 @@ public class UndertowWeb implements Web<HttpHandler> {
             log.warnf("No context registered at path %s", context);
             return null;
         }
+    }
+
+    public Set<String> registeredContexts() {
+        return contextRegistrar.keySet();
     }
 
     /**

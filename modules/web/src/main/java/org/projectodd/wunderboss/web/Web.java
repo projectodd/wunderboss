@@ -21,6 +21,7 @@ import org.projectodd.wunderboss.Option;
 
 import javax.servlet.Servlet;
 import java.util.Map;
+import java.util.Set;
 
 public interface Web<S> extends Component {
     class CreateOption extends Option {
@@ -36,12 +37,12 @@ public interface Web<S> extends Component {
         public static final RegisterOption STATIC_DIR   = opt("static_dir", RegisterOption.class);
     }
 
-
-
     Web registerHandler(S handler, Map<RegisterOption, Object> opts);
 
     Web registerServlet(Servlet servlet, Map<RegisterOption, Object> opts);
 
     Web unregister(String context);
+
+    Set<String> registeredContexts();
 
 }
