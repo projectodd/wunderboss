@@ -37,12 +37,34 @@ public interface Web<S> extends Component {
         public static final RegisterOption STATIC_DIR   = opt("static_dir", RegisterOption.class);
     }
 
-    Web registerHandler(S handler, Map<RegisterOption, Object> opts);
+    /**
+     * Registers a handler.
+     * @param handler
+     * @param opts
+     * @return true if this replaced an existing handler at the same context.
+     */
+    boolean registerHandler(S handler, Map<RegisterOption, Object> opts);
 
-    Web registerServlet(Servlet servlet, Map<RegisterOption, Object> opts);
+    /**
+     * Registers a servlet.
+     * @param servlet
+     * @param opts
+     * @return true if this replaced an existing servlet at the same context.
+     */
+    boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts);
 
-    Web unregister(String context);
 
+    /**
+     * Unregisters a handler or servlet at the given context.
+     * @param context
+     * @return true if there was actually something to unregister.
+     */
+    boolean unregister(String context);
+
+    /**
+     *
+     * @return an unmodifiable Set of contexts.
+     */
     Set<String> registeredContexts();
 
 }

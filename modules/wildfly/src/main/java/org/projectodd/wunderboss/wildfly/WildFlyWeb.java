@@ -19,7 +19,6 @@ package org.projectodd.wunderboss.wildfly;
 import io.undertow.server.HttpHandler;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.web.Web;
 import org.projectodd.wunderboss.web.UndertowWeb;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
@@ -39,9 +38,11 @@ public class WildFlyWeb extends UndertowWeb {
     }
 
     @Override
-    public Web registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
+    public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = getContextPath(options);
+        final boolean replacement = hasContext(context);
+
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
@@ -56,7 +57,7 @@ public class WildFlyWeb extends UndertowWeb {
                 }
             }
         });
-        return this;
+        return replacement;
     }
 
     private List<Host> getHosts() {

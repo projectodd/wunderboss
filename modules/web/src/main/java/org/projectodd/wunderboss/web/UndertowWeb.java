@@ -43,6 +43,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,9 +96,11 @@ public class UndertowWeb implements Web<HttpHandler> {
                 .build();
     }
 
-    public Web registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
+    public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = getContextPath(options);
+        final boolean replacement = hasContext(context);
+
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
@@ -114,12 +117,15 @@ public class UndertowWeb implements Web<HttpHandler> {
             start();
         }
         log.infof("Registered web context %s", context);
-        return this;
+
+        return replacement;
     }
 
-    public Web registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
-        Options<RegisterOption> options = new Options<>(opts);
-        String context = getContextPath(options);
+    public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
+        final Options<RegisterOption> options = new Options<>(opts);
+        final String context = getContextPath(options);
+        final boolean replacement = hasContext(context);
+
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(),
                                                          servletClass,
@@ -159,23 +165,30 @@ public class UndertowWeb implements Web<HttpHandler> {
             // TODO: something better
             e.printStackTrace();
         }
-        return this;
+
+        return replacement;
     }
 
-    public Web unregister(String context) {
-        Runnable f = contextRegistrar.remove(context);
+    public boolean unregister(String context) {
+        final Runnable f = contextRegistrar.remove(context);
+        boolean exists = false;
         if (f != null) {
             f.run();
+            exists = true;
             log.infof("Unregistered web context at path %s", context);
-            return this;
         } else {
             log.warnf("No context registered at path %s", context);
-            return null;
         }
+
+        return exists;
     }
 
     public Set<String> registeredContexts() {
-        return contextRegistrar.keySet();
+        return Collections.unmodifiableSet(this.contextRegistrar.keySet());
+    }
+
+    protected boolean hasContext(String context) {
+        return this.contextRegistrar.keySet().contains(context);
     }
 
     /**
