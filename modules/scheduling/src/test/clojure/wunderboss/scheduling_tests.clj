@@ -75,12 +75,20 @@
       (is (not (.unschedule default "a-job")))
       (reset! should-run? false))))
 
+(deftest scheduledJobs
+  (with-job #() {}
+    (let [jobs (.scheduledJobs default)]
+      (is (= #{"a-job"} jobs))
+      ;; it should be unmodifiable
+      (is (thrown? UnsupportedOperationException
+            (.add jobs "should-fail"))))))
+
 (deftest rescheduling
   (let [started1? (promise)
         should-run1? (atom true)
         started2? (promise)]
-    (with-job 
-      (fn [] 
+    (with-job
+      (fn []
         (is @should-run1?)
         (deliver started1? true))
       {:every 100}

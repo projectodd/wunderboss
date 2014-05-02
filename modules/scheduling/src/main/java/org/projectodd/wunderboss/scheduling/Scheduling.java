@@ -20,6 +20,7 @@ import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Option;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface Scheduling extends Component {
     class CreateOption extends Option {
@@ -59,4 +60,5 @@ public interface Scheduling extends Component {
     boolean unschedule(String name) throws Exception;
 
 
+    Set<String> scheduledJobs();
 }

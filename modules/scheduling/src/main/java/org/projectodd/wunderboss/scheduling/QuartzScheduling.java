@@ -32,8 +32,10 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
 
@@ -116,6 +118,11 @@ public class QuartzScheduling implements Scheduling {
         }
 
         return false;
+    }
+
+    @Override
+    public Set<String> scheduledJobs() {
+        return Collections.unmodifiableSet(this.currentJobs.keySet());
     }
 
     public synchronized JobKey lookupJob(String name) {
