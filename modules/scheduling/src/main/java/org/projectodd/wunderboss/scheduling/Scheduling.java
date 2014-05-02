@@ -34,7 +34,7 @@ public interface Scheduling extends Component {
         public static final ScheduleOption IN        = opt("in", ScheduleOption.class);
         public static final ScheduleOption LIMIT     = opt("limit", ScheduleOption.class);
         public static final ScheduleOption UNTIL     = opt("until", ScheduleOption.class);
-        public static final ScheduleOption SINGLETON = opt("singleton", ScheduleOption.class);
+        public static final ScheduleOption SINGLETON = opt("singleton", true, ScheduleOption.class);
     }
 
     /**
