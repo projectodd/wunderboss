@@ -31,10 +31,8 @@ public interface Web<S> extends Component {
     }
 
     class RegisterOption extends Option {
-        public static final RegisterOption CONTEXT_PATH = opt("context_path", "/", RegisterOption.class);
-        public static final RegisterOption DESTROY      = opt("destroy", RegisterOption.class);
-        public static final RegisterOption INIT         = opt("init", RegisterOption.class);
-        public static final RegisterOption STATIC_DIR   = opt("static_dir", RegisterOption.class);
+        public static final RegisterOption PATH       = opt("path", "/", RegisterOption.class);
+        public static final RegisterOption STATIC_DIR = opt("static_dir", RegisterOption.class);
     }
 
     /**

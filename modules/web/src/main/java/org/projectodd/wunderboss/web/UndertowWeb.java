@@ -105,9 +105,6 @@ public class UndertowWeb implements Web<HttpHandler> {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
         pathHandler.addPrefixPath(context, httpHandler);
-        if (options.get(INIT) != null) {
-            ((Runnable) options.get(INIT)).run();
-        }
         epilogue(options, new Runnable() { 
                 public void run() { 
                     pathHandler.removePrefixPath(context);
@@ -194,21 +191,11 @@ public class UndertowWeb implements Web<HttpHandler> {
     /**
      * Associate a resource cleanup function with a context path,
      * invoked in the unregister method. The context is obtained from
-     * the passed options. If the options contain an entry for a
-     * "destroy" function, it will be run as well.
+     * the passed options.
      */
     protected void epilogue(Options<RegisterOption> options, final Runnable cleanup) {
         String context = getContextPath(options);
-        if (options.has(DESTROY)) {
-            final Runnable destroy = (Runnable) options.get(DESTROY);
-            contextRegistrar.put(context, new Runnable() {
-                    public void run() {
-                        cleanup.run();
-                        destroy.run();
-                    }});
-        } else {
-            contextRegistrar.put(context, cleanup);
-        }
+        contextRegistrar.put(context, cleanup);
     }
 
     protected HttpHandler wrapWithStaticHandler(HttpHandler baseHandler, String path) {
@@ -259,8 +246,7 @@ public class UndertowWeb implements Web<HttpHandler> {
     }
 
     protected static String getContextPath(Options<RegisterOption> options) {
-        // Maybe accept "context" as a key, too?
-        return options.getString(CONTEXT_PATH, (String)CONTEXT_PATH.defaultValue);
+        return options.getString(PATH, (String)PATH.defaultValue);
     }
     
     private final String name;
