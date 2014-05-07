@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web;
+package org.projectodd.wunderboss.websocket;
 
 import javax.websocket.MessageHandler;
 
