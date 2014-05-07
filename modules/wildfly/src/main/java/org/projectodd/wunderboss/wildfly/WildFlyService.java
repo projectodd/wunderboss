@@ -30,7 +30,6 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.projectodd.wunderboss.Utils;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.ruby.RubyLocator;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.io.File;
@@ -76,10 +75,6 @@ public class WildFlyService implements Service<WildFlyService> {
 
         String language = requiredProperty(properties, "language");
         List<File> classpathAdditions = new ArrayList<>();
-
-        if (language.equals("ruby")) {
-            classpathAdditions.addAll(RubyLocator.locateLibs(properties.getProperty("jruby.home")));
-        }
 
         if (properties.containsKey("classpath")) {
             classpathAdditions.addAll(Utils.classpathStringToFiles(properties.getProperty("classpath")));
