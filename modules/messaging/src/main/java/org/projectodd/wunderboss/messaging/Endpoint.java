@@ -16,14 +16,10 @@
 
 package org.projectodd.wunderboss.messaging;
 
-import org.projectodd.wunderboss.Closeable;
-
-public interface Endpoint extends Closeable {
+public interface Endpoint extends AutoCloseable {
 
     /**
      * Indicates if this is a broadcast endpoint (a topic) or not
      */
     boolean isBroadcast();
-
-    boolean isDurable();
 }

@@ -16,12 +16,11 @@
 
 package org.projectodd.wunderboss.messaging;
 
-import org.projectodd.wunderboss.Closeable;
 import org.projectodd.wunderboss.Option;
 
 import java.util.Map;
 
-public interface Connection extends Closeable {
+public interface Connection extends AutoCloseable {
 
     class ListenOption extends Option {
         /**
