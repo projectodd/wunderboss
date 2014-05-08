@@ -55,7 +55,7 @@ public class WunderBoss {
         String fullName = clazz.getName() + ":" + name;
         T component = (T) components.get(fullName);
         if (component != null) {
-            log.info("Returning existing component for " + fullName + ", ignoring options.");
+            log.debug("Returning existing component for " + fullName + ", ignoring options.");
         } else {
             component = getComponentProvider(clazz, true).create(name, new Options<>(options));
             components.put(fullName, component);
