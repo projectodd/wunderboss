@@ -30,6 +30,7 @@ import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -177,9 +178,14 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         Options<ReceiveOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT, (Integer)ReceiveOption.TIMEOUT.defaultValue);
         try (Session session = this.jmsConnection.createSession()) {
-            javax.jms.Message message = session.createConsumer(((DestinationEndpoint)endpoint).destination(),
-                                                               opts.getString(ReceiveOption.SELECTOR))
-                    .receive(timeout);
+            MessageConsumer consumer = session.createConsumer(((DestinationEndpoint)endpoint).destination(),
+                                                              opts.getString(ReceiveOption.SELECTOR));
+            javax.jms.Message message;
+            if (timeout == -1) {
+                message = consumer.receiveNoWait();
+            } else {
+                message = consumer.receive(timeout);
+            }
 
             if (message != null) {
                 return new HornetQMessage(message, endpoint, this);
