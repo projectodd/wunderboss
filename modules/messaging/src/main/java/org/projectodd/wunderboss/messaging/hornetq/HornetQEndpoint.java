@@ -25,8 +25,8 @@ import javax.jms.Topic;
 
 public class HornetQEndpoint extends DestinationEndpoint {
 
-    public HornetQEndpoint(Destination dest, JMSServerManager jmsServerManager, boolean durable) {
-        super(dest, durable);
+    public HornetQEndpoint(Destination dest, JMSServerManager jmsServerManager) {
+        super(dest);
         this.jmsServerManager = jmsServerManager;
     }
 

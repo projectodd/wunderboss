@@ -1,12 +1,12 @@
 /*
  * Copyright 2014 Red Hat, Inc, and individual contributors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,13 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.Closeable;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
@@ -42,16 +42,18 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
     protected static final String SYNC_ATTRIBUTE = "synchronous";
 
-    public HornetQConnection(Messaging parent, Connection jmsConnection) {
+    public HornetQConnection(Connection jmsConnection, Messaging parent,
+                             Options<Messaging.CreateConnectionOption> creationOptions) {
         this.jmsConnection = jmsConnection;
-        this.parent = parent;
+        this.broker = parent;
+        this.creationOptions = creationOptions;
     }
 
     @Override
     public Listener listen(Endpoint endpoint, MessageHandler handler,
                            Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        Listener listener = new MessageHandlerGroup(this.parent, handler,
+        Listener listener = new MessageHandlerGroup(this.broker, handler,
                                                     endpoint,
                                                     opts).start();
 
@@ -61,16 +63,32 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     }
 
     @Override
-    public Listener respond(Endpoint endpoint, MessageHandler handler,
+    public Listener respond(Endpoint endpoint, final MessageHandler handler,
                             Map<ListenOption, Object> options) throws Exception {
-        Options<ListenOption> opts = new Options<>(options);
+        final Options<ListenOption> opts = new Options<>(options);
         String selector = SYNC_ATTRIBUTE + " = TRUE";
         if (opts.has(ListenOption.SELECTOR)) {
             selector += " AND " + opts.getString(ListenOption.SELECTOR);
         }
         opts.put(ListenOption.SELECTOR, selector);
 
-        return listen(endpoint, handler, opts);
+        MessageHandler wrappedHandler = new MessageHandler() {
+            @Override
+            public Object onMessage(Message msg) throws Exception {
+                Object result = handler.onMessage(msg);
+                Options<SendOption> replyOptions = new Options<>();
+                replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL,
+                                                             (Integer) RespondOption.TTL.defaultValue));
+                if (result instanceof String) {
+                    ((ReplyableMessage)msg).reply((String)result, msg.contentType(), replyOptions);
+                } else {
+                    ((ReplyableMessage)msg).reply((byte[])result, msg.contentType(), replyOptions);
+                }
+                return null;
+            }
+        };
+
+        return listen(endpoint, wrappedHandler, opts);
     }
 
     @Override
@@ -102,8 +120,8 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         return message;
     }
 
-    protected static javax.jms.Message fillInHeaders(javax.jms.Message message, Map<String, Object> headers) throws JMSException {
-        for(Map.Entry<String, Object> each : headers.entrySet()) {
+    protected static javax.jms.Message fillInProperties(javax.jms.Message message, Map<String, Object> properties) throws JMSException {
+        for(Map.Entry<String, Object> each : properties.entrySet()) {
             message.setObjectProperty(each.getKey(), each.getValue());
         }
         return message;
@@ -118,7 +136,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
                         Map<SendOption, Object> options) throws Exception {
         Options<SendOption> opts = new Options<>(options);
         message.setStringProperty(CONTENT_TYPE_PROPERTY, contentType);
-        fillInHeaders(message, (Map<String, Object>)opts.get(SendOption.HEADERS, Collections.emptyMap()));
+        fillInProperties(message, (Map<String, Object>) opts.get(SendOption.PROPERTIES, Collections.emptyMap()));
         MessageProducer producer = session.createProducer(((DestinationEndpoint)endpoint).destination());
         producer.send(message,
                       (opts.getBoolean(SendOption.PERSISTENT, (Boolean)SendOption.PERSISTENT.defaultValue) ?
@@ -130,27 +148,28 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     @Override
     public Response request(Endpoint endpoint, String content, String contentType,
                             Map<SendOption, Object> options) throws Exception {
-        javax.jms.Message message;
         try (Session session = createSession()) {
-            message = buildTextMessage(session, content);
-            message.setBooleanProperty(SYNC_ATTRIBUTE, true);
-            send(session, endpoint, message, contentType, options);
+            return request(endpoint, session, buildTextMessage(session, content),
+                           contentType, options);
         }
-
-        return new HornetQResponse(this, message, endpoint);
     }
 
     @Override
     public Response request(Endpoint endpoint, byte[] content, String contentType,
                             Map<SendOption, Object> options) throws Exception {
-        javax.jms.Message message;
         try (Session session = createSession()) {
-            message = buildBytesMessage(session, content);
-            message.setBooleanProperty(SYNC_ATTRIBUTE, true);
-            send(session, endpoint, message, contentType, options);
+            return request(endpoint, session, buildBytesMessage(session, content),
+                           contentType, options);
         }
+    }
 
-        return new HornetQResponse(this, message, endpoint);
+    private Response request(Endpoint endpoint, Session session,
+                             javax.jms.Message message, String contentType,
+                             Map<SendOption, Object> options) throws Exception {
+        message.setBooleanProperty(SYNC_ATTRIBUTE, true);
+        send(session, endpoint, message, contentType, options);
+
+        return new HornetQResponse(message, endpoint, this.broker, this.creationOptions);
     }
 
     @Override
@@ -158,7 +177,8 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         Options<ReceiveOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT, (Integer)ReceiveOption.TIMEOUT.defaultValue);
         try (Session session = this.jmsConnection.createSession()) {
-            javax.jms.Message message = session.createConsumer(((DestinationEndpoint)endpoint).destination())
+            javax.jms.Message message = session.createConsumer(((DestinationEndpoint)endpoint).destination(),
+                                                               opts.getString(ReceiveOption.SELECTOR))
                     .receive(timeout);
 
             if (message != null) {
@@ -171,7 +191,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     @Override
     public void close() throws Exception {
-        for(Closeable each : this.listeners) {
+        for(AutoCloseable each : this.listeners) {
             each.close();
         }
         this.jmsConnection.close();
@@ -181,7 +201,16 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         return this.jmsConnection;
     }
 
+    public Messaging broker() {
+        return this.broker;
+    }
+
+    public Options<Messaging.CreateConnectionOption> creationOptions() {
+        return this.creationOptions;
+    }
+
     private final Connection jmsConnection;
-    private final Messaging parent;
+    private final Messaging broker;
+    private final Options<Messaging.CreateConnectionOption> creationOptions;
     private final List<Listener> listeners = new ArrayList<>();
 }

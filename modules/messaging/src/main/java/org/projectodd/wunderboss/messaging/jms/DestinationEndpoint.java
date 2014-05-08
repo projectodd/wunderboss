@@ -23,9 +23,8 @@ import javax.jms.Topic;
 
 public abstract class DestinationEndpoint implements Endpoint {
 
-    public DestinationEndpoint(Destination dest, boolean durable) {
+    public DestinationEndpoint(Destination dest) {
         this.destination = dest;
-        this.durable = durable;
     }
 
     @Override
@@ -33,15 +32,9 @@ public abstract class DestinationEndpoint implements Endpoint {
         return (this.destination instanceof Topic);
     }
 
-    @Override
-    public boolean isDurable() {
-        return this.durable;
-    }
-
     public Destination destination() {
         return this.destination;
     }
 
     private final Destination destination;
-    private final boolean durable;
 }

@@ -24,7 +24,6 @@ import org.hornetq.jms.client.HornetQMessage;
 import org.hornetq.jms.client.HornetQMessageConsumer;
 import org.hornetq.jms.client.HornetQSession;
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 
@@ -39,7 +38,7 @@ import java.lang.reflect.Field;
 public class TransactionalListener implements MessageListener, org.hornetq.api.core.client.MessageHandler {
     public TransactionalListener(MessageHandler handler,
                                  Endpoint endpoint,
-                                 Connection connection,
+                                 HornetQConnection connection,
                                  Session session,
                                  MessageConsumer consumer, boolean xa, TransactionManager tm) {
         this.handler = handler;
@@ -196,7 +195,7 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
 
     private final MessageHandler handler;
     private final Endpoint endpoint;
-    private final Connection connection;
+    private final HornetQConnection connection;
     private final Session session;
     private final MessageConsumer consumer;
     private final boolean xa;

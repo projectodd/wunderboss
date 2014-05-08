@@ -33,7 +33,7 @@ public interface Connection extends AutoCloseable {
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         /**
          * subscriber-name for durable topic subscriptions. Ignored for queues. Defaults to
-         * LISTENER_ID, then falls back to CLIENT_ID if LISTENER_ID not set.
+         * CLIENT_ID.
          */
         public static final ListenOption SUBSCRIBER_NAME = opt("subscriber_name", ListenOption.class);
         /**
@@ -46,6 +46,10 @@ public interface Connection extends AutoCloseable {
     Listener listen(Endpoint endpoint, MessageHandler handler,
                     Map<ListenOption, Object> options) throws Exception;
 
+    class RespondOption extends ListenOption {
+        public static final RespondOption TTL = opt("ttl", 60000, RespondOption.class);
+    }
+
     Listener respond(Endpoint endpoint, MessageHandler handler,
                      Map<ListenOption, Object> options) throws Exception;
 
@@ -53,7 +57,7 @@ public interface Connection extends AutoCloseable {
         public static final SendOption PRIORITY   = opt("priority", 4, SendOption.class); //TODO: 4 is JMS specific?
         public static final SendOption TTL        = opt("ttl", 0, SendOption.class);
         public static final SendOption PERSISTENT = opt("persistent", true, SendOption.class);
-        public static final SendOption HEADERS    = opt("headers", SendOption.class);
+        public static final SendOption PROPERTIES = opt("properties", SendOption.class);
     }
 
     void send(Endpoint endpoint, String content, String contentType, Map<SendOption, Object> options) throws Exception;
@@ -73,6 +77,13 @@ public interface Connection extends AutoCloseable {
         public static final ReceiveOption SELECTOR = opt("selector", ReceiveOption.class);
     }
 
+    /**
+     *
+     * @param endpoint
+     * @param options
+     * @return the Message, or null on timeout
+     * @throws Exception
+     */
     Message receive(Endpoint endpoint,
                     Map<ReceiveOption, Object> options) throws Exception;
 

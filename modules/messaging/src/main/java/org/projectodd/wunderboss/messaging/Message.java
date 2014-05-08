@@ -21,7 +21,7 @@ import java.util.Map;
 public interface Message {
     String contentType();
 
-    Map<String, Object> headers();
+    Map<String, Object> properties();
 
     Endpoint endpoint();
 

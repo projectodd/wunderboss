@@ -33,7 +33,6 @@ import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Connection;
-import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.ConnectionFactory;
@@ -45,7 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class HornetQMessaging implements Messaging {
 
@@ -77,9 +75,10 @@ public class HornetQMessaging implements Messaging {
             // TODO: security?
             config.setSecurityEnabled(false);
 
-            //TODO: setting this to true allows persisting destination configs. Do we want this?
-            // My gut currently says "no", but in the container, we may be fighting this
-            config.setPersistenceEnabled(false);
+            config.setPersistenceEnabled(true);
+
+            config.setBindingsDirectory("target/data/bindings");
+            config.setLargeMessagesDirectory("target/data/largemessages");
 
             //TODO: mbean server
             this.jmsServerManager =
@@ -136,7 +135,7 @@ public class HornetQMessaging implements Messaging {
         javax.jms.Connection connection = cf.createConnection();
         connection.start();
 
-        return new HornetQConnection(this, connection);
+        return new HornetQConnection(connection, this, opts);
     }
 
     @Override
@@ -146,21 +145,27 @@ public class HornetQMessaging implements Messaging {
         boolean topic = opts.getBoolean(CreateEndpointOption.BROADCAST, false);
         String jndiName = (topic ? "topic:" : "queue:") + name;
         Destination dest = topic ? lookupTopic(name) : lookupQueue(name);
-        boolean durable = false;
+        String selector = opts.getString(CreateEndpointOption.SELECTOR, "");
+
         if (dest == null) {
             if (topic) {
+                if (opts.getBoolean(CreateEndpointOption.DURABLE, false)) {
+                    throw new IllegalArgumentException("Broadcast endpoints can't be durable.");
+                }
+                if (!"".equals(selector)) {
+                    throw new IllegalArgumentException("Broadcast endpoints can't have selectors.");
+                }
                 createTopic(name, jndiName);
                 dest = lookupTopic(name);
             } else {
-                durable = opts.getBoolean(CreateEndpointOption.DURABLE,
-                                          (Boolean)CreateEndpointOption.DURABLE.defaultValue);
-                String selector = opts.getString(CreateEndpointOption.SELECTOR, "");
-                createQueue(name, jndiName, selector, durable);
+                createQueue(name, jndiName, selector,
+                            opts.getBoolean(CreateEndpointOption.DURABLE,
+                                            (Boolean)CreateEndpointOption.DURABLE.defaultValue));
                 dest = lookupQueue(name);
             }
         }
 
-        return new HornetQEndpoint(dest, this.jmsServerManager, durable);
+        return new HornetQEndpoint(dest, this.jmsServerManager);
     }
 
     protected void createTopic(String name, String jndiName) throws Exception {
@@ -207,7 +212,4 @@ public class HornetQMessaging implements Messaging {
     private final boolean xa;
     protected boolean started = false;
     protected JMSServerManager jmsServerManager;
-    private final Map<String, MessageHandlerGroup> listenerGroups = new ConcurrentHashMap<>();
-
-
 }

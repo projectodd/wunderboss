@@ -1,12 +1,12 @@
 /*
  * Copyright 2014 Red Hat, Inc, and individual contributors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -91,7 +91,6 @@ public class MessageHandlerGroup implements Listener {
     }
 
     protected void startConnection() throws Exception {
-
         this.connection =
                 (HornetQConnection)broker.createConnection(new HashMap<CreateConnectionOption, Object>() {{
                     put(Messaging.CreateConnectionOption.XA, isXAEnabled());
@@ -115,7 +114,10 @@ public class MessageHandlerGroup implements Listener {
             return ((XAConnection)this.connection.jmsConnection()).createXASession();
         } else {
             // Use local transactions for non-XA message processors
-            return this.connection.jmsConnection().createSession(true, Session.SESSION_TRANSACTED);
+            //return
+            //this.connection.jmsConnection().createSession(true,
+            //Session.SESSION_TRANSACTED);
+            return this.connection.jmsConnection().createSession();
         }
     }
 
