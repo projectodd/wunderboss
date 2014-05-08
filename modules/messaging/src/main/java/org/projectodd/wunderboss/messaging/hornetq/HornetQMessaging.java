@@ -133,6 +133,11 @@ public class HornetQMessaging implements Messaging {
         }
 
         javax.jms.Connection connection = cf.createConnection();
+
+        if (opts.has(CreateConnectionOption.CLIENT_ID)) {
+            connection.setClientID(opts.getString(CreateConnectionOption.CLIENT_ID));
+        }
+
         connection.start();
 
         return new HornetQConnection(connection, this, opts);

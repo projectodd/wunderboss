@@ -18,7 +18,7 @@
            [org.projectodd.wunderboss.messaging Messaging
             Connection Connection$ListenOption Connection$ReceiveOption
             Connection$RespondOption Connection$SendOption
-            Messaging$CreateEndpointOption
+            Messaging$CreateConnectionOption Messaging$CreateEndpointOption
             MessageHandler]
            java.util.concurrent.TimeUnit))
 
@@ -43,14 +43,15 @@
         opts))))
 
 (def coerce-endpoint-options (create-opts-fn Messaging$CreateEndpointOption))
+(def coerce-connection-options (create-opts-fn Messaging$CreateConnectionOption))
 (def coerce-listen-options (create-opts-fn Connection$ListenOption))
 (def coerce-respond-options (create-opts-fn Connection$RespondOption))
 (def coerce-receive-options (create-opts-fn Connection$ReceiveOption))
 (def coerce-send-options (create-opts-fn Connection$SendOption))
 
-(defn create-endpoint [name]
+(defn create-endpoint [name & [opts]]
   (.findOrCreateEndpoint default "a-queue"
-    (coerce-endpoint-options {:durable false})))
+    (coerce-endpoint-options (merge opts {:durable false}))))
 
 (deftest endpoint-creation-should-throw-if-a-durable-broadcast-is-requested
   (is (thrown? IllegalArgumentException
@@ -81,6 +82,18 @@
     (is (thrown? javax.jms.InvalidDestinationException
           (.receive connection endpoint (coerce-receive-options {:timeout 1}))))))
 
+(deftest receive-with-a-durable-subscription
+  (with-open [topic (create-endpoint "subs" {:broadcast true})
+              connection (.createConnection default (coerce-connection-options {:client_id "client-id"}))]
+    (.send connection topic "hi" nil nil)
+    (is (nil? (.receive connection topic
+                (coerce-receive-options {:timeout -1 :subscriber_name "bar"}))))
+    (.send connection topic "hi2" nil nil)
+    (is (= "hi2" (.body
+                   (.receive connection topic
+                     (coerce-receive-options {:timeout 100 :subscriber_name "bar"}))
+                   String)))))
+
 (deftest listen
   (with-open [connection (.createConnection default nil)
               queue (create-endpoint "listen-queue")]
@@ -96,6 +109,29 @@
       (.close listener)
       (.send connection queue "hi" nil nil)
       (is (= :success (deref @called 1000 :success))))))
+
+(deftest listen-with-durable-subscriber
+  (with-open [connection (.createConnection default
+                           (coerce-connection-options {:client_id "something"}))
+              topic (create-endpoint "listen-topic" {:broadcast true})]
+    (let [called (atom (promise))
+          listener (.listen connection topic
+                     (reify MessageHandler
+                       (onMessage [_ msg]
+                         (deliver @called (.body msg String))))
+                     (coerce-listen-options {:subscriber_name "subs"}))]
+      (.send connection topic "hi" nil nil)
+      (is (= "hi" (deref @called 1000 :failure)))
+      (reset! called (promise))
+      (.close listener)
+      (.send connection topic "hi-again" nil nil)
+      (is (= :failure (deref @called 100 :failure)))
+      (with-open [listener (.listen connection topic
+                             (reify MessageHandler
+                               (onMessage [_ msg]
+                                 (deliver @called (.body msg String))))
+                             (coerce-listen-options {:subscriber_name "subs"}))]
+        (is (= "hi-again" (deref @called 1000 :failure)))))))
 
 (deftest listen-with-concurrency
   (with-open [connection (.createConnection default nil)

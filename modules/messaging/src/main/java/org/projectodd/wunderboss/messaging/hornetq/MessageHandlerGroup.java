@@ -22,26 +22,24 @@ import org.projectodd.wunderboss.messaging.Connection.ListenOption;
 import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Messaging;
-import org.projectodd.wunderboss.messaging.Messaging.CreateConnectionOption;
 import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.XAConnection;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(Messaging broker,
+    public MessageHandlerGroup(HornetQConnection connection,
                                MessageHandler handler,
                                Endpoint endpoint,
                                Options<ListenOption> options) {
-        this.broker = broker;
+        this.connection = connection;
         this.handler = handler;
         this.endpoint = (DestinationEndpoint)endpoint;
         this.options = options;
@@ -50,8 +48,6 @@ public class MessageHandlerGroup implements Listener {
     public synchronized MessageHandlerGroup start() {
         if (!this.started) {
             try {
-                startConnection();
-
                 int concurrency = this.options.getInt(ListenOption.CONCURRENCY, 1);
                 while(concurrency-- > 0) {
                     Session session = createSession();
@@ -78,8 +74,6 @@ public class MessageHandlerGroup implements Listener {
     @Override
     public synchronized void close() throws Exception {
         if (this.started) {
-            this.connection.close();
-
             for(TransactionalListener each : this.listeners) {
                 each.stop();
             }
@@ -87,25 +81,6 @@ public class MessageHandlerGroup implements Listener {
             this.listeners.clear();
 
             this.started = false;
-        }
-    }
-
-    protected void startConnection() throws Exception {
-        this.connection =
-                (HornetQConnection)broker.createConnection(new HashMap<CreateConnectionOption, Object>() {{
-                    put(Messaging.CreateConnectionOption.XA, isXAEnabled());
-                }});
-
-
-        if (isDurable()) {
-            if (this.endpoint instanceof Topic) {
-                String clientID = this.options.getString(ListenOption.CLIENT_ID);
-                log.info("Setting clientID to " + clientID);
-                this.connection.jmsConnection().setClientID(clientID);
-            } else {
-                log.warn("ClientID set for handler but " +
-                                 endpoint + " is not a topic - ignoring.");
-            }
         }
     }
 
@@ -123,26 +98,26 @@ public class MessageHandlerGroup implements Listener {
 
     protected MessageConsumer createConsumer(Session session) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
-        String name = this.options.getString(ListenOption.SUBSCRIBER_NAME,
-                                             this.options.getString(ListenOption.CLIENT_ID));
-        if (isDurable() && this.endpoint instanceof Topic) {
-            return session.createDurableSubscriber((Topic) endpoint,
+        String name = this.options.getString(ListenOption.SUBSCRIBER_NAME);
+        Destination destination = endpoint.destination();
+        if (isDurable()) {
+            return session.createDurableSubscriber((Topic) destination,
                                                    name, selector, false);
         } else {
-            return session.createConsumer(endpoint.destination(), selector);
+            return session.createConsumer(destination, selector);
         }
 
     }
 
     protected boolean isXAEnabled() {
-        return this.options.getBoolean(ListenOption.XA, this.broker.isXaDefault());
+        return this.options.getBoolean(ListenOption.XA, this.connection.isXAEnabled());
     }
 
     protected boolean isDurable() {
-        return this.options.has(ListenOption.CLIENT_ID);
+        return this.options.has(ListenOption.SUBSCRIBER_NAME) &&
+                this.endpoint.destination() instanceof Topic;
     }
 
-    private final Messaging broker;
     private final MessageHandler handler;
     private final DestinationEndpoint endpoint;
     private final Options<ListenOption> options;

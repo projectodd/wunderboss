@@ -23,17 +23,12 @@ import java.util.Map;
 public interface Connection extends AutoCloseable {
 
     class ListenOption extends Option {
-        /**
-         * The client-id for durable topic subscriptions. Ignored for queues.
-         */
-        public static final ListenOption CLIENT_ID   = opt("client_id", ListenOption.class);
+
 
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
-
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         /**
-         * subscriber-name for durable topic subscriptions. Ignored for queues. Defaults to
-         * CLIENT_ID.
+         * subscriber-name for durable topic subscriptions. Ignored for queues.
          */
         public static final ListenOption SUBSCRIBER_NAME = opt("subscriber_name", ListenOption.class);
         /**
@@ -75,6 +70,10 @@ public interface Connection extends AutoCloseable {
     class ReceiveOption extends Option {
         public static final ReceiveOption TIMEOUT  = opt("timeout", 10000, ReceiveOption.class);
         public static final ReceiveOption SELECTOR = opt("selector", ReceiveOption.class);
+        /**
+         * subscriber-name for durable topic subscriptions. Ignored for queues.
+         */
+        public static final ReceiveOption SUBSCRIBER_NAME = opt("subscriber_name", ReceiveOption.class);
     }
 
     /**

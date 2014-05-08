@@ -44,6 +44,10 @@ public interface Messaging extends Component {
 
     class CreateConnectionOption extends Option {
         /**
+         * The client-id for durable topic subscriptions. Ignored for queues.
+         */
+        public static final CreateConnectionOption CLIENT_ID = opt("client_id", CreateConnectionOption.class);
+        /**
          * If true, and xa connection is returned. Defaults to whatever was specified for
          * CreateOption.XA.
          */

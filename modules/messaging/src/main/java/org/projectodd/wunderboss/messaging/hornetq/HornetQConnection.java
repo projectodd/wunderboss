@@ -29,11 +29,13 @@ import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
+import javax.jms.Topic;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,10 +45,10 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
     protected static final String SYNC_ATTRIBUTE = "synchronous";
 
-    public HornetQConnection(Connection jmsConnection, Messaging parent,
+    public HornetQConnection(Connection jmsConnection, Messaging broker,
                              Options<Messaging.CreateConnectionOption> creationOptions) {
         this.jmsConnection = jmsConnection;
-        this.broker = parent;
+        this.broker = broker;
         this.creationOptions = creationOptions;
     }
 
@@ -54,7 +56,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     public Listener listen(Endpoint endpoint, MessageHandler handler,
                            Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        Listener listener = new MessageHandlerGroup(this.broker, handler,
+        Listener listener = new MessageHandlerGroup(this, handler,
                                                     endpoint,
                                                     opts).start();
 
@@ -178,8 +180,19 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         Options<ReceiveOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT, (Integer)ReceiveOption.TIMEOUT.defaultValue);
         try (Session session = this.jmsConnection.createSession()) {
-            MessageConsumer consumer = session.createConsumer(((DestinationEndpoint)endpoint).destination(),
-                                                              opts.getString(ReceiveOption.SELECTOR));
+            String selector = opts.getString(ReceiveOption.SELECTOR);
+            Destination destination = ((DestinationEndpoint)endpoint).destination();
+            MessageConsumer consumer;
+            if (opts.has(ReceiveOption.SUBSCRIBER_NAME) &&
+                    destination instanceof Topic) {
+                consumer = session.createDurableSubscriber((Topic)destination,
+                                                           opts.getString(ReceiveOption.SUBSCRIBER_NAME),
+                                                           selector,
+                                                           false);
+            } else {
+                consumer = session.createConsumer(destination, selector);
+            }
+
             javax.jms.Message message;
             if (timeout == -1) {
                 message = consumer.receiveNoWait();
@@ -209,6 +222,11 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     public Messaging broker() {
         return this.broker;
+    }
+
+    public boolean isXAEnabled() {
+        return this.creationOptions.getBoolean(Messaging.CreateConnectionOption.XA,
+                                               this.broker.isXaDefault());
     }
 
     public Options<Messaging.CreateConnectionOption> creationOptions() {
