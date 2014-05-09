@@ -22,6 +22,7 @@ import org.projectodd.wunderboss.messaging.Connection.ListenOption;
 import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
+import org.projectodd.wunderboss.messaging.Subscription;
 import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
 import javax.jms.Destination;
@@ -98,11 +99,12 @@ public class MessageHandlerGroup implements Listener {
 
     protected MessageConsumer createConsumer(Session session) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
-        String name = this.options.getString(ListenOption.SUBSCRIBER_NAME);
         Destination destination = endpoint.destination();
         if (isDurable()) {
+            Subscription subscription = (Subscription)this.options.get(ListenOption.SUBSCRIPTION);
             return session.createDurableSubscriber((Topic) destination,
-                                                   name, selector, false);
+                                                   subscription.name(),
+                                                   selector, false);
         } else {
             return session.createConsumer(destination, selector);
         }
@@ -114,7 +116,7 @@ public class MessageHandlerGroup implements Listener {
     }
 
     protected boolean isDurable() {
-        return this.options.has(ListenOption.SUBSCRIBER_NAME) &&
+        return this.options.has(ListenOption.SUBSCRIPTION) &&
                 this.endpoint.destination() instanceof Topic;
     }
 

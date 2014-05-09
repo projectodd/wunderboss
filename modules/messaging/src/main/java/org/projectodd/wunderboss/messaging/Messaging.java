@@ -44,9 +44,9 @@ public interface Messaging extends Component {
 
     class CreateConnectionOption extends Option {
         /**
-         * The client-id for durable topic subscriptions. Ignored for queues.
+         * A durable topic subscription. Ignored for queues.
          */
-        public static final CreateConnectionOption CLIENT_ID = opt("client_id", CreateConnectionOption.class);
+        public static final CreateConnectionOption SUBSCRIPTION = opt("subscription", CreateConnectionOption.class);
         /**
          * If true, and xa connection is returned. Defaults to whatever was specified for
          * CreateOption.XA.
@@ -56,6 +56,13 @@ public interface Messaging extends Component {
 
     //TODO: remote connections?
     Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
+
+
+    class CreateSubscriptionOption extends Option {
+        public static final CreateSubscriptionOption SELECTOR  = opt("selector", CreateSubscriptionOption.class);
+    }
+    Subscription createSubscription(Endpoint endpoint, String name,
+                                    Map<CreateSubscriptionOption, Object> options) throws Exception;
 
     boolean isXaDefault();
 }

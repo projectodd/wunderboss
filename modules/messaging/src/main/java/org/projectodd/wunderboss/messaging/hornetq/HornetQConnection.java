@@ -24,6 +24,7 @@ import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
+import org.projectodd.wunderboss.messaging.Subscription;
 import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
 
 import javax.jms.BytesMessage;
@@ -183,10 +184,11 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
             String selector = opts.getString(ReceiveOption.SELECTOR);
             Destination destination = ((DestinationEndpoint)endpoint).destination();
             MessageConsumer consumer;
-            if (opts.has(ReceiveOption.SUBSCRIBER_NAME) &&
+            if (opts.has(ReceiveOption.SUBSCRIPTION) &&
                     destination instanceof Topic) {
+                Subscription subscription = (Subscription)opts.get(ReceiveOption.SUBSCRIPTION);
                 consumer = session.createDurableSubscriber((Topic)destination,
-                                                           opts.getString(ReceiveOption.SUBSCRIBER_NAME),
+                                                           subscription.name(),
                                                            selector,
                                                            false);
             } else {

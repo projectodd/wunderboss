@@ -33,7 +33,9 @@ import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.messaging.Subscription;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -134,13 +136,21 @@ public class HornetQMessaging implements Messaging {
 
         javax.jms.Connection connection = cf.createConnection();
 
-        if (opts.has(CreateConnectionOption.CLIENT_ID)) {
-            connection.setClientID(opts.getString(CreateConnectionOption.CLIENT_ID));
+        if (opts.has(CreateConnectionOption.SUBSCRIPTION)) {
+            connection.setClientID(((Subscription)opts.get(CreateConnectionOption.SUBSCRIPTION)).name());
         }
 
         connection.start();
 
         return new HornetQConnection(connection, this, opts);
+    }
+
+    @Override
+    public Subscription createSubscription(Endpoint endpoint, String name,
+                                           Map<CreateSubscriptionOption, Object> options) throws Exception {
+        Options<CreateSubscriptionOption> opts = new Options<>(options);
+        return new HornetQSubscription(this, endpoint, name,
+                                       opts.getString(CreateSubscriptionOption.SELECTOR)).start();
     }
 
     @Override

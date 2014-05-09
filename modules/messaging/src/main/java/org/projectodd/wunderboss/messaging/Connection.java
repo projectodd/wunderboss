@@ -28,9 +28,9 @@ public interface Connection extends AutoCloseable {
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         /**
-         * subscriber-name for durable topic subscriptions. Ignored for queues.
+         * A durable topic subscription. Ignored for queues.
          */
-        public static final ListenOption SUBSCRIBER_NAME = opt("subscriber_name", ListenOption.class);
+        public static final ListenOption SUBSCRIPTION = opt("subscription", ListenOption.class);
         /**
          * If true, and xa is used around the onMessage(). Defaults to whatever was specified for
          * CreateOption.XA.
@@ -73,7 +73,7 @@ public interface Connection extends AutoCloseable {
         /**
          * subscriber-name for durable topic subscriptions. Ignored for queues.
          */
-        public static final ReceiveOption SUBSCRIBER_NAME = opt("subscriber_name", ReceiveOption.class);
+        public static final ReceiveOption SUBSCRIPTION = opt("subscription", ReceiveOption.class);
     }
 
     /**

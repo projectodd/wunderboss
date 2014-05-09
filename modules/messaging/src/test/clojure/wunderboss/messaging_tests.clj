@@ -84,15 +84,21 @@
 
 (deftest receive-with-a-durable-subscription
   (with-open [topic (create-endpoint "subs" {:broadcast true})
-              connection (.createConnection default (coerce-connection-options {:client_id "client-id"}))]
-    (.send connection topic "hi" nil nil)
-    (is (nil? (.receive connection topic
-                (coerce-receive-options {:timeout -1 :subscriber_name "bar"}))))
-    (.send connection topic "hi2" nil nil)
-    (is (= "hi2" (.body
-                   (.receive connection topic
-                     (coerce-receive-options {:timeout 100 :subscriber_name "bar"}))
-                   String)))))
+              subscription (.createSubscription default topic "recv-sub" nil)]
+    (with-open [connection (.createConnection default
+                             (coerce-connection-options {:subscription subscription}))]
+      (.send connection topic "hi" nil nil)
+      (is (= "hi" (.body
+                    (.receive connection topic
+                      (coerce-receive-options {:timeout 100 :subscription subscription}))
+                    String))))
+    (.close subscription)
+    (with-open [connection (.createConnection default
+                             (coerce-connection-options {:subscription subscription}))]
+      (.send connection topic "hi2" nil nil)
+      (is (nil?
+            (.receive connection topic
+              (coerce-receive-options {:timeout 100 :subscription subscription})))))))
 
 (deftest listen
   (with-open [connection (.createConnection default nil)
@@ -111,15 +117,16 @@
       (is (= :success (deref @called 1000 :success))))))
 
 (deftest listen-with-durable-subscriber
-  (with-open [connection (.createConnection default
-                           (coerce-connection-options {:client_id "something"}))
-              topic (create-endpoint "listen-topic" {:broadcast true})]
+  (with-open [topic (create-endpoint "listen-topic" {:broadcast true})
+              subscription (.createSubscription default topic "foo" nil)
+              connection (.createConnection default
+                           (coerce-connection-options {:subscription subscription}))]
     (let [called (atom (promise))
           listener (.listen connection topic
                      (reify MessageHandler
                        (onMessage [_ msg]
                          (deliver @called (.body msg String))))
-                     (coerce-listen-options {:subscriber_name "subs"}))]
+                     (coerce-listen-options {:subscription subscription}))]
       (.send connection topic "hi" nil nil)
       (is (= "hi" (deref @called 1000 :failure)))
       (reset! called (promise))
@@ -130,7 +137,7 @@
                              (reify MessageHandler
                                (onMessage [_ msg]
                                  (deliver @called (.body msg String))))
-                             (coerce-listen-options {:subscriber_name "subs"}))]
+                     (coerce-listen-options {:subscription subscription}))]
         (is (= "hi-again" (deref @called 1000 :failure)))))))
 
 (deftest listen-with-concurrency
