@@ -35,6 +35,7 @@ import org.wildfly.extension.undertow.UndertowService;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -57,15 +58,28 @@ public class WildFlyService implements Service<WildFlyService> {
         Properties properties = new Properties();
         String configName = deploymentName.replace(".jar", ".properties");
         String configPath = System.getProperty("jboss.server.base.dir") + File.separator + "deployments" + File.separator + configName;
-        log.debug("!!! Looking for config file at " + configPath);
+        log.debugf("Looking for properties file at %s", configPath);
         File configFile = new File(configPath);
         if (configFile.exists()) {
-            log.debug("!!! Found config file");
+            log.debugf("Found properties file %s", configPath);
             try {
                 properties.load(new FileInputStream(configFile));
             } catch (Exception e) {
-                log.error("Error loading config file: " + configPath);
+                log.errorf("Error loading properties file %s", configPath);
                 throw new StartException(e);
+            }
+        } else {
+            String internalPath = "META-INF/app.properties";
+            log.debugf("Looking for properties file at %s", internalPath);
+            InputStream configStream = WunderBoss.classLoader().getResourceAsStream(internalPath);
+            if (configStream != null) {
+                log.debugf("Found properties file %s", internalPath);
+                try {
+                    properties.load(configStream);
+                } catch (Exception e) {
+                    log.errorf("Error loading properties file %s", internalPath);
+                    throw new StartException(e);
+                }
             }
         }
         WunderBoss.putOption("deployment-name", this.deploymentName);
@@ -86,9 +100,18 @@ public class WildFlyService implements Service<WildFlyService> {
             throw new StartException(e);
         }
 
-        WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
-        WunderBoss.registerComponentProvider(new WildFlyMessagingProvider());
+        try {
+            WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
+        } catch (LinkageError ignored) {
+            // Ignore - perhaps the user isn't using our web
+        }
+        try {
+            WunderBoss.registerComponentProvider(new WildFlyMessagingProvider());
+        } catch (LinkageError ignored) {
+            // Ignore - perhaps the user isn't using our messaging
+        }
         WunderBoss.registerComponentProvider(new SingletonContextProvider());
+        WunderBoss.registerComponentProvider(new ChannelProvider());
 
         log.info("Initializing " + deploymentName + " as " + language);
         WunderBoss.findLanguage(language)
@@ -136,4 +159,6 @@ public class WildFlyService implements Service<WildFlyService> {
     private InjectedValue<ChannelFactory> channelFactoryInjector = new InjectedValue<>();
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
+
+    static final ServiceName JMS_MANAGER_SERVICE_NAME = ServiceName.JBOSS.append("messaging", "default", "jms", "manager");
 }

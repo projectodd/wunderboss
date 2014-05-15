@@ -39,7 +39,7 @@ public class WildFlyServiceActivator implements ServiceActivator {
         serviceActivatorContext.getServiceTarget()
                 .addService(WildFlyService.serviceName(deploymentName), service)
                 .addDependency(UndertowService.UNDERTOW, UndertowService.class, service.getUndertowInjector())
-                .addDependency(ServiceBuilder.DependencyType.OPTIONAL, WildFlyMessaging.JMS_MANAGER_SERVICE_NAME)
+                .addDependency(ServiceBuilder.DependencyType.OPTIONAL, WildFlyService.JMS_MANAGER_SERVICE_NAME)
                 .addDependency(ServiceBuilder.DependencyType.OPTIONAL,
                         ChannelFactoryService.getServiceName(null),
                         ChannelFactory.class,

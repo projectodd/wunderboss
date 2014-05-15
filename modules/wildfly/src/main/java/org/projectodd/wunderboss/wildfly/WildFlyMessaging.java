@@ -30,8 +30,6 @@ import java.util.Map;
 
 public class WildFlyMessaging extends HornetQMessaging {
 
-    static final ServiceName JMS_MANAGER_SERVICE_NAME = ServiceName.JBOSS.append("messaging", "default", "jms", "manager");
-
     public WildFlyMessaging(String name, Options<CreateOption> options) {
         super(name, options);
         try {
@@ -46,7 +44,7 @@ public class WildFlyMessaging extends HornetQMessaging {
     public synchronized void start() throws Exception {
         if (!started) {
             ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
-            ServiceName hornetQServiceName = JMS_MANAGER_SERVICE_NAME;
+            ServiceName hornetQServiceName = WildFlyService.JMS_MANAGER_SERVICE_NAME;
             jmsServerManager = (JMSServerManager) serviceRegistry.getRequiredService(hornetQServiceName).getValue();
             started = true;
         }
