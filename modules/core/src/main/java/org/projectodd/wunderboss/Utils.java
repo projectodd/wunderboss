@@ -38,14 +38,30 @@ public class Utils {
 
     public static List<File> classpathStringToFiles(String cp) {
         List<File> files = new ArrayList<>();
-        for(String each : cp.trim().split(":")) {
+        for(String each : classpathStringToArray(cp)) {
             files.add(new File(each));
         }
 
         return files;
     }
+    
+    public static String[] classpathStringToArray(String cp) {
+        return cp.trim().split(":");
+    }
 
     public static boolean inContainer() {
         return WunderBoss.options().has("deployment-name");
+    }
+
+    public static void deleteRecursively(File directory) {
+        if (directory.isDirectory()) {
+            File[] children = directory.listFiles();
+            if (children != null) {
+                for (File file : children) {
+                    deleteRecursively(file);
+                }
+            }
+        }
+        directory.delete();
     }
 }

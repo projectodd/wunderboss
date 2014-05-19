@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class RubyLanguageTest {
-    String testApp = "src/test/resources/apps/basic";
+    String testApp = RubyLanguageTest.class.getClassLoader().getResource("apps/basic").getPath();
     Language ruby;
 
     @Before
@@ -44,6 +44,6 @@ public class RubyLanguageTest {
 
     @Test
     public void testCanEvalCode() {
-        assertEquals("it works!", ruby.eval("require 'ham';Ham.new.biscuit").toString());
+        assertEquals("it works!", ruby.eval("puts $:.inspect;require 'ham';Ham.new.biscuit").toString());
     }
 }

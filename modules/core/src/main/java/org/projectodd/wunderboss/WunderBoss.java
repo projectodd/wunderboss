@@ -162,6 +162,10 @@ public class WunderBoss {
         }
     }
 
+    public static void updateClassPath(URL url) {
+        classLoader.addURL(url);
+    }
+
     public static ClassLoader classLoader() {
         return classLoader;
     }

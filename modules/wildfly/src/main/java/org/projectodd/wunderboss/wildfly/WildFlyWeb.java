@@ -60,6 +60,16 @@ public class WildFlyWeb extends UndertowWeb {
         return replacement;
     }
 
+    @Override
+    public void start() {
+        // no-op on WildFly
+    }
+
+    @Override
+    public void stop() {
+        // no-op on WildFly
+    }
+
     private List<Host> getHosts() {
         List<Host> hosts = new ArrayList<Host>();
         for (Server server : undertowService.getServers()) {

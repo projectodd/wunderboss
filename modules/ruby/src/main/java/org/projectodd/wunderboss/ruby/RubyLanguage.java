@@ -17,9 +17,12 @@
 package org.projectodd.wunderboss.ruby;
 
 import org.jruby.Ruby;
+import org.jruby.RubyInstanceConfig;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.projectodd.wunderboss.Language;
 import org.projectodd.wunderboss.WunderBoss;
+
+import java.io.File;
 
 public class RubyLanguage implements Language {
 
@@ -37,12 +40,6 @@ public class RubyLanguage implements Language {
         }
 
         return this.runtime;
-    }
-
-    protected Ruby createRuntime(String root) {
-        Ruby runtime = Ruby.getGlobalRuntime();
-        runtime.getLoadService().addPaths(root);
-        return runtime;
     }
 
     @Override
@@ -65,6 +62,28 @@ public class RubyLanguage implements Language {
             return (T) ((IRubyObject) object).toJava(toClass);
         }
         return (T) object;
+    }
+
+    protected Ruby createRuntime(String root) {
+        Ruby runtime;
+        if (Ruby.isGlobalRuntimeReady()) {
+            runtime = Ruby.getGlobalRuntime();
+        } else {
+            RubyInstanceConfig instanceConfig = new RubyInstanceConfig();
+            String jrubyHome = WunderBoss.options().get("jruby-home", "").toString();
+            if (!jrubyHome.isEmpty()) {
+                instanceConfig.setJRubyHome(jrubyHome);
+            }
+            String[] argv = (String[]) WunderBoss.options().get("argv", new String[]{});
+            instanceConfig.setArgv(argv);
+            runtime = Ruby.newInstance(instanceConfig);
+        }
+        runtime.getLoadService().addPaths(root);
+        return runtime;
+    }
+
+    protected boolean usesBundler(String root) {
+        return new File(root + "/app/Gemfile").exists();
     }
 
     private Ruby runtime;
