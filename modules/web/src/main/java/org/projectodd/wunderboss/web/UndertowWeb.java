@@ -200,7 +200,9 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     protected HttpHandler wrapWithStaticHandler(HttpHandler baseHandler, String path) {
         // static path is given relative to application root
-        path = WunderBoss.options().get("root", "").toString() + File.separator + path;
+        if (!new File(path).isAbsolute()) {
+            path = WunderBoss.options().get("root", "").toString() + File.separator + path;
+        }
         if (!new File(path).exists()) {
             log.debugf("Not adding static handler for nonexistent directory %s", path);
             return baseHandler;
