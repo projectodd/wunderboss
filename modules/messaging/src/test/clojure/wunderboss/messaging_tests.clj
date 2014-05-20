@@ -143,20 +143,17 @@
 (deftest listen-with-concurrency
   (with-open [connection (.createConnection default nil)
               queue (create-endpoint "listen-queue")]
-    (let [thread-ids (atom #{})
-          latch (java.util.concurrent.CountDownLatch. 10)
+    (let [latch (java.util.concurrent.CountDownLatch. 5)
           listener (.listen connection queue
                      (reify MessageHandler
                        (onMessage [_ msg]
                          (let [msg (read-string (.body msg String))]
-                           (Thread/sleep 50)
-                           (swap! thread-ids conj (.getId (Thread/currentThread)))
-                           (.countDown latch))))
+                           (.countDown latch)
+                           (.await latch))))
                      (coerce-listen-options {:concurrency 5}))]
-      (dotimes [n 10]
+      (dotimes [n 5]
         (.send connection queue (str n) nil nil))
-      (.await latch)
-      (is (= 5 (count @thread-ids)))
+      (is (.await latch 10 TimeUnit/SECONDS))
       (.close listener))))
 
 (deftest request-response
