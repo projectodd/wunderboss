@@ -18,52 +18,44 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.Connection.ListenOption;
-import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Destination.ListenOption;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Subscription;
-import org.projectodd.wunderboss.messaging.jms.DestinationEndpoint;
+import org.projectodd.wunderboss.messaging.Session;
 
-import javax.jms.Destination;
+import javax.jms.JMSConsumer;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.Session;
-import javax.jms.Topic;
-import javax.jms.XAConnection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
     public MessageHandlerGroup(HornetQConnection connection,
                                MessageHandler handler,
-                               Endpoint endpoint,
+                               HornetQDestination destination,
                                Options<ListenOption> options) {
         this.connection = connection;
         this.handler = handler;
-        this.endpoint = (DestinationEndpoint)endpoint;
+        this.destination = destination;
         this.options = options;
     }
 
-    public synchronized MessageHandlerGroup start() {
+    public synchronized MessageHandlerGroup start() throws Exception {
         if (!this.started) {
-            try {
-                int concurrency = this.options.getInt(ListenOption.CONCURRENCY, 1);
-                while(concurrency-- > 0) {
-                    Session session = createSession();
-                    listeners.add(new TransactionalListener(this.handler,
-                                                            this.endpoint,
-                                                            this.connection,
-                                                            session,
-                                                            createConsumer(session),
-                                                            isXAEnabled(),
-                                                            //TODO: a transaction manager
-                                                            null).start());
-                }
-
-            } catch (Exception e) {
-                log.error("Failed to start handler group: ", e);
+            int concurrency = this.options.getInt(ListenOption.CONCURRENCY, 1);
+            while(concurrency-- > 0) {
+                HornetQSession session = createSession();
+                listeners.add(new TransactionalListener(this.handler,
+                                                        this.destination,
+                                                        this.connection,
+                                                        session,
+                                                        createConsumer(session.context()),
+                                                        isXAEnabled(),
+                                                        //TODO: a transaction manager
+                                                        null).start());
             }
 
             this.started = true;
@@ -85,43 +77,34 @@ public class MessageHandlerGroup implements Listener {
         }
     }
 
-    protected Session createSession() throws JMSException {
+    protected HornetQSession createSession() throws Exception {
         if (isXAEnabled()) {
-            return ((XAConnection)this.connection.jmsConnection()).createXASession();
+            return null; //((XAConnection)this.connection.jmsContext()).createXASession();
         } else {
             // Use local transactions for non-XA message processors
             //return
-            //this.connection.jmsConnection().createSession(true,
+            //this.connection.jmsContext().getSession(true,
             //Session.SESSION_TRANSACTED);
-            return this.connection.jmsConnection().createSession();
+
+            return (HornetQSession)this.connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{put(
+                    Connection.CreateSessionOption.MODE, Session.Mode.TRANSACTED);
+            }});
         }
     }
 
-    protected MessageConsumer createConsumer(Session session) throws JMSException {
+    protected JMSConsumer createConsumer(JMSContext context) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
-        Destination destination = endpoint.destination();
-        if (isDurable()) {
-            Subscription subscription = (Subscription)this.options.get(ListenOption.SUBSCRIPTION);
-            return session.createDurableSubscriber((Topic) destination,
-                                                   subscription.name(),
-                                                   selector, false);
-        } else {
-            return session.createConsumer(destination, selector);
-        }
+        javax.jms.Destination destination = this.destination.destination();
 
+        return context.createConsumer(destination, selector);
     }
 
     protected boolean isXAEnabled() {
         return this.options.getBoolean(ListenOption.XA, this.connection.isXAEnabled());
     }
 
-    protected boolean isDurable() {
-        return this.options.has(ListenOption.SUBSCRIPTION) &&
-                this.endpoint.destination() instanceof Topic;
-    }
-
     private final MessageHandler handler;
-    private final DestinationEndpoint endpoint;
+    private final HornetQDestination destination;
     private final Options<ListenOption> options;
     private HornetQConnection connection;
     private final List<TransactionalListener> listeners = new ArrayList<>();

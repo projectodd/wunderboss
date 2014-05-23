@@ -23,7 +23,7 @@ public interface Message {
 
     Map<String, Object> properties();
 
-    Endpoint endpoint();
+    Destination endpoint();
 
     <V> V body(Class V);
 

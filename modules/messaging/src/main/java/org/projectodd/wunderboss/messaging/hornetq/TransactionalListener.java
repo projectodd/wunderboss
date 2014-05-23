@@ -16,38 +16,29 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.hornetq.api.core.HornetQException;
-import org.hornetq.api.core.client.ClientConsumer;
-import org.hornetq.api.core.client.ClientMessage;
-import org.hornetq.api.core.client.ClientSession;
-import org.hornetq.jms.client.HornetQMessage;
-import org.hornetq.jms.client.HornetQMessageConsumer;
-import org.hornetq.jms.client.HornetQSession;
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Destination;
+import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 
+import javax.jms.JMSConsumer;
 import javax.jms.Message;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
-import javax.jms.Session;
-import javax.jms.XASession;
 import javax.transaction.TransactionManager;
-import java.lang.reflect.Field;
 
-public class TransactionalListener implements MessageListener, org.hornetq.api.core.client.MessageHandler {
+public class TransactionalListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
     public TransactionalListener(MessageHandler handler,
-                                 Endpoint endpoint,
+                                 Destination endpoint,
                                  HornetQConnection connection,
-                                 Session session,
-                                 MessageConsumer consumer, boolean xa, TransactionManager tm) {
+                                 HornetQSession session,
+                                 JMSConsumer consumer, boolean xa, TransactionManager tm) {
         this.handler = handler;
         this.endpoint = endpoint;
         this.connection = connection;
         this.session = session;
         this.consumer = consumer;
-        this.xa = xa;
-        this.tm = tm;
+        //this.xa = xa;
+        //this.tm = tm;
     }
 
     public TransactionalListener start() {
@@ -55,7 +46,7 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
             try {
                 // Use HornetQ's Core API for message consumers where possible so we
                 // get proper XA support. Otherwise, fall back to standard JMS.
-                if (consumer instanceof HornetQMessageConsumer) {
+                /*if (consumer instanceof HornetQMessageConsumer) {
                     log.trace("Using HornetQ Core API for handler");
                     Field sessionField = consumer.getClass().getDeclaredField("session");
                     sessionField.setAccessible(true);
@@ -69,9 +60,9 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
                     this.transactedOrClientAck = (ackMode == Session.SESSION_TRANSACTED || ackMode == Session.CLIENT_ACKNOWLEDGE) || hornetQSession.isXA();
 
                     this.clientConsumer.setMessageHandler( this );
-                } else {
-                    consumer.setMessageListener( this );
-                }
+                } else {*/
+                consumer.setMessageListener(this);
+                //}
             } catch (Exception e) {
                 log.error("Failed to start handler: ", e);
             }
@@ -96,17 +87,23 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
         }
     }
 
+    @Override
+    public void close() {
+        stop();
+    }
+
     /**
      * This entire method is essentially a copy of HornetQ's
      * JMSMessageListenerWrapper onMessage but with hooks for preparing
      * transactions before calling MessageListener's onMessage
      *
      */
+    /*
     @Override
     public void onMessage(final ClientMessage message) {
         ClientSession coreSession = this.hornetQSession.getCoreSession();
         HornetQMessage msg = HornetQMessage.createMessage(message, coreSession);
-        log.trace("MessageHandler.onMessage called with messageId " + msg.getJMSMessageID());
+        log.trace("MessageHandler.onMessage called with messageId " + message.getMessageID());
 
         try {
             msg.doBeforeReceive();
@@ -130,17 +127,16 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
         }
 
         try {
-            onMessage(msg);
+            onMessage(message);
         } catch (RuntimeException e) {
             log.warn("Unhandled exception thrown from onMessage", e);
-
             if (!transactedOrClientAck) {
                 try {
                     log.trace("Rolling back messageId " + msg.getJMSMessageID());
                     coreSession.rollback(true);
                     this.hornetQSession.setRecoverCalled(true);
                 } catch (Exception e2) {
-                    log.error("Failed to recover session", e2);
+                    log.error("Failed to recover context", e2);
                 }
             }
         }
@@ -159,15 +155,21 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
 
        this.hornetQSession.setRecoverCalled(false);
     }
+       */
 
     @Override
     public void onMessage(Message message) {
-        try {
-            try {
-                this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
-                                                                                                      this.endpoint,
-                                                                                                      this.connection));
-                if (this.xa) {
+           try {
+               this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
+                                                                                                     this.endpoint,
+                                                                                                     this.connection),
+                                      this.session);
+               this.session.context().commit();
+           } catch (Exception e) {
+               log.warn("Unhandled exception thrown from onMessage", e);
+               this.session.context().rollback();
+           }
+         /*       if (this.xa) {
                     this.tm.commit();
                 }
             } catch (javax.transaction.RollbackException ignored) {
@@ -181,28 +183,28 @@ public class TransactionalListener implements MessageListener, org.hornetq.api.c
         } catch (Throwable e) {
             e.printStackTrace();
             throw new RuntimeException("Unexpected error processing message", e);
-        }
+        }*/
     }
 
-    private void prepareTransaction() {
+   /* private void prepareTransaction() {
         try {
             this.tm.begin();
-            this.tm.getTransaction().enlistResource(((XASession)this.session).getXAResource());
+            this.tm.getTransaction().enlistResource(((XASession)this.context).getXAResource());
         } catch (Throwable e) {
             log.error("Failed to prepare transaction for message", e);
         }
-    }
+    }*/
 
     private final MessageHandler handler;
-    private final Endpoint endpoint;
+    private final Destination endpoint;
     private final HornetQConnection connection;
-    private final Session session;
-    private final MessageConsumer consumer;
-    private final boolean xa;
-    private final TransactionManager tm;
-    private HornetQSession hornetQSession;
+    private final HornetQSession session;
+    private final JMSConsumer consumer;
+    //private final boolean xa;
+    //private final TransactionManager tm;
+   /* private HornetQSession hornetQSession;
     private ClientConsumer clientConsumer;
-    private boolean transactedOrClientAck;
+    private boolean transactedOrClientAck;*/
     private boolean started = false;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");

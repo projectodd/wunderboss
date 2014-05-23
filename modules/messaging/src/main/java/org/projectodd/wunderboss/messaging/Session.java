@@ -16,10 +16,8 @@
 
 package org.projectodd.wunderboss.messaging;
 
-public interface Subscription extends AutoCloseable {
-    Endpoint endpoint();
+public interface Session extends AutoCloseable {
+    public enum Mode { AUTO_ACK, CLIENT_ACK, TRANSACTED }
 
-    String name();
-
-    String selector();
+    Mode mode();
 }

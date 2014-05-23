@@ -22,68 +22,9 @@ import java.util.Map;
 
 public interface Connection extends AutoCloseable {
 
-    class ListenOption extends Option {
-
-
-        public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
-        public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
-        /**
-         * A durable topic subscription. Ignored for queues.
-         */
-        public static final ListenOption SUBSCRIPTION = opt("subscription", ListenOption.class);
-        /**
-         * If true, and xa is used around the onMessage(). Defaults to whatever was specified for
-         * CreateOption.XA.
-         */
-        public static final ListenOption XA = opt("xa", ListenOption.class);
+    class CreateSessionOption extends Option {
+        public static final CreateSessionOption MODE = opt("mode", Session.Mode.AUTO_ACK, CreateSessionOption.class);
     }
 
-    Listener listen(Endpoint endpoint, MessageHandler handler,
-                    Map<ListenOption, Object> options) throws Exception;
-
-    class RespondOption extends ListenOption {
-        public static final RespondOption TTL = opt("ttl", 60000, RespondOption.class);
-    }
-
-    Listener respond(Endpoint endpoint, MessageHandler handler,
-                     Map<ListenOption, Object> options) throws Exception;
-
-    class SendOption extends Option {
-        public static final SendOption PRIORITY   = opt("priority", 4, SendOption.class); //TODO: 4 is JMS specific?
-        public static final SendOption TTL        = opt("ttl", 0, SendOption.class);
-        public static final SendOption PERSISTENT = opt("persistent", true, SendOption.class);
-        public static final SendOption PROPERTIES = opt("properties", SendOption.class);
-    }
-
-    void send(Endpoint endpoint, String content, String contentType, Map<SendOption, Object> options) throws Exception;
-
-    void send(Endpoint endpoint, byte[] content, String contentType, Map<SendOption, Object> options) throws Exception;
-
-    class RequestOption extends SendOption {}
-
-    Response request(Endpoint endpoint, String content, String contentType,
-                     Map<SendOption, Object> options) throws Exception;
-
-    Response request(Endpoint endpoint, byte[] content, String contentType,
-                     Map<SendOption, Object> options) throws Exception;
-
-    class ReceiveOption extends Option {
-        public static final ReceiveOption TIMEOUT  = opt("timeout", 10000, ReceiveOption.class);
-        public static final ReceiveOption SELECTOR = opt("selector", ReceiveOption.class);
-        /**
-         * subscriber-name for durable topic subscriptions. Ignored for queues.
-         */
-        public static final ReceiveOption SUBSCRIPTION = opt("subscription", ReceiveOption.class);
-    }
-
-    /**
-     *
-     * @param endpoint
-     * @param options
-     * @return the Message, or null on timeout
-     * @throws Exception
-     */
-    Message receive(Endpoint endpoint,
-                    Map<ReceiveOption, Object> options) throws Exception;
-
+    Session createSession(Map<CreateSessionOption, Object> options) throws Exception;
 }

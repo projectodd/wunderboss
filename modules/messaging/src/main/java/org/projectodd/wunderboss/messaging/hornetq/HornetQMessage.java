@@ -17,8 +17,9 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.Connection.SendOption;
-import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Destination;
+import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
+import org.projectodd.wunderboss.messaging.Destination.SendOption;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 
@@ -30,16 +31,16 @@ import java.util.Map;
 
 public class HornetQMessage implements ReplyableMessage {
 
-    public HornetQMessage(javax.jms.Message message, Endpoint endpoint, HornetQConnection connection) {
+    public HornetQMessage(javax.jms.Message message, Destination destination, HornetQConnection connection) {
         this.baseMessage = message;
         this.connection = connection;
-        this.endpoint = endpoint;
+        this.destination = destination;
     }
 
     @Override
     public String contentType() {
         try {
-            return this.baseMessage.getStringProperty(HornetQConnection.CONTENT_TYPE_PROPERTY);
+            return this.baseMessage.getStringProperty(HornetQDestination.CONTENT_TYPE_PROPERTY);
         } catch (JMSException e) {
             throw new IllegalStateException("Failed to read property from message", e);
         }
@@ -60,8 +61,8 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     @Override
-    public Endpoint endpoint() {
-        return this.endpoint;
+    public Destination endpoint() {
+        return this.destination;
     }
 
     @Override
@@ -84,31 +85,39 @@ public class HornetQMessage implements ReplyableMessage {
 
     @Override
     public Response reply(String content, String contentType,
-                          Map<SendOption, Object> options) throws Exception {
-        this.connection.send(this.endpoint, content, contentType, replyOptions(options));
+                          Map<MessageOpOption, Object> options) throws Exception {
+        this.destination.send(content, contentType, replyOptions(options));
 
-        return new HornetQResponse(this.baseMessage, this.endpoint,
-                                   this.connection.broker(), this.connection.creationOptions());
+        return new HornetQResponse(requestID(), this.destination, this.connection);
     }
 
     @Override
     public Response reply(byte[] content, String contentType,
-                          Map<SendOption, Object> options) throws Exception {
-        this.connection.send(this.endpoint, content, contentType, replyOptions(options));
+                          Map<MessageOpOption, Object> options) throws Exception {
+        this.destination.send(content, contentType, replyOptions(options));
 
-        return new HornetQResponse(this.baseMessage, this.endpoint,
-                                   this.connection.broker(), this.connection.creationOptions());
+        return new HornetQResponse(requestID(), this.destination, this.connection);
     }
 
-    protected Options<SendOption> replyOptions(Map<SendOption, Object> options) throws Exception {
-        Options<SendOption> opts = new Options<>(options);
-        Map<String, Object> properties = (Map<String, Object>)opts.get(SendOption.PROPERTIES);
+    protected String requestID() {
+        try {
+
+            return this.baseMessage.getStringProperty(HornetQQueue.REQUEST_ID_PROPERTY);
+        } catch (JMSException ffs) {
+            ffs.printStackTrace();
+
+            return null;
+        }
+    }
+    protected Options<MessageOpOption> replyOptions(Map<Destination.MessageOpOption, Object> options) throws Exception {
+        Options<MessageOpOption> opts = new Options<>(options);
+        Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.SendOption.PROPERTIES);
         if (properties == null) {
             properties = new HashMap<>();
             opts.put(SendOption.PROPERTIES, properties);
         }
         //gross, we're modifying the original properties map
-        properties.put("JMSCorrelationID", this.baseMessage.getJMSMessageID());
+        properties.put("JMSCorrelationID", requestID());
 
         return opts;
     }
@@ -119,5 +128,5 @@ public class HornetQMessage implements ReplyableMessage {
 
     private final javax.jms.Message baseMessage;
     private final HornetQConnection connection;
-    private final Endpoint endpoint;
+    private final Destination destination;
 }

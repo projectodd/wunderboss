@@ -16,10 +16,22 @@
 
 package org.projectodd.wunderboss.messaging;
 
-public interface Endpoint extends AutoCloseable {
+import java.util.Map;
 
-    /**
-     * Indicates if this is a broadcast endpoint (a topic) or not
-     */
-    boolean isBroadcast();
+public interface Queue extends Destination {
+    class RespondOption extends Destination.ListenOption {
+        public static final RespondOption TTL = opt("ttl", 60000, RespondOption.class);
+    }
+
+    Listener respond(MessageHandler handler,
+                     Map<ListenOption, Object> options) throws Exception;
+
+
+    class RequestOption extends SendOption {}
+
+    Response request(String content, String contentType,
+                     Map<MessageOpOption, Object> options) throws Exception;
+
+    Response request(byte[] content, String contentType,
+                     Map<MessageOpOption, Object> options) throws Exception;
 }

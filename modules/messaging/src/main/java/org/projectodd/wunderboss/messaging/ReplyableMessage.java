@@ -21,8 +21,8 @@ import java.util.Map;
 public interface ReplyableMessage extends Message {
 
     Response reply(String content, String contentType,
-                   Map<Connection.SendOption, Object> options) throws Exception;
+                   Map<Destination.MessageOpOption, Object> options) throws Exception;
 
     Response reply(byte[] content, String contentType,
-                   Map<Connection.SendOption, Object> options) throws Exception;
+                   Map<Destination.MessageOpOption, Object> options) throws Exception;
 }

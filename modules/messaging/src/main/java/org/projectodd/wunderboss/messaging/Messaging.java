@@ -26,43 +26,34 @@ public interface Messaging extends Component {
     class CreateOption extends Option {
         public static final CreateOption HOST = opt("host", CreateOption.class);
         public static final CreateOption PORT = opt("port", CreateOption.class);
-
-        /**
-         * Specifies if xa is on by default. Defaults to false.
-         */
-        public static final CreateOption XA = opt("xa", false, CreateOption.class);
     }
 
-    class CreateEndpointOption extends Option {
-        public static final CreateEndpointOption BROADCAST = opt("broadcast", false, CreateEndpointOption.class);
-        public static final CreateEndpointOption DURABLE   = opt("durable", true, CreateEndpointOption.class);
-        public static final CreateEndpointOption SELECTOR  = opt("selector", CreateEndpointOption.class);
+    class CreateQueueOption extends Option {
+        public static final CreateQueueOption DURABLE   = opt("durable", true, CreateQueueOption.class);
+        public static final CreateQueueOption SELECTOR  = opt("selector", CreateQueueOption.class);
     }
 
-    Endpoint findOrCreateEndpoint(String name,
-                                  Map<CreateEndpointOption, Object> options) throws Exception;
+    Queue findOrCreateQueue(String name,
+                            Map<CreateQueueOption, Object> options) throws Exception;
+
+    class CreateTopicOption extends Option {
+    }
+
+    Topic findOrCreateTopic(String name,
+                            Map<CreateTopicOption, Object> options) throws Exception;
 
     class CreateConnectionOption extends Option {
+        public static final CreateConnectionOption HOST = opt("host", CreateConnectionOption.class);
+        public static final CreateConnectionOption PORT = opt("port", CreateConnectionOption.class);
+        public static final CreateConnectionOption CLIENT_ID = opt("client_id", CreateConnectionOption.class);
         /**
-         * A durable topic subscription. Ignored for queues.
+         * If true, and xa connection is returned.
          */
-        public static final CreateConnectionOption SUBSCRIPTION = opt("subscription", CreateConnectionOption.class);
-        /**
-         * If true, and xa connection is returned. Defaults to whatever was specified for
-         * CreateOption.XA.
-         */
-        public static final CreateConnectionOption XA = opt("xa", CreateConnectionOption.class);
+        public static final CreateConnectionOption XA = opt("xa", false, CreateConnectionOption.class);
     }
 
     //TODO: remote connections?
     Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
 
-
-    class CreateSubscriptionOption extends Option {
-        public static final CreateSubscriptionOption SELECTOR  = opt("selector", CreateSubscriptionOption.class);
-    }
-    Subscription createSubscription(Endpoint endpoint, String name,
-                                    Map<CreateSubscriptionOption, Object> options) throws Exception;
-
-    boolean isXaDefault();
+    Connection defaultConnection() throws Exception;
 }

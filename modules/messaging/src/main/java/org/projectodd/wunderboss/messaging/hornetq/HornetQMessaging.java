@@ -26,19 +26,17 @@ import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.server.impl.HornetQServerImpl;
-import org.hornetq.jms.client.HornetQQueue;
-import org.hornetq.jms.client.HornetQTopic;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Connection;
-import org.projectodd.wunderboss.messaging.Endpoint;
 import org.projectodd.wunderboss.messaging.Messaging;
-import org.projectodd.wunderboss.messaging.Subscription;
+import org.projectodd.wunderboss.messaging.Queue;
+import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +50,6 @@ public class HornetQMessaging implements Messaging {
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
         this.options = options;
-        this.xa = options.getBoolean(CreateOption.XA, false);
     }
 
     @Override
@@ -125,62 +122,63 @@ public class HornetQMessaging implements Messaging {
     }
 
     @Override
+    public Connection defaultConnection() throws Exception {
+        if (this.defaultConnection == null) {
+            this.defaultConnection = createConnection(null);
+        }
+        return this.defaultConnection;
+    }
+
+    @Override
     public Connection createConnection(Map<CreateConnectionOption, Object> options) throws JMSException {
         Options<CreateConnectionOption> opts = new Options<>(options);
         ConnectionFactory cf;
-        if (opts.getBoolean(CreateConnectionOption.XA, isXaDefault())) {
+        if (opts.getBoolean(CreateConnectionOption.XA,
+                            (Boolean)CreateConnectionOption.XA.defaultValue)) {
             cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
         } else {
             cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
         }
 
-        javax.jms.Connection connection = cf.createConnection();
+        JMSContext context = cf.createContext();
 
-        if (opts.has(CreateConnectionOption.SUBSCRIPTION)) {
-            connection.setClientID(((Subscription)opts.get(CreateConnectionOption.SUBSCRIPTION)).name());
+        if (opts.has(CreateConnectionOption.CLIENT_ID)) {
+            context.setClientID(opts.getString(CreateConnectionOption.CLIENT_ID));
         }
 
-        connection.start();
-
-        return new HornetQConnection(connection, this, opts);
+        return new HornetQConnection(context, this, opts);
     }
 
     @Override
-    public Subscription createSubscription(Endpoint endpoint, String name,
-                                           Map<CreateSubscriptionOption, Object> options) throws Exception {
-        Options<CreateSubscriptionOption> opts = new Options<>(options);
-        return new HornetQSubscription(this, endpoint, name,
-                                       opts.getString(CreateSubscriptionOption.SELECTOR)).start();
+    public synchronized Queue findOrCreateQueue(String name,
+                                                Map<CreateQueueOption, Object> options) throws Exception {
+        Options<CreateQueueOption> opts = new Options<>(options);
+        String jndiName = "queue:" + name;
+        javax.jms.Queue queue = lookupQueue(jndiName);
+        String selector = opts.getString(CreateQueueOption.SELECTOR, "");
+
+        if (queue == null) {
+            createQueue(name, jndiName, selector,
+                        opts.getBoolean(CreateQueueOption.DURABLE,
+                                        (Boolean) CreateQueueOption.DURABLE.defaultValue));
+                queue = lookupQueue(name);
+        }
+
+        return new HornetQQueue(queue, this);
     }
 
     @Override
-    public synchronized HornetQEndpoint findOrCreateEndpoint(String name,
-                                                   Map<CreateEndpointOption, Object> options) throws Exception {
-        Options<CreateEndpointOption> opts = new Options<>(options);
-        boolean topic = opts.getBoolean(CreateEndpointOption.BROADCAST, false);
-        String jndiName = (topic ? "topic:" : "queue:") + name;
-        Destination dest = topic ? lookupTopic(name) : lookupQueue(name);
-        String selector = opts.getString(CreateEndpointOption.SELECTOR, "");
+    public synchronized Topic findOrCreateTopic(String name,
+                                                Map<CreateTopicOption, Object> options) throws Exception {
+        String jndiName = "topic:" + name;
+        javax.jms.Topic topic = lookupTopic(jndiName);
 
-        if (dest == null) {
-            if (topic) {
-                if (opts.getBoolean(CreateEndpointOption.DURABLE, false)) {
-                    throw new IllegalArgumentException("Broadcast endpoints can't be durable.");
-                }
-                if (!"".equals(selector)) {
-                    throw new IllegalArgumentException("Broadcast endpoints can't have selectors.");
-                }
-                createTopic(name, jndiName);
-                dest = lookupTopic(name);
-            } else {
-                createQueue(name, jndiName, selector,
-                            opts.getBoolean(CreateEndpointOption.DURABLE,
-                                            (Boolean)CreateEndpointOption.DURABLE.defaultValue));
-                dest = lookupQueue(name);
-            }
+        if (topic == null) {
+            createTopic(name, jndiName);
+            topic = lookupTopic(name);
         }
 
-        return new HornetQEndpoint(dest, this.jmsServerManager);
+        return new HornetQTopic(topic, this);
     }
 
     protected void createTopic(String name, String jndiName) throws Exception {
@@ -191,28 +189,23 @@ public class HornetQMessaging implements Messaging {
         this.jmsServerManager.createQueue(false, name, selector, durable, jndiName);
     }
 
-    @Override
-    public boolean isXaDefault() {
-        return this.xa;
-    }
-
-    protected HornetQTopic lookupTopic(String name) {
+    protected javax.jms.Topic lookupTopic(String name) {
         String[] jndiNames = jmsServerManager.getJNDIOnTopic(name);
         for (String jndiName : jndiNames) {
             Object jndiObject = lookupJNDI(jndiName);
             if (jndiObject != null) {
-                return (HornetQTopic) jndiObject;
+                return (javax.jms.Topic)jndiObject;
             }
         }
         return null;
     }
 
-    protected HornetQQueue lookupQueue(String name) {
+    protected javax.jms.Queue lookupQueue(String name) {
         String[] jndiNames = jmsServerManager.getJNDIOnQueue(name);
         for (String jndiName : jndiNames) {
             Object jndiObject = lookupJNDI(jndiName);
             if (jndiObject != null) {
-                return (HornetQQueue) jndiObject;
+                return (javax.jms.Queue)jndiObject;
             }
         }
         return null;
@@ -224,7 +217,7 @@ public class HornetQMessaging implements Messaging {
 
     private final String name;
     private final Options<CreateOption> options;
-    private final boolean xa;
+    private Connection defaultConnection;
     protected boolean started = false;
     protected JMSServerManager jmsServerManager;
 }

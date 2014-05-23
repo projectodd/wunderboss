@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms;
+package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Session;
 
-import javax.jms.Destination;
-import javax.jms.Topic;
+import javax.jms.JMSContext;
 
-public abstract class DestinationEndpoint implements Endpoint {
-
-    public DestinationEndpoint(Destination dest) {
-        this.destination = dest;
+public class HornetQSession implements Session {
+    public HornetQSession(JMSContext context, Mode mode) {
+        this.context = context;
+        this.mode = mode;
     }
 
     @Override
-    public boolean isBroadcast() {
-        return (this.destination instanceof Topic);
+    public Mode mode() {
+        return this.mode;
     }
 
-    public Destination destination() {
-        return this.destination;
+    @Override
+    public void close() throws Exception {
+        this.context.close();
     }
 
-    private final Destination destination;
+    public JMSContext context() {
+        return this.context;
+    }
+
+    private final JMSContext context;
+    private final Mode mode;
 }

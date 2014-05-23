@@ -17,11 +17,9 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.Connection;
-import org.projectodd.wunderboss.messaging.Connection.ReceiveOption;
-import org.projectodd.wunderboss.messaging.Endpoint;
+import org.projectodd.wunderboss.messaging.Destination;
+import org.projectodd.wunderboss.messaging.Destination.ReceiveOption;
 import org.projectodd.wunderboss.messaging.Message;
-import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Response;
 
 import java.util.concurrent.ExecutionException;
@@ -30,12 +28,10 @@ import java.util.concurrent.TimeoutException;
 
 public class HornetQResponse implements Response {
 
-    public HornetQResponse(javax.jms.Message message, Endpoint endpoint, Messaging broker,
-                           Options<Messaging.CreateConnectionOption> connectionOptions) {
-        this.message = message;
-        this.endpoint = endpoint;
-        this.broker = broker;
-        this.connectionOptions = connectionOptions;
+    public HornetQResponse(String requestId, Destination destination, HornetQConnection connection) {
+        this.requestId = requestId;
+        this.destination = destination;
+        this.connection = connection;
     }
 
     @Override
@@ -69,12 +65,12 @@ public class HornetQResponse implements Response {
     public Message get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         if (!isDone()) {
             try {
-                Options<ReceiveOption> options = new Options<>();
+                Options<Destination.MessageOpOption> options = new Options<>();
                 options.put(ReceiveOption.TIMEOUT, unit.toMillis(timeout));
-                options.put(ReceiveOption.SELECTOR, "JMSCorrelationID='" + this.message.getJMSMessageID() + "'");
-                try (Connection connection = this.broker.createConnection(this.connectionOptions)) {
-                    this.value = connection.receive(this.endpoint, options);
-                }
+                options.put(ReceiveOption.SELECTOR, "JMSCorrelationID='" + this.requestId + "'");
+                options.put(ReceiveOption.CONNECTION, this.connection);
+
+                this.value = this.destination.receive(options);
             } catch (Exception e) {
                 throw new ExecutionException(e);
             }
@@ -88,9 +84,8 @@ public class HornetQResponse implements Response {
         return this.value;
     }
 
-    private final Messaging broker;
-    private final Options<Messaging.CreateConnectionOption> connectionOptions;
-    private final javax.jms.Message message;
-    private final Endpoint endpoint;
+    private final HornetQConnection connection;
+    private final String requestId;
+    private final Destination destination;
     private Message value = null;
 }

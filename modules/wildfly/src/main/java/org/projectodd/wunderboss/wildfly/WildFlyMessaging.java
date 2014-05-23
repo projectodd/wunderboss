@@ -21,8 +21,11 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQEndpoint;
+import org.projectodd.wunderboss.messaging.Queue;
+import org.projectodd.wunderboss.messaging.Topic;
 import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
+import org.projectodd.wunderboss.messaging.hornetq.HornetQQueue;
+import org.projectodd.wunderboss.messaging.hornetq.HornetQTopic;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -59,15 +62,23 @@ public class WildFlyMessaging extends HornetQMessaging {
     }
 
     @Override
-    public synchronized HornetQEndpoint findOrCreateEndpoint(String name,
-                                                      Map<CreateEndpointOption, Object> options) throws Exception {
-        HornetQEndpoint endpoint = super.findOrCreateEndpoint(name, options);
-        // TODO: Should we be smarter and destroy endpoints we created but not ones created
-        // by something else? Or maybe close is the wrong name for what close does - it would
-        // be a problem if an embedded app called .close on the endpoint in one place while still
-        // using it in another as well.
-        endpoint.destroyOnClose(false);
-        return endpoint;
+    public synchronized Queue findOrCreateQueue(String name,
+                                                Map<CreateQueueOption, Object> options) throws Exception {
+        HornetQQueue queue = (HornetQQueue)super.findOrCreateQueue(name, options);
+        // TODO: Should we be smarter and destroy destinations we created but not ones created
+        // by something else?
+        queue.setDestroyOnStop(false);
+        return queue;
+    }
+
+    @Override
+    public synchronized Topic findOrCreateTopic(String name,
+                                                Map<CreateTopicOption, Object> options) throws Exception {
+        HornetQTopic topic = (HornetQTopic)super.findOrCreateTopic(name, options);
+        // TODO: Should we be smarter and destroy destinations we created but not ones created
+        // by something else?
+        topic.setDestroyOnStop(false);
+        return topic;
     }
 
     @Override
