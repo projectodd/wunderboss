@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.hornetq.api.core.TransportConfiguration;
+import org.hornetq.api.jms.HornetQJMSClient;
 import org.hornetq.api.jms.JMSFactoryType;
 import org.hornetq.core.config.Configuration;
 import org.hornetq.core.config.impl.ConfigurationImpl;
@@ -37,7 +38,6 @@ import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSContext;
-import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -134,14 +134,26 @@ public class HornetQMessaging implements Messaging {
     }
 
     @Override
-    public Connection createConnection(Map<CreateConnectionOption, Object> options) throws JMSException {
-        Options<CreateConnectionOption> opts = new Options<>(options);
+    public Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception {
+        final Options<CreateConnectionOption> opts = new Options<>(options);
         ConnectionFactory cf;
-        if (opts.getBoolean(CreateConnectionOption.XA,
+        if (opts.has(CreateConnectionOption.HOST)) {
+            //TODO: possibly cache the remote cf's?
+            TransportConfiguration config =
+                    new TransportConfiguration("org.hornetq.core.remoting.impl.netty.NettyConnectorFactory",
+                                               new HashMap() {{
+                                                   put("host", opts.getString(CreateConnectionOption.HOST));
+                                                   put("port", opts.getInt(CreateConnectionOption.PORT, 5445));
+                                               }});
+            cf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
+        }  else {
+            start();
+            if (opts.getBoolean(CreateConnectionOption.XA,
                             (Boolean)CreateConnectionOption.XA.defaultValue)) {
             cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
-        } else {
-            cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
+            } else {
+                cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
+            }
         }
 
         JMSContext context = cf.createContext();
@@ -157,15 +169,23 @@ public class HornetQMessaging implements Messaging {
     public synchronized Queue findOrCreateQueue(String name,
                                                 Map<CreateQueueOption, Object> options) throws Exception {
         Options<CreateQueueOption> opts = new Options<>(options);
-        String jndiName = "queue:" + name;
-        javax.jms.Queue queue = lookupQueue(jndiName);
-        String selector = opts.getString(CreateQueueOption.SELECTOR, "");
+        javax.jms.Queue queue;
+        if (opts.has(CreateQueueOption.CONNECTION)) {
+            // assume it's remote, so we just need a ref to it
+            queue = ((HornetQConnection)opts.get(CreateQueueOption.CONNECTION)).jmsContext().createQueue(name);
+        } else {
+            start();
 
-        if (queue == null) {
-            createQueue(name, jndiName, selector,
-                        opts.getBoolean(CreateQueueOption.DURABLE,
+            String jndiName = "queue:" + name;
+            queue = lookupQueue(jndiName);
+            String selector = opts.getString(CreateQueueOption.SELECTOR, "");
+
+            if (queue == null) {
+                createQueue(name, jndiName, selector,
+                            opts.getBoolean(CreateQueueOption.DURABLE,
                                         (Boolean) CreateQueueOption.DURABLE.defaultValue));
                 queue = lookupQueue(name);
+            }
         }
 
         return new HornetQQueue(queue, this);
@@ -174,12 +194,20 @@ public class HornetQMessaging implements Messaging {
     @Override
     public synchronized Topic findOrCreateTopic(String name,
                                                 Map<CreateTopicOption, Object> options) throws Exception {
-        String jndiName = "topic:" + name;
-        javax.jms.Topic topic = lookupTopic(jndiName);
+        Options<CreateTopicOption> opts = new Options<>(options);
+        javax.jms.Topic topic;
+        if (opts.has(CreateTopicOption.CONNECTION)) {
+            // assume it's remote, so we just need a ref to it
+            topic = ((HornetQConnection)opts.get(CreateTopicOption.CONNECTION)).jmsContext().createTopic(name);
+        } else {
+            start();
+            String jndiName = "topic:" + name;
+            topic = lookupTopic(jndiName);
 
-        if (topic == null) {
-            createTopic(name, jndiName);
-            topic = lookupTopic(name);
+            if (topic == null) {
+                createTopic(name, jndiName);
+                topic = lookupTopic(name);
+            }
         }
 
         return new HornetQTopic(topic, this);

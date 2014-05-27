@@ -29,6 +29,7 @@ public interface Messaging extends Component {
     }
 
     class CreateQueueOption extends Option {
+        public static final CreateQueueOption CONNECTION = opt("connection", CreateQueueOption.class);
         public static final CreateQueueOption DURABLE   = opt("durable", true, CreateQueueOption.class);
         public static final CreateQueueOption SELECTOR  = opt("selector", CreateQueueOption.class);
     }
@@ -37,6 +38,7 @@ public interface Messaging extends Component {
                             Map<CreateQueueOption, Object> options) throws Exception;
 
     class CreateTopicOption extends Option {
+        public static final CreateTopicOption CONNECTION = opt("connection", CreateTopicOption.class);
     }
 
     Topic findOrCreateTopic(String name,

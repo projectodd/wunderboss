@@ -325,3 +325,16 @@
     (.rollback s)
     (is (not (.receive q (coerce-receive-options {:timeout 1000}))))
     (.close s)))
+
+(deftest remote-connections
+  ;; this creates the queue in the 'remote' broker
+  (create-queue "remote-queue")
+  (with-open [c (.createConnection default
+                  (coerce-connection-options {:host "localhost"}))]
+    (let [q (create-queue "remote-queue" {:connection c})]
+      (.send q "success" "text/plain"
+        (coerce-send-options {:connection c}))
+      (let [msg (.receive q (coerce-receive-options {:connection c
+                                                     :timeout 1000}))]
+      (is msg)
+      (is (= "success" (.body msg String)))))))
