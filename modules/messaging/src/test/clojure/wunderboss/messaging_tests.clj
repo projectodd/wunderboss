@@ -23,7 +23,9 @@
             Queue$RespondOption
             Topic$SubscribeOption Topic$UnsubscribeOption
             Messaging$CreateConnectionOption Messaging$CreateQueueOption
-            MessageHandler]
+            MessageHandler
+            Session$Mode
+            Connection$CreateSessionOption]
            java.util.concurrent.TimeUnit))
 
 (System/setProperty "logging.configuration" "file:///home/tcrawley/tmp/hornetq-logging.properties")
@@ -54,6 +56,7 @@
 (def coerce-send-options (create-opts-fn Destination$SendOption))
 (def coerce-subscribe-options (create-opts-fn Topic$SubscribeOption))
 (def coerce-unsubscribe-options (create-opts-fn Topic$UnsubscribeOption))
+(def coerce-session-options (create-opts-fn Connection$CreateSessionOption))
 
 (defn handler [f]
   (reify MessageHandler
@@ -312,3 +315,13 @@
         (Thread/sleep 100)
         (is (thrown? java.util.concurrent.TimeoutException
               (.get response 1 TimeUnit/MILLISECONDS)))))))
+
+(deftest session-rollback
+  (let [s (.createSession (.defaultConnection default)
+            (coerce-session-options {:mode Session$Mode/TRANSACTED}))
+        q (create-queue "rollback")]
+    (.send q "failure" "text/plain"
+      (coerce-send-options {:session s}))
+    (.rollback s)
+    (is (not (.receive q (coerce-receive-options {:timeout 1000}))))
+    (.close s)))

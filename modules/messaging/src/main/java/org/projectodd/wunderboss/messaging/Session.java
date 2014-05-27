@@ -20,4 +20,10 @@ public interface Session extends AutoCloseable {
     public enum Mode { AUTO_ACK, CLIENT_ACK, TRANSACTED }
 
     Mode mode();
+
+    void commit();
+
+    void rollback();
+
+    void acknowledge();
 }

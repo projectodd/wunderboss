@@ -32,6 +32,21 @@ public class HornetQSession implements Session {
     }
 
     @Override
+    public void commit() {
+        this.context.commit();
+    }
+
+    @Override
+    public void rollback() {
+        this.context.rollback();
+    }
+
+    @Override
+    public void acknowledge() {
+        this.context.acknowledge();
+    }
+
+    @Override
     public void close() throws Exception {
         this.context.close();
     }
