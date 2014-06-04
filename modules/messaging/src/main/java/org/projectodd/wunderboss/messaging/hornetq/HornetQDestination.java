@@ -27,12 +27,10 @@ import javax.jms.Destination;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSException;
 import javax.jms.JMSProducer;
-import javax.jms.Queue;
-import javax.jms.Topic;
 import java.util.Collections;
 import java.util.Map;
 
-public class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
+public abstract class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
 
      public HornetQDestination(Destination dest, HornetQMessaging broker) {
@@ -40,25 +38,11 @@ public class HornetQDestination implements org.projectodd.wunderboss.messaging.D
         this.broker = broker;
     }
 
-    public void setDestroyOnStop(boolean shouldDestroyOnStop) {
-        this.shouldDestroyOnStop = shouldDestroyOnStop;
-    }
-
     public Destination destination() {
         return this.destination;
     }
 
-    @Override
-    public String name() {
-        try {
-            return this.destination instanceof Topic ?
-                    ((Topic)this.destination).getTopicName() :
-                    ((Queue)this.destination).getQueueName();
-        } catch (JMSException ffs) {
-            ffs.printStackTrace();
-            return null;
-        }
-    }
+    public abstract String fullName();
 
     @Override
     public Listener listen(MessageHandler handler, Map<ListenOption, Object> options) throws Exception {
@@ -68,6 +52,7 @@ public class HornetQDestination implements org.projectodd.wunderboss.messaging.D
                                                     this,
                                                     opts).start();
         connection.addCloseable(listener);
+        this.broker.addCloseableForDestination(this, listener);
 
         return listener;
     }
@@ -175,14 +160,7 @@ public class HornetQDestination implements org.projectodd.wunderboss.messaging.D
     @Override
     public void stop() throws Exception {
         if (!this.stopped) {
-            if (shouldDestroyOnStop) {
-                Destination dest = this.destination();
-                if (dest instanceof Queue) {
-                    this.broker.jmsServerManager().destroyQueue(((Queue) dest).getQueueName(), true);
-                } else {
-                    this.broker.jmsServerManager().destroyTopic(((Topic)dest).getTopicName(), true);
-                }
-            }
+            this.broker.destroyDestination(this);
             this.stopped = true;
         }
     }
@@ -193,6 +171,5 @@ public class HornetQDestination implements org.projectodd.wunderboss.messaging.D
 
     private final Destination destination;
     private boolean stopped = false;
-    private boolean shouldDestroyOnStop = true;
     private final HornetQMessaging broker;
 }

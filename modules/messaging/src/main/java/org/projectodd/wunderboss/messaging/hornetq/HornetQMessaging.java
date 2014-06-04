@@ -176,15 +176,14 @@ public class HornetQMessaging implements Messaging {
         } else {
             start();
 
-            String jndiName = "queue:" + name;
-            queue = lookupQueue(jndiName);
+            queue = lookupQueue(name);
             String selector = opts.getString(CreateQueueOption.SELECTOR, "");
 
             if (queue == null) {
-                createQueue(name, jndiName, selector,
-                            opts.getBoolean(CreateQueueOption.DURABLE,
-                                        (Boolean) CreateQueueOption.DURABLE.defaultValue));
-                queue = lookupQueue(name);
+                queue = createQueue(name, selector,
+                                    opts.getBoolean(CreateQueueOption.DURABLE,
+                                                    (Boolean) CreateQueueOption.DURABLE.defaultValue));
+                this.createdDestinations.add(HornetQQueue.fullName(name));
             }
         }
 
@@ -201,24 +200,61 @@ public class HornetQMessaging implements Messaging {
             topic = ((HornetQConnection)opts.get(CreateTopicOption.CONNECTION)).jmsContext().createTopic(name);
         } else {
             start();
-            String jndiName = "topic:" + name;
-            topic = lookupTopic(jndiName);
+            topic = lookupTopic(name);
 
             if (topic == null) {
-                createTopic(name, jndiName);
-                topic = lookupTopic(name);
+                topic = createTopic(name);
+                this.createdDestinations.add(HornetQTopic.fullName(name));
             }
         }
 
         return new HornetQTopic(topic, this);
     }
 
-    protected void createTopic(String name, String jndiName) throws Exception {
-        this.jmsServerManager.createTopic(false, name, jndiName);
+    protected javax.jms.Topic createTopic(String name) throws Exception {
+        this.jmsServerManager.createTopic(false, name, "java:/jms/topic/" + name);
+
+        return lookupTopic(name);
     }
 
-    protected void createQueue(String name, String jndiName, String selector, boolean durable) throws Exception {
-        this.jmsServerManager.createQueue(false, name, selector, durable, jndiName);
+    protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
+        this.jmsServerManager.createQueue(false, name, selector, durable, "java:/jms/queue/" + name);
+
+        return lookupQueue(name);
+    }
+
+    protected boolean destroyDestination(HornetQDestination dest) throws Exception {
+        String fullName = dest.fullName();
+        if (this.closeablesForDestination.containsKey(fullName)) {
+            for(AutoCloseable each : this.closeablesForDestination.get(fullName)) {
+                each.close();
+            }
+            this.closeablesForDestination.remove(fullName);
+        }
+
+        if (this.createdDestinations.contains(fullName)) {
+            if (dest instanceof HornetQQueue) {
+                this.jmsServerManager().destroyQueue(dest.name(), true);
+            } else {
+                this.jmsServerManager().destroyTopic(dest.name(), true);
+            }
+            this.createdDestinations.remove(fullName);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    protected void addCloseableForDestination(HornetQDestination dest, AutoCloseable c) {
+        String fullName = dest.fullName();
+        List<AutoCloseable> closeables = this.closeablesForDestination.get(fullName);
+        if (closeables == null) {
+            closeables = new ArrayList<>();
+            this.closeablesForDestination.put(fullName, closeables);
+        }
+
+        closeables.add(c);
     }
 
     protected javax.jms.Topic lookupTopic(String name) {
@@ -249,7 +285,10 @@ public class HornetQMessaging implements Messaging {
 
     private final String name;
     private final Options<CreateOption> options;
+    private final Set<String> createdDestinations = new HashSet<>();
+    private final Map<String, List<AutoCloseable>> closeablesForDestination = new HashMap<>();
     private Connection defaultConnection;
     protected boolean started = false;
     protected JMSServerManager jmsServerManager;
+
 }

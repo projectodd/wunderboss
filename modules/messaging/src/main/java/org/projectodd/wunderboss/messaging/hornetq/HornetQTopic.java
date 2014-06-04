@@ -25,6 +25,7 @@ import org.projectodd.wunderboss.messaging.Session;
 import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.JMSConsumer;
+import javax.jms.JMSException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,6 +56,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
                                                       null).start();
 
         connection.addCloseable(listener);
+        broker().addCloseableForDestination(this, listener);
 
         return new Listener() {
             @Override
@@ -87,6 +89,24 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         }
     }
 
+    public static String fullName(String name) {
+        return "/jms/topic/" + name;
+    }
+
+    @Override
+    public String fullName() {
+        return fullName(name());
+    }
+
+    @Override
+    public String name() {
+        try {
+            return ((javax.jms.Topic)destination()).getTopicName();
+        } catch (JMSException ffs) {
+            ffs.printStackTrace();
+            return null;
+        }
+    }
 
     protected HornetQConnection connection(final String id, Object connection) throws Exception {
         if (connection == null) {
@@ -103,4 +123,6 @@ public class HornetQTopic extends HornetQDestination implements Topic {
             put(Connection.CreateSessionOption.MODE, Session.Mode.TRANSACTED);
         }});
     }
+
+
 }

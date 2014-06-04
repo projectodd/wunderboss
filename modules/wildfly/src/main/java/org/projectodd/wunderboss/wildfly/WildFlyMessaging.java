@@ -21,15 +21,10 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.Queue;
-import org.projectodd.wunderboss.messaging.Topic;
 import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQQueue;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQTopic;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import java.util.Map;
 
 public class WildFlyMessaging extends HornetQMessaging {
 
@@ -62,30 +57,24 @@ public class WildFlyMessaging extends HornetQMessaging {
     }
 
     @Override
-    public synchronized Queue findOrCreateQueue(String name,
-                                                Map<CreateQueueOption, Object> options) throws Exception {
-        HornetQQueue queue = (HornetQQueue)super.findOrCreateQueue(name, options);
-        // TODO: Should we be smarter and destroy destinations we created but not ones created
-        // by something else?
-        queue.setDestroyOnStop(false);
-        return queue;
-    }
-
-    @Override
-    public synchronized Topic findOrCreateTopic(String name,
-                                                Map<CreateTopicOption, Object> options) throws Exception {
-        HornetQTopic topic = (HornetQTopic)super.findOrCreateTopic(name, options);
-        // TODO: Should we be smarter and destroy destinations we created but not ones created
-        // by something else?
-        topic.setDestroyOnStop(false);
-        return topic;
-    }
-
-    @Override
     protected Object lookupJNDI(String jndiName) {
+        return lookupJNDIWithRetry(jndiName, 0);
+    }
+
+    private Object lookupJNDIWithRetry(String jndiName, int attempt) {
         try {
             return context.lookup(jndiName);
         } catch (NamingException ex) {
+            if (ex.getCause() instanceof IllegalStateException
+                    && attempt < 100) {
+                //TODO: do this a better way
+                //the destination isn't yet available
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ignored) {}
+
+                return lookupJNDIWithRetry(jndiName, attempt + 1);
+            }
             // TODO: something better
             ex.printStackTrace();
         }

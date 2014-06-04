@@ -25,6 +25,7 @@ import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 import org.projectodd.wunderboss.messaging.Session;
 
+import javax.jms.JMSException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -77,6 +78,25 @@ public class HornetQQueue extends HornetQDestination implements Queue {
     public Response request(byte[] content, String contentType,
                             Map<MessageOpOption, Object> options) throws Exception {
         return _request(content, contentType, options);
+    }
+
+    public static String fullName(String name) {
+        return "/jms/queue/" + name;
+    }
+
+    @Override
+    public String fullName() {
+        return fullName(name());
+    }
+
+    @Override
+    public String name() {
+        try {
+            return ((javax.jms.Queue)destination()).getQueueName();
+        } catch (JMSException ffs) {
+            ffs.printStackTrace();
+            return null;
+        }
     }
 
     private Response _request(Object message, String contentType,
