@@ -102,13 +102,17 @@ public class HornetQMessaging implements Messaging {
     @Override
     public synchronized void stop() throws Exception {
         if (started) {
-            if (this.defaultConnection != null) {
-                this.defaultConnection.close();
-                this.defaultConnection = null;
-            }
+            closeDefaultConnection();
             this.jmsServerManager.stop();
             this.jmsServerManager = null;
             this.started = false;
+        }
+    }
+
+    protected void closeDefaultConnection() throws Exception {
+        if (this.defaultConnection != null) {
+            this.defaultConnection.close();
+            this.defaultConnection = null;
         }
     }
 

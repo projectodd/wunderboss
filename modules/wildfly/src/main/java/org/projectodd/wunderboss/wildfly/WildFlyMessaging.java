@@ -51,6 +51,7 @@ public class WildFlyMessaging extends HornetQMessaging {
     @Override
     public synchronized void stop() throws Exception {
         if (started) {
+            closeDefaultConnection();
             jmsServerManager = null;
             started = false;
         }
