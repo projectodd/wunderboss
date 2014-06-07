@@ -15,13 +15,27 @@
  */
 package org.projectodd.wunderboss.caching;
 
+import org.infinispan.Cache;
 import org.infinispan.configuration.cache.Configuration;
-
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Option;
 
 public interface Caching extends Component {
     class CreateOption extends Option {
-        public static final CreateOption CONFIGURATION = opt("configuration", Configuration.class);
+        public static final CreateOption CONFIGURATION = opt("configuration", CreateOption.class);
+        // transactional
+        // locking
+        // sync
+        // encoding
+        // name
+        // persist
+        // clustering mode
+        // eviction
+        // max entries
+        // idle
+        // ttl
     }
+    Cache create(String name, Configuration configuration);
+    Cache find(String name);
+    Cache findOrCreate(String name, Configuration configuration);
 }

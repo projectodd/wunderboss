@@ -15,18 +15,25 @@
  */
 package org.projectodd.wunderboss.caching;
 
-import org.infinispan.manager.CacheContainer;
+import org.infinispan.Cache;
+import org.infinispan.configuration.cache.Configuration;
+import org.infinispan.manager.DefaultCacheManager;
+import org.infinispan.manager.EmbeddedCacheManager;
+import org.jboss.logging.Logger;
+
 import org.projectodd.wunderboss.Options;
 
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
+        this.manager = new DefaultCacheManager((Configuration) options.get(CreateOption.CONFIGURATION), false);
         this.name = name;
     }
 
     @Override
     public synchronized void start() throws Exception {
         if (!started) {
+            this.manager.start();
             this.started = true;
         }
     }
@@ -34,23 +41,56 @@ public class InfinispanCaching implements Caching {
     @Override
     public synchronized void stop() throws Exception {
         if (started) {
+            this.manager.stop();
             this.started = false;
         }
     }
 
     @Override
     public String name() {
+        // manager.getName() ?
         return this.name;
     }
 
-    public CacheContainer cacheContainer() {
+    @Override
+    public Cache find(String name) {
+        Cache result = null;
+        if (manager.isRunning(name)) {
+            result = manager.getCache(name);
+            if (!result.getStatus().allowInvocations()) {
+                result.start();
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public Cache create(String name, Configuration configuration) {
+        if (null != find(name)) {
+            log.warn("Removing existing cache: "+name);
+            manager.removeCache(name);
+        }
+        manager.defineConfiguration(name, configuration);
+        log.info("Creating cache: "+name);
+        return manager.getCache(name);
+    }
+
+    @Override
+    public Cache findOrCreate(String name, Configuration configuration) {
+        Cache result = find(name);
+        return (result == null) ? create(name, configuration) : result;
+    }
+
+    public EmbeddedCacheManager manager() {
         if (this.started) {
-            return this.cacheContainer;
+            return this.manager;
         }
         return null;
     }
 
     private final String name;
     private boolean started = false;
-    private CacheContainer cacheContainer;
+    private EmbeddedCacheManager manager;
+
+    private static final Logger log = Logger.getLogger(Caching.class);
 }
