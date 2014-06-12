@@ -150,7 +150,14 @@ public class HornetQMessaging implements Messaging {
                                                    put("host", opts.getString(CreateConnectionOption.HOST));
                                                    put("port", opts.getInt(CreateConnectionOption.PORT, 5445));
                                                }});
-            cf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
+            HornetQConnectionFactory hornetQcf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
+
+            hornetQcf.setReconnectAttempts(opts.getInt(CreateConnectionOption.RECONNECT_ATTEMPTS));
+            hornetQcf.setRetryInterval(opts.getLong(CreateConnectionOption.RECONNECT_RETRY_INTERVAL));
+            hornetQcf.setRetryIntervalMultiplier(opts.getDouble(CreateConnectionOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
+            hornetQcf.setMaxRetryInterval(opts.getLong(CreateConnectionOption.RECONNECT_MAX_RETRY_INTERVAL));
+
+            cf = hornetQcf;
         }  else {
             start();
             if (opts.getBoolean(CreateConnectionOption.XA)) {

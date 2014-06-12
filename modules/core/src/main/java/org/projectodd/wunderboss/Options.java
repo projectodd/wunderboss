@@ -99,6 +99,21 @@ public class Options<T> extends HashMap<T, Object> {
         return (Long)value;
     }
 
+    public Double getDouble(T key) {
+        return getDouble(key, null);
+    }
+
+    public Double getDouble(T key, Double defaultValue) {
+        Object value = get(key);
+        if (value == null) {
+            value = defaultValue;
+        } else if (!(value instanceof Double)) {
+            value = Double.parseDouble(value.toString());
+        }
+
+        return (Double)value;
+    }
+
     public String getString(T key) {
         return getString(key, null);
     }

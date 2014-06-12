@@ -52,6 +52,15 @@ public interface Messaging extends Component {
          * If true, and xa connection is returned.
          */
         public static final CreateConnectionOption XA = opt("xa", false, CreateConnectionOption.class);
+
+        public static final CreateConnectionOption RECONNECT_RETRY_INTERVAL =
+                opt("reconnect_retry_interval", 2000, CreateConnectionOption.class);
+        public static final CreateConnectionOption RECONNECT_RETRY_INTERVAL_MULTIPLIER =
+                opt("reconnect_retry_interval_multiplier", 1.0, CreateConnectionOption.class);
+        public static final CreateConnectionOption RECONNECT_MAX_RETRY_INTERVAL =
+                opt("reconnect_max_retry_interval", 2000, CreateConnectionOption.class);
+        public static final CreateConnectionOption RECONNECT_ATTEMPTS =
+                opt("reconnect_attempts", 0, CreateConnectionOption.class);
     }
 
     //TODO: remote connections?
