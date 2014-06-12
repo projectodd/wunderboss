@@ -16,7 +16,6 @@
 package org.projectodd.wunderboss.caching;
 
 import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.jboss.logging.Logger;
@@ -26,7 +25,7 @@ import org.projectodd.wunderboss.Options;
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
-        this.manager = new DefaultCacheManager((Configuration) options.get(CreateOption.CONFIGURATION), false);
+        this.manager = new DefaultCacheManager(Config.uration(options), false);
         this.name = name;
     }
 
@@ -65,20 +64,20 @@ public class InfinispanCaching implements Caching {
     }
     
     @Override
-    public Cache create(String name, Configuration configuration) {
+    public Cache create(String name, Options<CreateOption> options) {
         if (null != find(name)) {
             log.warn("Removing existing cache: "+name);
             manager.removeCache(name);
         }
-        manager.defineConfiguration(name, configuration);
+        manager.defineConfiguration(name, Config.uration(options));
         log.info("Creating cache: "+name);
         return manager.getCache(name);
     }
 
     @Override
-    public Cache findOrCreate(String name, Configuration configuration) {
+    public Cache findOrCreate(String name, Options<CreateOption> options) {
         Cache result = find(name);
-        return (result == null) ? create(name, configuration) : result;
+        return (result == null) ? create(name, options) : result;
     }
 
     public EmbeddedCacheManager manager() {
