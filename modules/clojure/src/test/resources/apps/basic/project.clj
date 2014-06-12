@@ -17,7 +17,7 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.6.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
                  ;; we can't depend on this, or we'll get the version
                  ;; from .m2, not the version we're building
                  ;;[org.projectodd.wunderboss/wunderboss-clojure "0.1.0-SNAPSHOT"]
