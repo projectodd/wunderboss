@@ -60,10 +60,13 @@ public class Options<T> extends HashMap<T, Object> {
 
     public Boolean getBoolean(T key, Boolean defaultValue) {
         Object value = get(key);
-        if (value != null) {
-            return Boolean.parseBoolean(value.toString());
+        if (value == null) {
+            value = defaultValue;
+        } else if (!(value instanceof Boolean)) {
+            value = Boolean.parseBoolean(value.toString());
         }
-        return defaultValue;
+
+        return (Boolean)value;
     }
 
     public Integer getInt(T key) {
@@ -72,10 +75,13 @@ public class Options<T> extends HashMap<T, Object> {
 
     public Integer getInt(T key, Integer defaultValue) {
         Object value = get(key);
-        if (value != null) {
-            return Integer.parseInt(value.toString());
+        if (value == null) {
+            value = defaultValue;
+        } else if (!(value instanceof Integer)) {
+            value = Integer.parseInt(value.toString());
         }
-        return defaultValue;
+
+        return (Integer)value;
     }
 
     public Long getLong(T key) {
@@ -84,10 +90,13 @@ public class Options<T> extends HashMap<T, Object> {
 
     public Long getLong(T key, Long defaultValue) {
         Object value = get(key);
-        if (value != null) {
-            return Long.parseLong(value.toString());
+        if (value == null) {
+            value = defaultValue;
+        } else if (!(value instanceof Long)) {
+            value = Long.parseLong(value.toString());
         }
-        return defaultValue;
+
+        return (Long)value;
     }
 
     public String getString(T key) {
@@ -104,10 +113,6 @@ public class Options<T> extends HashMap<T, Object> {
 
     public Date getDate(T key, Date defaultValue) {
         return get(key) != null ? (Date)get(key) : defaultValue;
-    }
-
-    public String removeString(T key, String defaultValue) {
-        return get(key) != null ? remove(key).toString() : defaultValue;
     }
 
     public Options put(T key, Object value) {
