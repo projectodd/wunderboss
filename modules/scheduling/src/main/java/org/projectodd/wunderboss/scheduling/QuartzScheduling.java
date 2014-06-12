@@ -46,7 +46,7 @@ public class QuartzScheduling implements Scheduling {
      */
     public QuartzScheduling(String name, Options<CreateOption> options) {
         this.name = name;
-        this.numThreads = options.getInt(CreateOption.NUM_THREADS, (Integer)CreateOption.NUM_THREADS.defaultValue);
+        this.numThreads = options.getInt(CreateOption.NUM_THREADS);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class QuartzScheduling implements Scheduling {
 
         JobDataMap jobDataMap = new JobDataMap();
 
-        if (options.getBoolean(SINGLETON, false)) {
+        if (options.getBoolean(SINGLETON)) {
             fn = WunderBoss.findOrCreateComponent(SingletonContext.class, name, null).runnable(fn);
         }
 

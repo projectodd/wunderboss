@@ -32,6 +32,24 @@ public class Options<T> extends HashMap<T, Object> {
         }
     }
 
+    /**
+     * Looks up key in the options.
+     *
+     * If key is an Option, its default value will be returned if the key
+     * isn't found.
+     *
+     * @param key
+     * @return
+     */
+    public Object get(Object key) {
+        Object val = super.get(key);
+        if (val == null && key instanceof Option) {
+            val = ((Option)key).defaultValue;
+        }
+
+        return val;
+    }
+
     public Object get(T key, Object defaultValue) {
         return get(key) != null ? get(key) : defaultValue;
     }
@@ -99,7 +117,8 @@ public class Options<T> extends HashMap<T, Object> {
     }
 
     /**
-     * Returns true if key has a *non-null value* in the map, false otherwise.
+     * Returns true if key resolves to a *non-null value* (considering
+     * a possible default), false otherwise.
      */
     public boolean has(T key) {
         return get(key) != null;
@@ -116,4 +135,3 @@ public class Options<T> extends HashMap<T, Object> {
         return mergedOptions;
     }
 }
-

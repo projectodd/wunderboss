@@ -45,7 +45,7 @@ public class MessageHandlerGroup implements Listener {
 
     public synchronized MessageHandlerGroup start() throws Exception {
         if (!this.started) {
-            int concurrency = this.options.getInt(ListenOption.CONCURRENCY, 1);
+            int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
             while(concurrency-- > 0) {
                 HornetQSession session = createSession();
                 listeners.add(new TransactionalListener(this.handler,

@@ -27,6 +27,7 @@ import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
 import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.server.impl.HornetQServerImpl;
+import org.hornetq.jms.client.HornetQConnectionFactory;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
@@ -152,8 +153,7 @@ public class HornetQMessaging implements Messaging {
             cf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
         }  else {
             start();
-            if (opts.getBoolean(CreateConnectionOption.XA,
-                            (Boolean)CreateConnectionOption.XA.defaultValue)) {
+            if (opts.getBoolean(CreateConnectionOption.XA)) {
             cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
             } else {
                 cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
@@ -185,8 +185,7 @@ public class HornetQMessaging implements Messaging {
 
             if (queue == null) {
                 queue = createQueue(name, selector,
-                                    opts.getBoolean(CreateQueueOption.DURABLE,
-                                                    (Boolean) CreateQueueOption.DURABLE.defaultValue));
+                                    opts.getBoolean(CreateQueueOption.DURABLE));
                 this.createdDestinations.add(HornetQQueue.fullName(name));
             }
         }

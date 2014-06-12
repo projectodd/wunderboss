@@ -37,8 +37,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     @Override
     public Session createSession(Map<CreateSessionOption, Object> options) throws Exception {
         Options<CreateSessionOption> opts = new Options<>(options);
-        Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE,
-                                                      CreateSessionOption.MODE.defaultValue);
+        Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE);
         int mode = 0;
         switch (optMode) {
             case AUTO_ACK:
@@ -76,8 +75,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     }
 
     public boolean isXAEnabled() {
-        return this.creationOptions.getBoolean(Messaging.CreateConnectionOption.XA,
-                                               (Boolean)Messaging.CreateConnectionOption.XA.defaultValue);
+        return this.creationOptions.getBoolean(Messaging.CreateConnectionOption.XA);
     }
 
     public Options<Messaging.CreateConnectionOption> creationOptions() {

@@ -53,8 +53,7 @@ public class HornetQQueue extends HornetQDestination implements Queue {
             public Object onMessage(Message msg, Session session) throws Exception {
                 Object result = handler.onMessage(msg, session);
                 Options<MessageOpOption> replyOptions = new Options<>();
-                replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL,
-                                                             (Integer) RespondOption.TTL.defaultValue));
+                replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL));
                 replyOptions.put(SendOption.SESSION, session);
                 if (result instanceof String) {
                     ((ReplyableMessage)msg).reply((String)result, msg.contentType(), replyOptions);

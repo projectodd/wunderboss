@@ -112,9 +112,9 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             fillInProperties(producer, additionalProperties);
             producer
                     .setProperty(CONTENT_TYPE_PROPERTY, contentType)
-                    .setDeliveryMode((opts.getBoolean(SendOption.PERSISTENT, (Boolean) SendOption.PERSISTENT.defaultValue) ?
+                    .setDeliveryMode((opts.getBoolean(SendOption.PERSISTENT) ?
                             DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
-                    .setPriority(opts.getInt(SendOption.PRIORITY, (Integer)SendOption.PRIORITY.defaultValue))
+                    .setPriority(opts.getInt(SendOption.PRIORITY))
                     .setTimeToLive(opts.getLong(SendOption.TTL, producer.getTimeToLive()));
             if (message instanceof String) {
                 producer.send(this.destination, (String)message);
@@ -131,7 +131,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     @Override
     public Message receive(Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
-        int timeout = opts.getInt(ReceiveOption.TIMEOUT, (Integer)ReceiveOption.TIMEOUT.defaultValue);
+        int timeout = opts.getInt(ReceiveOption.TIMEOUT);
         boolean closeSession = !opts.has(MessageOpOption.SESSION);
         Session session = getSession(opts);
         try {
