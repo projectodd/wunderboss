@@ -34,56 +34,54 @@ public class Config {
     }
 
     public static ConfigurationBuilder builder(Options<Caching.CreateOption> options) {
-        return new Builder(options);
+        return new Config(options).builder;
     }
 
-    public static class Builder extends ConfigurationBuilder {
-
-        public Builder(Options<Caching.CreateOption> options) {
-            this.options = options;
-            read();
-            mode();
-            evict();
-            expire();
-            transact();
-        }
-
-        void read() {
-            Configuration c = (Configuration) options.get(Caching.CreateOption.CONFIGURATION);
-            if (c != null) {
-                read(c);
-            }
-        }
-        void mode() {
-            clustering().cacheMode(CacheMode.valueOf(options.getString(Caching.CreateOption.MODE).toUpperCase()));
-        }
-        void evict() {
-            eviction()
-                .strategy(EvictionStrategy.valueOf(options.getString(Caching.CreateOption.EVICTION).toUpperCase()))
-                .maxEntries(options.getInt(Caching.CreateOption.MAX_ENTRIES));
-        }
-        void expire() {
-            expiration()
-                .maxIdle(options.getLong(Caching.CreateOption.IDLE))
-                .lifespan(options.getLong(Caching.CreateOption.TTL));
-        }
-        void transact() {
-            if (options.getBoolean(Caching.CreateOption.TRANSACTIONAL)) {
-                LockingMode mode = LockingMode.valueOf(options.getString(Caching.CreateOption.LOCKING).toUpperCase());
-                transaction()
-                    .transactionMode(TransactionMode.TRANSACTIONAL)
-                    .transactionManagerLookup(new GenericTransactionManagerLookup())
-                    .lockingMode(mode)
-                    .recovery()
-                    .versioning().enabled(mode==LockingMode.OPTIMISTIC).scheme(VersioningScheme.SIMPLE)
-                    .locking()
-                    .isolationLevel(mode==LockingMode.OPTIMISTIC ? IsolationLevel.REPEATABLE_READ : IsolationLevel.READ_COMMITTED)
-                    .writeSkewCheck(mode==LockingMode.OPTIMISTIC);
-            } else {
-                transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
-            }
-        }
-
-        private Options<Caching.CreateOption> options;
+    Config(Options<Caching.CreateOption> options) {
+        this.options = options;
+        read();
+        mode();
+        evict();
+        expire();
+        transact();
     }
+
+    void read() {
+        Configuration c = (Configuration) options.get(Caching.CreateOption.CONFIGURATION);
+        if (c != null) {
+            builder.read(c);
+        }
+    }
+    void mode() {
+        builder.clustering().cacheMode(CacheMode.valueOf(options.getString(Caching.CreateOption.MODE).toUpperCase()));
+    }
+    void evict() {
+        builder.eviction()
+            .strategy(EvictionStrategy.valueOf(options.getString(Caching.CreateOption.EVICTION).toUpperCase()))
+            .maxEntries(options.getInt(Caching.CreateOption.MAX_ENTRIES));
+    }
+    void expire() {
+        builder.expiration()
+            .maxIdle(options.getLong(Caching.CreateOption.IDLE))
+            .lifespan(options.getLong(Caching.CreateOption.TTL));
+    }
+    void transact() {
+        if (options.getBoolean(Caching.CreateOption.TRANSACTIONAL)) {
+            LockingMode mode = LockingMode.valueOf(options.getString(Caching.CreateOption.LOCKING).toUpperCase());
+            builder.transaction()
+                .transactionMode(TransactionMode.TRANSACTIONAL)
+                .transactionManagerLookup(new GenericTransactionManagerLookup())
+                .lockingMode(mode)
+                .recovery()
+                .versioning().enabled(mode==LockingMode.OPTIMISTIC).scheme(VersioningScheme.SIMPLE)
+                .locking()
+                .isolationLevel(mode==LockingMode.OPTIMISTIC ? IsolationLevel.REPEATABLE_READ : IsolationLevel.READ_COMMITTED)
+                .writeSkewCheck(mode==LockingMode.OPTIMISTIC);
+        } else {
+            builder.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
+        }
+    }
+
+    private Options<Caching.CreateOption> options;
+    ConfigurationBuilder builder = new ConfigurationBuilder();
 }
