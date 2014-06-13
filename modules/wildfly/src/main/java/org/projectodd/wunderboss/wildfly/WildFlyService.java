@@ -55,6 +55,7 @@ public class WildFlyService implements Service<WildFlyService> {
         WunderBoss.putOption("deployment-name", this.deploymentName);
         WunderBoss.putOption("service-registry", this.registry);
         WunderBoss.putOption("wildfly-service", this);
+        WunderBoss.putOption("default-context-path", getDefaultContextPath());
 
         try {
             WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
@@ -116,6 +117,17 @@ public class WildFlyService implements Service<WildFlyService> {
     @Override
     public WildFlyService getValue() throws IllegalStateException, IllegalArgumentException {
         return this;
+    }
+
+    private String getDefaultContextPath() {
+        String path = deploymentName.replace(".jar", "");
+        if (path.equals("ROOT")) {
+            path = "/";
+        }
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return path;
     }
 
     public Injector<UndertowService> getUndertowInjector() {
