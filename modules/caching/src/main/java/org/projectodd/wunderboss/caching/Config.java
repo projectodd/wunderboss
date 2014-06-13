@@ -44,6 +44,7 @@ public class Config {
         evict();
         expire();
         transact();
+        persist();
     }
 
     void read() {
@@ -81,6 +82,15 @@ public class Config {
             builder.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
         }
     }
+    void persist() {
+        Object v = options.get(Caching.CreateOption.PERSIST);
+        if (v instanceof Boolean && (boolean) v) {
+            builder.persistence().addSingleFileStore();
+        }
+        if (v instanceof String) {
+            builder.persistence().addSingleFileStore().location(v.toString());
+        }
+    }     
 
     private Options<Caching.CreateOption> options;
     ConfigurationBuilder builder = new ConfigurationBuilder();
