@@ -89,13 +89,13 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         }
     }
 
-    public static String fullName(String name) {
-        return "/jms/topic/" + name;
+    public static String jmsName(String name) {
+        return "jms.topic." + name;
     }
 
     @Override
-    public String fullName() {
-        return fullName(name());
+    public String jmsName() {
+        return jmsName(name());
     }
 
     @Override

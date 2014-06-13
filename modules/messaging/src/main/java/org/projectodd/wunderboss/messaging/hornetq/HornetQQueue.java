@@ -80,11 +80,11 @@ public class HornetQQueue extends HornetQDestination implements Queue {
     }
 
     public static String fullName(String name) {
-        return "/jms/queue/" + name;
+        return "jms.queue." + name;
     }
 
     @Override
-    public String fullName() {
+    public String jmsName() {
         return fullName(name());
     }
 

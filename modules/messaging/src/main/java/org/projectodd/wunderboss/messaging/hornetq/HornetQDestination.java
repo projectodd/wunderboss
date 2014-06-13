@@ -42,7 +42,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         return this.destination;
     }
 
-    public abstract String fullName();
+    public abstract String jmsName();
 
     @Override
     public Listener listen(MessageHandler handler, Map<ListenOption, Object> options) throws Exception {

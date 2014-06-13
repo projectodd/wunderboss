@@ -214,7 +214,7 @@ public class HornetQMessaging implements Messaging {
 
             if (topic == null) {
                 topic = createTopic(name);
-                this.createdDestinations.add(HornetQTopic.fullName(name));
+                this.createdDestinations.add(HornetQTopic.jmsName(name));
             }
         }
 
@@ -234,7 +234,7 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected boolean destroyDestination(HornetQDestination dest) throws Exception {
-        String fullName = dest.fullName();
+        String fullName = dest.jmsName();
         if (this.closeablesForDestination.containsKey(fullName)) {
             for(AutoCloseable each : this.closeablesForDestination.get(fullName)) {
                 each.close();
@@ -257,7 +257,7 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected void addCloseableForDestination(HornetQDestination dest, AutoCloseable c) {
-        String fullName = dest.fullName();
+        String fullName = dest.jmsName();
         List<AutoCloseable> closeables = this.closeablesForDestination.get(fullName);
         if (closeables == null) {
             closeables = new ArrayList<>();
