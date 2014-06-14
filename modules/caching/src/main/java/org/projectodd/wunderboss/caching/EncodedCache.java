@@ -28,116 +28,110 @@ import java.util.HashSet;
 import java.util.ArrayList;
 
 
-public class EncodedCache<K,V> extends AbstractDelegatingCache<K,V> {
+public class EncodedCache extends AbstractDelegatingCache {
 
-    public EncodedCache(Cache<K,V> cache, Codec codec) {
+    public EncodedCache(Cache cache, Codec codec) {
         super(cache);
         this.codec = codec;
     }
 
-    K encodeKey(Object key) {
-        return (K) codec.encode(key);
+    Object encode(Object value) {
+        return codec.encode(value);
     }
 
-    V encode(Object value) {
-        return (V) codec.encode(value);
-    }
-
-    K decodeKey(Object key) {
-        return (K) codec.decode(key);
-    }
-
-    V decode(Object value) {
-        return (V) codec.decode(value);
+    Object decode(Object value) {
+        return codec.decode(value);
     }
 
     @Override
-    public void putForExternalRead(K key, V value) {
-        super.putForExternalRead(encodeKey(key), encode(value));
+    public void putForExternalRead(Object key, Object value) {
+        super.putForExternalRead(encode(key), encode(value));
     }
 
     @Override
-    public void evict(K key) {
-        super.evict(encodeKey(key));
+    public void evict(Object key) {
+        super.evict(encode(key));
     }
 
     @Override
-    public V put(K key, V value, long lifespan, TimeUnit unit) {
-        return decode(super.put(encodeKey(key), encode(value), lifespan, unit));
+    public Object put(Object key, Object value, long lifespan, TimeUnit unit) {
+        return decode(super.put(encode(key), encode(value), lifespan, unit));
     }
 
     @Override
-    public V putIfAbsent(K key, V value, long lifespan, TimeUnit unit) {
-        return decode(super.putIfAbsent(encodeKey(key), encode(value), lifespan, unit));
+    public Object putIfAbsent(Object key, Object value, long lifespan, TimeUnit unit) {
+        return decode(super.putIfAbsent(encode(key), encode(value), lifespan, unit));
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> map, long lifespan, TimeUnit unit) {
-        for (Entry entry: map.entrySet()) {
-            super.put(encodeKey(entry.getKey()), encode(entry.getValue()), lifespan, unit);
+    public void putAll(Map map, long lifespan, TimeUnit unit) {
+        for (Object o: map.entrySet()) {
+            Entry entry = (Entry) o;
+            super.put(encode(entry.getKey()), encode(entry.getValue()), lifespan, unit);
         }
     }
 
     @Override
-    public V replace(K key, V value, long lifespan, TimeUnit unit) {
-        return decode(super.replace(encodeKey(key), encode(value), lifespan, unit));
+    public Object replace(Object key, Object value, long lifespan, TimeUnit unit) {
+        return decode(super.replace(encode(key), encode(value), lifespan, unit));
     }
 
     @Override
-    public boolean replace(K key, V oldValue, V value, long lifespan, TimeUnit unit) {
-        return super.replace(encodeKey(key), encode(oldValue), encode(value), lifespan, unit);
+    public boolean replace(Object key, Object oldValue, Object value, long lifespan, TimeUnit unit) {
+        return super.replace(encode(key), encode(oldValue), encode(value), lifespan, unit);
     }
 
     @Override
-    public V put(K key, V value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
-        return decode(super.put(encodeKey(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
+    public Object put(Object key, Object value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+        return decode(super.put(encode(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
     }
 
     @Override
-    public V putIfAbsent(K key, V value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
-        return decode(super.putIfAbsent(encodeKey(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
+    public Object putIfAbsent(Object key, Object value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+        return decode(super.putIfAbsent(encode(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> map, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
-        for (Entry entry: map.entrySet()) {
-            super.put(encodeKey(entry.getKey()), encode(entry.getValue()), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit);
+    public void putAll(Map map, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+        for (Object o: map.entrySet()) {
+            Entry entry = (Entry) o;
+            super.put(encode(entry.getKey()), encode(entry.getValue()), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit);
         }
     }
 
     @Override
-    public V replace(K key, V value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
-        return decode(super.replace(encodeKey(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
+    public Object replace(Object key, Object value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+        return decode(super.replace(encode(key), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit));
     }
 
     @Override
-    public boolean replace(K key, V oldValue, V value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
-        return super.replace(encodeKey(key), encode(oldValue), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit);
+    public boolean replace(Object key, Object oldValue, Object value, long lifespan, TimeUnit lifespanUnit, long maxIdleTime, TimeUnit maxIdleTimeUnit) {
+        return super.replace(encode(key), encode(oldValue), encode(value), lifespan, lifespanUnit, maxIdleTime, maxIdleTimeUnit);
     }
 
     @Override
-    public V putIfAbsent(K key, V value) {
-        return decode(super.putIfAbsent(encodeKey(key), encode(value)));
+    public Object putIfAbsent(Object key, Object value) {
+        return decode(super.putIfAbsent(encode(key), encode(value)));
     }
 
     @Override
     public boolean remove(Object key, Object value) {
-        return super.remove(encodeKey(key), encode(value));
+        return super.remove(encode(key), encode(value));
     }
 
     @Override
-    public boolean replace(K key, V oldValue, V newValue) {
-        return super.replace(encodeKey(key), encode(oldValue), encode(newValue));
+    public boolean replace(Object key, Object oldValue, Object newValue) {
+        return super.replace(encode(key), encode(oldValue), encode(newValue));
     }
 
     @Override
-    public V replace(K key, V value) {
-        return decode(super.replace(encodeKey(key), encode(value)));
+    public Object replace(Object key, Object value) {
+        return decode(super.replace(encode(key), encode(value)));
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return super.containsKey(encodeKey(key));
+        return super.containsKey(encode(key));
     }
 
     @Override
@@ -146,52 +140,54 @@ public class EncodedCache<K,V> extends AbstractDelegatingCache<K,V> {
     }
 
     @Override
-    public V get(Object key) {
-        return super.get(encodeKey(key));
+    public Object get(Object key) {
+        return super.get(encode(key));
     }
 
     @Override
-    public V put(K key, V value) {
-        return decode(super.put(encodeKey(key), encode(value)));
+    public Object put(Object key, Object value) {
+        return decode(super.put(encode(key), encode(value)));
     }
 
     @Override
-    public V remove(Object key) {
-        return super.remove(encodeKey(key));
+    public Object remove(Object key) {
+        return super.remove(encode(key));
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> t) {
-        for (Entry entry: t.entrySet()) {
-            super.put(encodeKey(entry.getKey()), encode(entry.getValue()));
+    public void putAll(Map t) {
+        for (Object o: t.entrySet()) {
+            Entry entry = (Entry) o;
+            super.put(encode(entry.getKey()), encode(entry.getValue()));
         }
     }
 
     @Override
-    public Set<K> keySet() {
-        Set<K> keys = super.keySet();
-        Set<K> result = new HashSet<K>(keys.size());
-        for (K k: keys) {
-            result.add(decodeKey(k));
-        }
-        return result;
-    }
-
-    @Override
-    public Set<Entry<K, V>> entrySet() {
-        Set<Entry<K,V>> entries = super.entrySet();
-        Set<Entry<K,V>> result = new HashSet<Entry<K,V>>(entries.size());
-        for (Entry entry: entries) {
-            result.add(new SimpleImmutableEntry(decodeKey(entry.getKey()), decode(entry.getValue())));
+    public Set keySet() {
+        Set keys = super.keySet();
+        Set result = new HashSet(keys.size());
+        for (Object k: keys) {
+            result.add(decode(k));
         }
         return result;
     }
 
     @Override
-    public Collection<V> values() {
-        Collection<V> values = super.values();
-        Collection<V> result = new ArrayList<V>(values.size());
-        for (V v: values) {
+    public Set entrySet() {
+        Set entries = super.entrySet();
+        Set result = new HashSet(entries.size());
+        for (Object o: entries) {
+            Entry entry = (Entry) o;
+            result.add(new SimpleImmutableEntry(decode(entry.getKey()), decode(entry.getValue())));
+        }
+        return result;
+    }
+
+    @Override
+    public Collection values() {
+        Collection values = super.values();
+        Collection result = new ArrayList(values.size());
+        for (Object v: values) {
             result.add(decode(v));
         }
         return result;
