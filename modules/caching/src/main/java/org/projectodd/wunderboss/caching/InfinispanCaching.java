@@ -22,14 +22,12 @@ import org.jboss.logging.Logger;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
-import org.projectodd.wunderboss.codecs.None;
 
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
         this.manager = new DefaultCacheManager(Config.uration(options), false);
         this.name = name;
-        this.defaultCodec = (Codec) options.get(CreateOption.CODEC);
     }
 
     @Override
@@ -74,13 +72,18 @@ public class InfinispanCaching implements Caching {
         }
         manager.defineConfiguration(name, Config.uration(options));
         log.info("Creating cache: "+name);
-        return new EncodedCache(manager.getCache(name), getCodec(options));
+        return manager.getCache(name);
     }
 
     @Override
     public Cache findOrCreate(String name, Options<CreateOption> options) {
         Cache result = find(name);
-        return (result == null) ? create(name, options) : new EncodedCache(result, getCodec(options));
+        return (result == null) ? create(name, options) : result;
+    }
+
+    @Override
+    public Cache encodedWith(Codec codec, Cache cache) {
+        return new EncodedCache(cache, codec);
     }
 
     public EmbeddedCacheManager manager() {
@@ -90,21 +93,9 @@ public class InfinispanCaching implements Caching {
         return null;
     }
 
-    protected Codec getCodec(Options<CreateOption> options) {
-        Codec result = (Codec) options.get(CreateOption.CODEC);
-        if (result != null) {
-            return result;
-        }
-        if (defaultCodec != null) {
-            return defaultCodec;
-        }
-        return None.INSTANCE;
-    }
-
     private final String name;
     private boolean started = false;
     private EmbeddedCacheManager manager;
-    private Codec defaultCodec;
 
     private static final Logger log = Logger.getLogger(Caching.class);
 }
