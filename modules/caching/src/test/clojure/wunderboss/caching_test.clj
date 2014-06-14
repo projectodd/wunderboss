@@ -15,9 +15,15 @@
 (ns wunderboss.caching-test
   (:require [clojure.test :refer :all])
   (:import org.projectodd.wunderboss.WunderBoss
-           org.projectodd.wunderboss.caching.Caching))
+           org.projectodd.wunderboss.caching.Caching
+           org.projectodd.wunderboss.Options
+           java.util.Arrays))
 
 (def default (doto (WunderBoss/findOrCreateComponent Caching) (.start)))
 
-(deftest something
-  )
+(deftest byte-array-keys
+  (let [c (.create default "bytes" (Options.))
+        k (byte-array [1 2 3])
+        v (byte-array [4 5 6])]
+    (.put c k v)
+    (is (Arrays/equals (byte-array [4 5 6]) (get c (byte-array [1 2 3]))))))

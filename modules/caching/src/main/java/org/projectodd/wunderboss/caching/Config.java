@@ -26,6 +26,8 @@ import org.infinispan.transaction.lookup.GenericTransactionManagerLookup;
 import org.infinispan.util.concurrent.IsolationLevel;
 
 import org.projectodd.wunderboss.Options;
+import java.util.Arrays;
+
 
 public class Config {
 
@@ -39,6 +41,7 @@ public class Config {
 
     Config(Options<Caching.CreateOption> options) {
         this.options = options;
+        builder.dataContainer().keyEquivalence(EQUIVALENCE);
         read();
         mode();
         evict();
@@ -94,4 +97,39 @@ public class Config {
 
     private Options<Caching.CreateOption> options;
     ConfigurationBuilder builder = new ConfigurationBuilder();
+    static final Equivalence EQUIVALENCE = new Equivalence();
+
+    static class Equivalence implements org.infinispan.commons.equivalence.Equivalence<Object> {
+        private static boolean isByteArray(Object obj) {
+            return byte[].class == obj.getClass();
+        }
+        public int hashCode(Object obj) {
+            if (isByteArray(obj)) {
+                return 41 + Arrays.hashCode((byte[]) obj);
+            } else {
+                return obj.hashCode();
+            }
+        }
+        public boolean equals(Object obj, Object otherObj) {
+            if (obj == otherObj)
+                return true;
+            if (obj == null || otherObj == null)
+                return false;
+            if (isByteArray(obj) && isByteArray(otherObj))
+                return Arrays.equals((byte[]) obj, (byte[]) otherObj);
+            return obj.equals(otherObj);
+        }
+        public String toString(Object obj) {
+            if (isByteArray(obj))
+                return Arrays.toString((byte[]) obj);
+            else
+                return obj.toString();
+        }
+        public boolean isComparable(Object obj) {
+            return obj instanceof Comparable;
+        }
+        public int compare(Object obj, Object otherObj) {
+            return ((Comparable<Object>) obj).compareTo(otherObj);
+        }
+    }
 }
