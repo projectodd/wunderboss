@@ -16,12 +16,14 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
+import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Session;
 
 import javax.jms.JMSContext;
 
 public class HornetQSession implements Session {
-    public HornetQSession(JMSContext context, Mode mode) {
+    public HornetQSession(Connection connection, JMSContext context, Mode mode) {
+        this.connection = connection;
         this.context = context;
         this.mode = mode;
     }
@@ -47,6 +49,11 @@ public class HornetQSession implements Session {
     }
 
     @Override
+    public Connection connection() {
+        return this.connection;
+    }
+
+    @Override
     public void close() throws Exception {
         this.context.close();
     }
@@ -55,6 +62,7 @@ public class HornetQSession implements Session {
         return this.context;
     }
 
+    private final Connection connection;
     private final JMSContext context;
     private final Mode mode;
 }

@@ -54,7 +54,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         JMSContext session = this.jmsContext.createContext(mode);
         this.closeables.add(session);
 
-        return new HornetQSession(session, optMode);
+        return new HornetQSession(this, session, optMode);
     }
 
     @Override

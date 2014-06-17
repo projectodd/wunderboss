@@ -26,4 +26,6 @@ public interface Session extends AutoCloseable {
     void rollback();
 
     void acknowledge();
+
+    Connection connection();
 }
