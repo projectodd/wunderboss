@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.clojure;
 
 import clojure.java.api.Clojure;
+import clojure.lang.Compiler;
 import org.projectodd.wunderboss.Language;
 import org.projectodd.wunderboss.LoaderWrapper;
 import org.projectodd.wunderboss.WunderBoss;
@@ -28,7 +29,13 @@ public class ClojureLanguage implements Language {
     @Override
     public void initialize() {
         this.runtime = new LoaderWrapper(WunderBoss.classLoader());
-
+        // we have to touch Clojure.class so it will init clojure enough for
+        // binding the loader's root to work. Without this, we'll NPE
+        Clojure.var("clojure.core", "require");
+        // we have to bind the loader for cases where the TCCL is the wrong
+        // module inside WildFly (this happens for web requests). If LOADER isn't
+        // bound, clojure.lang.RT will fall back to the TCCL.
+        Compiler.LOADER.bindRoot(WunderBoss.classLoader());
     }
 
     @Override
