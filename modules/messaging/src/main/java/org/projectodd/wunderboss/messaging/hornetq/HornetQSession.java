@@ -28,6 +28,8 @@ public class HornetQSession implements Session {
         this.mode = mode;
     }
 
+    public static ThreadLocal<Session> currentSession = new ThreadLocal<>();
+
     @Override
     public Mode mode() {
         return this.mode;

@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.Pair;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -75,13 +76,20 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         }
     }
 
-    protected Session getSession(Options<MessageOpOption> options) throws Exception {
+    protected Pair<Session, Boolean> getSession(Options<MessageOpOption> options) throws Exception {
         Session session = (Session)options.get(MessageOpOption.SESSION);
+        boolean shouldClose = false;
+
         if (session == null) {
-            session = connection(options.get(MessageOpOption.CONNECTION)).createSession(null);
+            session = HornetQSession.currentSession.get();
         }
 
-        return session;
+        if (session == null) {
+            session = connection(options.get(MessageOpOption.CONNECTION)).createSession(null);
+            shouldClose = true;
+        }
+
+        return new Pair(session, shouldClose);
     }
 
     protected HornetQConnection connection(Object connection) throws Exception {
@@ -103,8 +111,9 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             throw new IllegalArgumentException("contentType can't be null");
         }
         Options<MessageOpOption> opts = new Options<>(options);
-        boolean closeSession = !opts.has(MessageOpOption.SESSION);
-        Session session = getSession(opts);
+        Pair<Session, Boolean> sessionInfo = getSession(opts);
+        Session session = sessionInfo.first;
+        boolean closeSession = sessionInfo.second;
 
         try {
             JMSProducer producer = ((HornetQSession)session).context().createProducer();
@@ -132,8 +141,10 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     public Message receive(Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
-        boolean closeSession = !opts.has(MessageOpOption.SESSION);
-        Session session = getSession(opts);
+        Pair<Session, Boolean> sessionInfo = getSession(opts);
+        Session session = sessionInfo.first;
+        boolean closeSession = sessionInfo.second;
+
         try {
             String selector = opts.getString(ReceiveOption.SELECTOR);
             JMSConsumer consumer = ((HornetQSession)session).context().createConsumer(this.destination, selector);

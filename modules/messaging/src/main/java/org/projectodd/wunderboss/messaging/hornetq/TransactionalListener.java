@@ -160,6 +160,7 @@ public class TransactionalListener implements Listener, MessageListener { //, or
     @Override
     public void onMessage(Message message) {
            try {
+               HornetQSession.currentSession.set(this.session);
                this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
                                                                                                      this.endpoint,
                                                                                                      this.connection),
@@ -168,7 +169,10 @@ public class TransactionalListener implements Listener, MessageListener { //, or
            } catch (Exception e) {
                log.warn("Unhandled exception thrown from onMessage", e);
                this.session.context().rollback();
+           } finally {
+               HornetQSession.currentSession.remove();
            }
+
          /*       if (this.xa) {
                     this.tm.commit();
                 }
