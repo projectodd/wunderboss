@@ -19,6 +19,8 @@ package org.projectodd.wunderboss.messaging;
 import java.util.Map;
 
 public interface Message {
+    String id();
+
     String contentType();
 
     Map<String, Object> properties();

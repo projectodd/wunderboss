@@ -38,6 +38,15 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     @Override
+    public String id() {
+        try {
+            return this.baseMessage.getJMSMessageID();
+        } catch (JMSException e) {
+            throw new IllegalStateException("Failed to read id from message", e);
+        }
+    }
+
+    @Override
     public String contentType() {
         try {
             return this.baseMessage.getStringProperty(HornetQDestination.CONTENT_TYPE_PROPERTY);
