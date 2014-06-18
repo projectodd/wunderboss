@@ -167,13 +167,9 @@ public class UndertowWeb implements Web<HttpHandler> {
     }
 
     @Override
-    public boolean unregister(String context) {
-        return pathology.remove(context, null);
-    }
-
-    @Override
-    public boolean unregister(String context, String... hostnames) {
-        return pathology.remove(context, Arrays.asList(hostnames));
+    public boolean unregister(Map<RegisterOption, Object> opts) {
+        final Options<RegisterOption> options = new Options<>(opts);
+        return pathology.remove(options.getString(PATH), options.getList(VHOSTS));
     }
 
     @Override

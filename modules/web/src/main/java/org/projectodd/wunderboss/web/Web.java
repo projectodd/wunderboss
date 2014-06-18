@@ -53,20 +53,12 @@ public interface Web<S> extends Component {
     boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts);
 
     /**
-     * Unregisters a handler or servlet at the given context on the
-     * default host.
+     * Unregisters a handler or servlet at the given context path,
+     * possibly on a virtual host.
      * @param context
      * @return true if there was actually something to unregister.
      */
-    boolean unregister(String context);
-
-    /**
-     * Unregisters a handler or servlet at the given context on the
-     * given virtual hosts.
-     * @param context
-     * @return true if there was actually something to unregister.
-     */
-    boolean unregister(String context, String... hostnames);
+    boolean unregister(Map<RegisterOption, Object> opts);
 
     /**
      * @return an unmodifiable Set of contexts
