@@ -19,6 +19,8 @@ package org.projectodd.wunderboss;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.Arrays;
 
 public class Options<T> extends HashMap<T, Object> {
 
@@ -128,6 +130,14 @@ public class Options<T> extends HashMap<T, Object> {
 
     public Date getDate(T key, Date defaultValue) {
         return get(key) != null ? (Date)get(key) : defaultValue;
+    }
+
+    public List getList(T key) {
+        Object v = get(key);
+        if (v instanceof List || v == null) {
+            return (List) v;
+        }
+        return Arrays.asList(v);
     }
 
     public Options put(T key, Object value) {

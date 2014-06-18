@@ -21,6 +21,7 @@ import io.undertow.Undertow;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.NameVirtualHostHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -43,11 +44,13 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.projectodd.wunderboss.web.Web.CreateOption.*;
@@ -92,24 +95,19 @@ public class UndertowWeb implements Web<HttpHandler> {
         host = options.getString(HOST);
         undertow = Undertow.builder()
                 .addHttpListener(port, host)
-                .setHandler(Handlers.header(pathHandler, Headers.SERVER_STRING, "undertow"))
+                .setHandler(Handlers.header(pathology.handler(), Headers.SERVER_STRING, "undertow"))
                 .build();
     }
 
+    @Override
     public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
-        final String context = getContextPath(options);
-        final boolean replacement = hasContext(context);
+        final String context = options.getString(PATH);
 
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
-        pathHandler.addPrefixPath(context, httpHandler);
-        epilogue(options, new Runnable() { 
-                public void run() { 
-                    pathHandler.removePrefixPath(context);
-                }});
-
+        final boolean replacement = pathology.add(context, options.getList(VHOSTS), httpHandler);
         if (autoStart) {
             start();
         }
@@ -118,10 +116,10 @@ public class UndertowWeb implements Web<HttpHandler> {
         return replacement;
     }
 
+    @Override
     public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
-        final String context = getContextPath(options);
-        final boolean replacement = hasContext(context);
+        final String context = options.getString(PATH);
 
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(),
@@ -147,9 +145,11 @@ public class UndertowWeb implements Web<HttpHandler> {
 
         final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();
+        boolean replacement = false;
         try {
-            registerHandler(manager.start(), options);
-            epilogue(options, new Runnable() { 
+            HttpHandler handler = manager.start();
+            replacement = registerHandler(handler, options);
+            epilogue(handler, new Runnable() { 
                     public void run() { 
                         try {
                             manager.stop();
@@ -166,36 +166,31 @@ public class UndertowWeb implements Web<HttpHandler> {
         return replacement;
     }
 
+    @Override
     public boolean unregister(String context) {
-        final Runnable f = contextRegistrar.remove(context);
-        boolean exists = false;
-        if (f != null) {
-            f.run();
-            exists = true;
-            log.infof("Unregistered web context at path %s", context);
-        } else {
-            log.warnf("No context registered at path %s", context);
-        }
-
-        return exists;
+        return pathology.remove(context, null);
     }
 
+    @Override
+    public boolean unregister(String context, String... hostnames) {
+        return pathology.remove(context, Arrays.asList(hostnames));
+    }
+
+    @Override
     public Set<String> registeredContexts() {
-        return Collections.unmodifiableSet(this.contextRegistrar.keySet());
-    }
-
-    protected boolean hasContext(String context) {
-        return this.contextRegistrar.keySet().contains(context);
+        return Collections.unmodifiableSet(pathology.getActiveHandlers());
     }
 
     /**
-     * Associate a resource cleanup function with a context path,
-     * invoked in the unregister method. The context is obtained from
-     * the passed options.
+     * Associate a resource cleanup function with a handler
      */
-    protected void epilogue(Options<RegisterOption> options, final Runnable cleanup) {
-        String context = getContextPath(options);
-        contextRegistrar.put(context, cleanup);
+    protected void epilogue(HttpHandler handler, final Runnable cleanup) {
+        pathology.epilogue(handler, cleanup);
+    }
+
+    // For the WF subclass
+    protected boolean register(String path, List<String> vhosts, HttpHandler handler) {
+        return pathology.add(path, vhosts, handler);
     }
 
     protected HttpHandler wrapWithStaticHandler(HttpHandler baseHandler, String path) {
@@ -254,18 +249,87 @@ public class UndertowWeb implements Web<HttpHandler> {
         return null;
     }
 
-    protected static String getContextPath(Options<RegisterOption> options) {
-        return options.getString(PATH);
-    }
-    
     private final String name;
     private int port;
     private String host;
     private Undertow undertow;
     private boolean autoStart;
-    private PathHandler pathHandler = new PathHandler();
+    private Pathology pathology = new Pathology();
     private boolean started;
     private Map<String, Runnable> contextRegistrar = new HashMap<>();
 
     private static final Logger log = Logger.getLogger(Web.class);
+
+    static class Pathology {
+
+        Pathology() {
+            vhostHandler = new NameVirtualHostHandler();
+            pathHandler = new PathHandler();
+            vhostHandler.setDefaultHandler(pathHandler);
+        }
+
+        public HttpHandler handler() {
+            return vhostHandler;
+        }
+
+        public synchronized boolean add(String path, List<String> vhosts, HttpHandler handler) {
+            boolean result = false;
+            if (vhosts == null) {
+                result = null != activeHandlers.put(path, handler);
+                pathHandler.addPrefixPath(path, handler);
+            } else {
+                for(String host: vhosts) {
+                    result = (null != activeHandlers.put(host + path, handler)) || result;
+                    PathHandler ph = (PathHandler) vhostHandler.getHosts().get(host);
+                    if (ph == null) {
+                        ph = new PathHandler();
+                        vhostHandler.addHost(host, ph);
+                    }
+                    ph.addPrefixPath(path, handler);
+                }
+            }
+            purge();
+            return result;
+        }
+
+        public synchronized boolean remove(String path, List<String> vhosts) {
+            boolean result = false;
+            if (vhosts == null) {
+                result = null != activeHandlers.remove(path);
+                pathHandler.removePrefixPath(path);
+            } else {
+                for(String host: vhosts) {
+                    if (null != activeHandlers.remove(host + path)) {
+                        result = true;
+                        PathHandler ph = (PathHandler) vhostHandler.getHosts().get(host);
+                        ph.removePrefixPath(path);
+                    }
+                }
+            }
+            purge();
+            return result;
+        }
+
+        public void epilogue(HttpHandler handler, Runnable f) {
+            epilogues.put(handler, f);
+        }
+
+        public Set<String> getActiveHandlers() {
+            return activeHandlers.keySet();
+        }
+
+        private void purge() {
+            Set<HttpHandler> keys = new HashSet<>(epilogues.keySet());
+            keys.removeAll(activeHandlers.values());
+            for(HttpHandler handler: keys) {
+                epilogues.remove(handler).run();
+            }
+        }
+
+        private NameVirtualHostHandler vhostHandler;
+        private PathHandler pathHandler;
+        private Map<String, HttpHandler> activeHandlers = new HashMap<>();
+        private Map<HttpHandler, Runnable> epilogues = new HashMap<>();
+    }
+        
 }

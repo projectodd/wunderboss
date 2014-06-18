@@ -40,8 +40,7 @@ public class WildFlyWeb extends UndertowWeb {
     @Override
     public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
-        final String context = getContextPath(options);
-        final boolean replacement = hasContext(context);
+        final String context = options.getString(PATH);
 
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
@@ -50,7 +49,9 @@ public class WildFlyWeb extends UndertowWeb {
             log.info("Registered HTTP context '" + context + "' for host " + host.getName());
             host.registerHandler(context, httpHandler);
         }
-        epilogue(options, new Runnable() {
+        // TODO: not sure how to handle vhosts here
+        final boolean replacement = register(context, null, httpHandler);
+        epilogue(httpHandler, new Runnable() {
             public void run() {
                 for (Host host : getHosts()) {
                     host.unregisterHandler(context);

@@ -33,6 +33,7 @@ public interface Web<S> extends Component {
     class RegisterOption extends Option {
         public static final RegisterOption PATH       = opt("path", "/", RegisterOption.class);
         public static final RegisterOption STATIC_DIR = opt("static_dir", RegisterOption.class);
+        public static final RegisterOption VHOSTS     = opt("vhosts", RegisterOption.class);
     }
 
     /**
@@ -51,17 +52,24 @@ public interface Web<S> extends Component {
      */
     boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts);
 
-
     /**
-     * Unregisters a handler or servlet at the given context.
+     * Unregisters a handler or servlet at the given context on the
+     * default host.
      * @param context
      * @return true if there was actually something to unregister.
      */
     boolean unregister(String context);
 
     /**
-     *
-     * @return an unmodifiable Set of contexts.
+     * Unregisters a handler or servlet at the given context on the
+     * given virtual hosts.
+     * @param context
+     * @return true if there was actually something to unregister.
+     */
+    boolean unregister(String context, String... hostnames);
+
+    /**
+     * @return an unmodifiable Set of contexts
      */
     Set<String> registeredContexts();
 
