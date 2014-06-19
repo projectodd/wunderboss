@@ -160,9 +160,7 @@
     (is (thrown? javax.jms.IllegalStateRuntimeException
           (.receive q (coerce-receive-options {:session s}))))))
 
-;; TODO: This test is failing - the receive isn't seeing the message from
-;; the send for some reason
-#_(deftest receive-should-not-close-the-passed-session
+(deftest receive-should-not-close-the-passed-session
   (let [s (.createSession (.defaultConnection default) nil)
         q (create-queue "receive-close-session")
         check-fn (fn []

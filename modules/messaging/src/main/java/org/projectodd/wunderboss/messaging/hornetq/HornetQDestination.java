@@ -145,10 +145,9 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         Session session = sessionInfo.first;
         boolean closeSession = sessionInfo.second;
 
-        try {
-            String selector = opts.getString(ReceiveOption.SELECTOR);
-            JMSConsumer consumer = ((HornetQSession)session).context().createConsumer(this.destination, selector);
+        String selector = opts.getString(ReceiveOption.SELECTOR);
 
+        try (JMSConsumer consumer = ((HornetQSession)session).context().createConsumer(this.destination, selector)) {
             javax.jms.Message message;
             if (timeout == -1) {
                 message = consumer.receiveNoWait();
