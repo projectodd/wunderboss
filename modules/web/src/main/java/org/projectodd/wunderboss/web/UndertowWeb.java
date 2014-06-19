@@ -256,9 +256,9 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     private static final Logger log = Logger.getLogger(Web.class);
 
-    static class Pathology {
+    public static class Pathology {
 
-        Pathology() {
+        public Pathology() {
             vhostHandler = new NameVirtualHostHandler();
             pathHandler = new PathHandler();
             vhostHandler.setDefaultHandler(pathHandler);
