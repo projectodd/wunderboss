@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
+<project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/maven-v4_0_0.xsd">
@@ -20,8 +20,6 @@
 
   <properties>
     <version.quartz-scheduler>2.2.1</version.quartz-scheduler>
-    <version.slf4j>1.5.5</version.slf4j>
-    <version.jboss-logging-slf4j>1.0.4.GA</version.jboss-logging-slf4j>
   </properties>
 
   <dependencies>
@@ -41,28 +39,8 @@
           <artifactId>jta</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>c3p0</groupId>
           <artifactId>c3p0</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${version.slf4j}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.slf4j</groupId>
-      <artifactId>slf4j-jboss-logging</artifactId>
-      <version>${version.jboss-logging-slf4j}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -80,7 +58,7 @@
           <goals>
             <goal>test</goal>
           </goals>
-          </execution>    
+          </execution>
         </executions>
       </plugin>
     </plugins>
