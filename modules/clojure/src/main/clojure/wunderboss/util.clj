@@ -24,11 +24,39 @@
   (doseq [f @exit-tasks]
     (f)))
 
+(defn options []
+  (WunderBoss/options))
+
 (defn service-registry []
-  (get (WunderBoss/options) "service-registry"))
+  (get (options) "service-registry"))
 
 (defn in-container? []
   (not (nil? (service-registry))))
+
+(try
+  (require '[dynapath.dynamic-classpath :as dp])
+  (eval '(let [base-url-classloader
+               (assoc dp/base-readable-addable-classpath
+               :classpath-urls #(seq (.getURLs %))
+               :add-classpath-url (fn [cl url]
+                                    (.addURL cl url)))]
+
+           ;; if dynapath is available, make our classloader join the party
+           (extend org.projectodd.wunderboss.DynamicClassLoader
+             dp/DynamicClasspath
+             base-url-classloader)
+
+           ;; users of dynapath often search for the highest addable loader,
+           ;; which in the container will be the AppClassLoader, and we really
+           ;; want the DynamicClassLoader to be used instead. Anything added
+           ;; to the AppClassLoader won't be seen, since JBoss Modules is
+           ;; between the ACL and the app.
+           (when (in-container?)
+             (extend sun.misc.Launcher$AppClassLoader
+               dp/DynamicClasspath
+               (assoc base-url-classloader
+                 :can-add? (constantly false))))))
+  (catch Exception _))
 
 (if-not (in-container?)
   (.addShutdownHook (Runtime/getRuntime) (Thread. exit!)))
