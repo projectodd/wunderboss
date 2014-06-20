@@ -37,9 +37,9 @@
   (require '[dynapath.dynamic-classpath :as dp])
   (eval '(let [base-url-classloader
                (assoc dp/base-readable-addable-classpath
-               :classpath-urls #(seq (.getURLs %))
-               :add-classpath-url (fn [cl url]
-                                    (.addURL cl url)))]
+                 :classpath-urls #(seq (.getURLs %))
+                 :add-classpath-url (fn [cl url]
+                                      (.addURL cl url)))]
 
            ;; if dynapath is available, make our classloader join the party
            (extend org.projectodd.wunderboss.DynamicClassLoader
