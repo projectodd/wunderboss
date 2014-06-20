@@ -172,6 +172,14 @@
     (check-fn)
     (.close s)))
 
+(deftest send-receive-with-the-same-session-should-work
+  (with-open [s (.createSession (.defaultConnection default) nil)]
+    (let [q (create-queue "send-receive-session")]
+      (.send q "success" "text/plain" (coerce-send-options {:session s}))
+      (is (= "success"
+            (.body (.receive q (coerce-receive-options {:session s}))
+              String))))))
+
 (deftest listen-should-use-the-passed-connection
   (let [c (.createConnection default nil)
         q (create-queue "listen-connection")]
@@ -334,5 +342,5 @@
         (coerce-send-options {:connection c}))
       (let [msg (.receive q (coerce-receive-options {:connection c
                                                      :timeout 1000}))]
-      (is msg)
-      (is (= "success" (.body msg String)))))))
+        (is msg)
+        (is (= "success" (.body msg String)))))))
