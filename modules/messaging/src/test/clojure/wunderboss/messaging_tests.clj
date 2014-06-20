@@ -63,9 +63,11 @@
     (onMessage [_ m _]
       (f (.body m String)))))
 
-(defn create-queue [name & [opts]]
-  (.findOrCreateQueue default name
-    (coerce-queue-options (merge opts {:durable false}))))
+(defn create-queue [& opts]
+  (let [[name opts] opts
+        name (or name (str (java.util.UUID/randomUUID)))]
+    (.findOrCreateQueue default name
+      (coerce-queue-options (merge opts {:durable false})))))
 
 (defn create-topic [name]
   (.findOrCreateTopic default name nil))
@@ -171,14 +173,6 @@
     (check-fn)
     (check-fn)
     (.close s)))
-
-(deftest send-receive-with-the-same-session-should-work
-  (with-open [s (.createSession (.defaultConnection default) nil)]
-    (let [q (create-queue "send-receive-session")]
-      (.send q "success" "text/plain" (coerce-send-options {:session s}))
-      (is (= "success"
-            (.body (.receive q (coerce-receive-options {:session s}))
-              String))))))
 
 (deftest listen-should-use-the-passed-connection
   (let [c (.createConnection default nil)
@@ -344,3 +338,28 @@
                                                      :timeout 1000}))]
         (is msg)
         (is (= "success" (.body msg String)))))))
+
+(deftest send-receive-with-the-same-session-should-work
+  (with-open [s (.createSession (.defaultConnection default) nil)]
+    (let [q (create-queue)]
+      (.send q "success" "text/plain" (coerce-send-options {:session s}))
+      (is (= "success"
+            (.body (.receive q (coerce-receive-options {:session s}))
+              String))))))
+
+(deftest send-and-receive-inside-a-listener-should-work
+  (println "send-and-receive-inside-a-listener-should-work PENDING")
+  ;; This fails when sharing the session from the listener
+  #_(let [q1 (create-queue)
+        q2 (create-queue)
+        p  (promise)
+        l  (.listen q1
+             (handler
+               (fn [msg]
+                 (.send q2 msg "text/plain" nil)
+                 (when-let [result (.receive q2 (coerce-receive-options {:timeout 1000}))]
+                   (is (= msg (.body result String)))
+                   (deliver p (.body result String)))))
+             nil)]
+    (.send q1 "whatevs" "text/plain" nil)
+    (is (= "whatevs" (deref p 1000 :failure)))))
