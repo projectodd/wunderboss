@@ -40,6 +40,7 @@ public class ApplicationRunner {
         loadProperties();
         extractJar();
         updateClassPath();
+        copyConfigProperties();
 
         WunderBoss.putOption("argv", args);
         WunderBoss.putOption("root", requiredProperty(properties, "root"));
@@ -47,6 +48,14 @@ public class ApplicationRunner {
         log.info("Initializing " + name + " as " + language);
         WunderBoss.findLanguage(language)
                 .eval(requiredProperty(properties, "init"));
+    }
+
+    protected void copyConfigProperties() {
+        for (String key : this.properties.stringPropertyNames()) {
+            if (key.startsWith("config.")) {
+                WunderBoss.putOption(key.substring(7), this.properties.getProperty(key));
+            }
+        }
     }
 
     protected void loadProperties() throws Exception {
