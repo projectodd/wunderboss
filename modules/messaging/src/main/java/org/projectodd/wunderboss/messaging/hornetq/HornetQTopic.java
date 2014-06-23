@@ -41,19 +41,16 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         Options<SubscribeOption> opts = new Options<>(options);
         final HornetQConnection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
         final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONNECTION);
-        final HornetQSession session = session(connection);
+        final HornetQSession session = session(opts, connection);
         final JMSConsumer consumer = session.context().createDurableConsumer((javax.jms.Topic)this.destination(),
                                                                              id,
                                                                              opts.getString(SubscribeOption.SELECTOR), false);
 
-        final Listener listener = new TransactionalListener(handler,
+        final Listener listener = new JMSListener(handler,
                                                       this,
                                                       connection,
                                                       session,
-                                                      consumer,
-                                                      false,
-                                                      //TODO: a transaction manager
-                                                      null).start();
+                                                      consumer).start();
 
         connection.addCloseable(listener);
         broker().addCloseableForDestination(this, listener);
@@ -76,7 +73,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         HornetQConnection connection = connection(id, opts.get(UnsubscribeOption.CONNECTION));
         HornetQSession session = null;
         try {
-            session = session(connection);
+            session = session(null, connection);
             session.context().unsubscribe(id);
         } finally {
             if (!opts.has(UnsubscribeOption.CONNECTION)) {
@@ -118,9 +115,11 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         return (HornetQConnection)connection;
     }
 
-    protected HornetQSession session(HornetQConnection connection) throws Exception {
+    protected HornetQSession session(final Options<SubscribeOption> options, HornetQConnection connection) throws Exception {
+        final Options<SubscribeOption> opts = new Options<>(options);
         return (HornetQSession)connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{
-            put(Connection.CreateSessionOption.MODE, Session.Mode.TRANSACTED);
+            put(Connection.CreateSessionOption.MODE, opts.getBoolean(SubscribeOption.TRANSACTED) ?
+                    Session.Mode.TRANSACTED : Session.Mode.AUTO_ACK);
         }});
     }
 

@@ -19,7 +19,7 @@ package org.projectodd.wunderboss.messaging;
 import java.util.Map;
 
 public interface Queue extends Destination {
-    class RespondOption extends Destination.ListenOption {
+    class RespondOption extends ListenOption {
         public static final RespondOption TTL = opt("ttl", 60000, RespondOption.class);
     }
 

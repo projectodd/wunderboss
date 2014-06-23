@@ -347,10 +347,8 @@
             (.body (.receive q (coerce-receive-options {:session s}))
               String))))))
 
-(deftest send-and-receive-inside-a-listener-should-work
-  (println "send-and-receive-inside-a-listener-should-work PENDING")
-  ;; This fails when sharing the session from the listener
-  #_(let [q1 (create-queue)
+(deftest send-and-receive-inside-a-non-transactional-listener-should-work
+ (let [q1 (create-queue)
         q2 (create-queue)
         p  (promise)
         l  (.listen q1
@@ -360,6 +358,6 @@
                  (when-let [result (.receive q2 (coerce-receive-options {:timeout 1000}))]
                    (is (= msg (.body result String)))
                    (deliver p (.body result String)))))
-             nil)]
+             (coerce-listen-options {:transacted false}))]
     (.send q1 "whatevs" "text/plain" nil)
     (is (= "whatevs" (deref p 1000 :failure)))))

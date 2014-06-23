@@ -27,7 +27,7 @@ public interface Destination {
         public static final ListenOption CONNECTION = opt("connection", ListenOption.class);
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
-        public static final ListenOption XA = opt("xa", false, ListenOption.class);
+        public static final ListenOption TRANSACTED = opt("transacted", true, ListenOption.class);
     }
 
     Listener listen(MessageHandler handler,

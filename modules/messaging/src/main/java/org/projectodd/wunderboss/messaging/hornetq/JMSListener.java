@@ -22,26 +22,24 @@ import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 
 import javax.jms.JMSConsumer;
+import javax.jms.JMSContext;
 import javax.jms.Message;
 import javax.jms.MessageListener;
-import javax.transaction.TransactionManager;
 
-public class TransactionalListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
-    public TransactionalListener(MessageHandler handler,
-                                 Destination endpoint,
-                                 HornetQConnection connection,
-                                 HornetQSession session,
-                                 JMSConsumer consumer, boolean xa, TransactionManager tm) {
+public class JMSListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
+    public JMSListener(MessageHandler handler,
+                       Destination endpoint,
+                       HornetQConnection connection,
+                       HornetQSession session,
+                       JMSConsumer consumer) {
         this.handler = handler;
         this.endpoint = endpoint;
         this.connection = connection;
         this.session = session;
         this.consumer = consumer;
-        //this.xa = xa;
-        //this.tm = tm;
     }
 
-    public TransactionalListener start() {
+    public JMSListener start() {
         if (!this.started) {
             try {
                 // Use HornetQ's Core API for message consumers where possible so we
@@ -159,19 +157,25 @@ public class TransactionalListener implements Listener, MessageListener { //, or
 
     @Override
     public void onMessage(Message message) {
-           try {
-               HornetQSession.currentSession.set(this.session);
-               this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
-                                                                                                     this.endpoint,
-                                                                                                     this.connection),
-                                      this.session);
-               this.session.context().commit();
-           } catch (Exception e) {
-               log.warn("Unhandled exception thrown from onMessage", e);
-               this.session.context().rollback();
-           } finally {
-               HornetQSession.currentSession.remove();
-           }
+        final JMSContext context = this.session.context();
+        try {
+            HornetQSession.currentSession.set(this.session);
+            this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
+                                                                                                  this.endpoint,
+                                                                                                  this.connection),
+                                   this.session);
+
+            if (context.getTransacted()) {
+                context.commit();
+            }
+        } catch (Exception e) {
+            log.warn("Unhandled exception thrown from onMessage", e);
+            if (context.getTransacted()) {
+                context.rollback();
+            }
+        } finally {
+            HornetQSession.currentSession.remove();
+        }
 
          /*       if (this.xa) {
                     this.tm.commit();

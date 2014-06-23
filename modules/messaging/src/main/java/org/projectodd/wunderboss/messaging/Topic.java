@@ -25,7 +25,7 @@ public interface Topic extends Destination {
     class SubscribeOption extends Option {
         public static final SubscribeOption CONNECTION = opt("connection", SubscribeOption.class);
         public static final SubscribeOption SELECTOR = opt("selector", SubscribeOption.class);
-        public static final SubscribeOption XA = opt("xa", false, SubscribeOption.class);
+        public static final SubscribeOption TRANSACTED = opt("transacted", true, SubscribeOption.class);
     }
 
     Listener subscribe(String id, MessageHandler handler,
