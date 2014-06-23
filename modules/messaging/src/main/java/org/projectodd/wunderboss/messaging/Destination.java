@@ -17,6 +17,8 @@
 package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.Option;
+import org.projectodd.wunderboss.codecs.Codec;
+import org.projectodd.wunderboss.codecs.Codecs;
 
 import java.util.Map;
 
@@ -31,6 +33,7 @@ public interface Destination {
     }
 
     Listener listen(MessageHandler handler,
+                    Codecs codecs,
                     Map<ListenOption, Object> options) throws Exception;
 
     class MessageOpOption extends Option {
@@ -45,9 +48,7 @@ public interface Destination {
         public static final SendOption PROPERTIES = opt("properties", SendOption.class);
     }
 
-    void send(String content, String contentType, Map<MessageOpOption, Object> options) throws Exception;
-
-    void send(byte[] content, String contentType, Map<MessageOpOption, Object> options) throws Exception;
+    void send(Object content, Codec codec, Map<MessageOpOption, Object> options) throws Exception;
 
     class ReceiveOption extends MessageOpOption {
         public static final ReceiveOption TIMEOUT  = opt("timeout", 10000, ReceiveOption.class);
@@ -61,7 +62,7 @@ public interface Destination {
      * @return the Message, or null on timeout
      * @throws Exception
      */
-    Message receive(Map<MessageOpOption, Object> options) throws Exception;
+    Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception;
 
     void stop() throws Exception;
 }

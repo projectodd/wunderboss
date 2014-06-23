@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.Option;
+import org.projectodd.wunderboss.codecs.Codecs;
 
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public interface Topic extends Destination {
     }
 
     Listener subscribe(String id, MessageHandler handler,
+                       Codecs codecs,
                        Map<SubscribeOption, Object> options) throws Exception;
 
     class UnsubscribeOption extends Option {

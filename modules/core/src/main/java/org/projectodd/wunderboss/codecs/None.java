@@ -16,8 +16,12 @@
 
 package org.projectodd.wunderboss.codecs;
 
-public class None implements Codec<Object,Object> {
-    
+public class None extends ObjectCodec<Object> {
+
+    None() {
+        super("none", "application/data");
+    }
+
     public static final None INSTANCE = new None();
 
     public Object encode(Object data) {

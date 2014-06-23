@@ -17,6 +17,8 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.codecs.Codec;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -40,6 +42,7 @@ public class HornetQQueue extends HornetQDestination implements Queue {
 
     @Override
     public Listener respond(final MessageHandler handler,
+                            final Codecs codecs,
                             Map<ListenOption, Object> options) throws Exception {
         final Options<ListenOption> opts = new Options<>(options);
         String selector = SYNC_PROPERTY + " = TRUE";
@@ -55,28 +58,27 @@ public class HornetQQueue extends HornetQDestination implements Queue {
                 Options<MessageOpOption> replyOptions = new Options<>();
                 replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL));
                 replyOptions.put(SendOption.SESSION, session);
-                if (result instanceof String) {
-                    ((ReplyableMessage)msg).reply((String)result, msg.contentType(), replyOptions);
-                } else {
-                    ((ReplyableMessage)msg).reply((byte[])result, msg.contentType(), replyOptions);
-                }
+                ((ReplyableMessage)msg).reply(result, codecs.forContentType(msg.contentType()), replyOptions);
+
                 return null;
             }
         };
 
-        return listen(wrappedHandler, opts);
+        return listen(wrappedHandler, codecs, opts);
     }
 
     @Override
-    public Response request(String content, String contentType,
+    public Response request(Object content, Codec codec,
                             Map<MessageOpOption, Object> options) throws Exception {
-        return _request(content, contentType, options);
-    }
+        Options<MessageOpOption> opts = new Options<>(options);
+        final String id = UUID.randomUUID().toString();
+        _send(content, codec, options,
+              new HashMap<String, Object>() {{
+                  put(SYNC_PROPERTY, true);
+                  put(REQUEST_ID_PROPERTY, id);
+              }});
 
-    @Override
-    public Response request(byte[] content, String contentType,
-                            Map<MessageOpOption, Object> options) throws Exception {
-        return _request(content, contentType, options);
+        return new HornetQResponse(id, (new Codecs()).add(codec), this, connection(opts.get(MessageOpOption.CONNECTION)));
     }
 
     public static String fullName(String name) {
@@ -98,16 +100,4 @@ public class HornetQQueue extends HornetQDestination implements Queue {
         }
     }
 
-    private Response _request(Object message, String contentType,
-                             Map<MessageOpOption, Object> options) throws Exception {
-        Options<MessageOpOption> opts = new Options<>(options);
-        final String id = UUID.randomUUID().toString();
-        _send(message, contentType, options,
-              new HashMap<String, Object>() {{
-                  put(SYNC_PROPERTY, true);
-                  put(REQUEST_ID_PROPERTY, id);
-              }});
-
-        return new HornetQResponse(id, this, connection(opts.get(MessageOpOption.CONNECTION)));
-    }
 }

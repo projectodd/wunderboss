@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.ReceiveOption;
 import org.projectodd.wunderboss.messaging.Message;
@@ -28,8 +29,9 @@ import java.util.concurrent.TimeoutException;
 
 public class HornetQResponse implements Response {
 
-    public HornetQResponse(String requestId, Destination destination, HornetQConnection connection) {
+    public HornetQResponse(String requestId, Codecs codecs, Destination destination, HornetQConnection connection) {
         this.requestId = requestId;
+        this.codecs = codecs;
         this.destination = destination;
         this.connection = connection;
     }
@@ -70,7 +72,7 @@ public class HornetQResponse implements Response {
                 options.put(ReceiveOption.SELECTOR, "JMSCorrelationID='" + this.requestId + "'");
                 options.put(ReceiveOption.CONNECTION, this.connection);
 
-                this.value = this.destination.receive(options);
+                this.value = this.destination.receive(this.codecs, options);
             } catch (Exception e) {
                 throw new ExecutionException(e);
             }
@@ -86,6 +88,7 @@ public class HornetQResponse implements Response {
 
     private final HornetQConnection connection;
     private final String requestId;
+    private final Codecs codecs;
     private final Destination destination;
     private Message value = null;
 }

@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2014 Red Hat, Inc, and individual contributors.
  *
@@ -17,6 +18,8 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.codecs.Codec;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
 import org.projectodd.wunderboss.messaging.Destination.SendOption;
@@ -31,8 +34,12 @@ import java.util.Map;
 
 public class HornetQMessage implements ReplyableMessage {
 
-    public HornetQMessage(javax.jms.Message message, Destination destination, HornetQConnection connection) {
+    public static final String CONTENT_TYPE_PROPERTY = "contentType";
+
+    HornetQMessage(javax.jms.Message message, Codec codec,
+                          Destination destination, HornetQConnection connection) {
         this.baseMessage = message;
+        this.codec = codec;
         this.connection = connection;
         this.destination = destination;
     }
@@ -48,8 +55,12 @@ public class HornetQMessage implements ReplyableMessage {
 
     @Override
     public String contentType() {
+        return contentType(this.baseMessage);
+    }
+
+    public static String contentType(javax.jms.Message message) {
         try {
-            return this.baseMessage.getStringProperty(HornetQDestination.CONTENT_TYPE_PROPERTY);
+            return message.getStringProperty(CONTENT_TYPE_PROPERTY);
         } catch (JMSException e) {
             throw new IllegalStateException("Failed to read property from message", e);
         }
@@ -75,9 +86,9 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     @Override
-    public <T> T body(Class T) {
+    public Object body() {
         try {
-            return (T)this.baseMessage.getBody(T);
+            return this.codec.decode(this.baseMessage.getBody(this.codec.encodesTo()));
         } catch (JMSException e) {
             e.printStackTrace();
         }
@@ -93,19 +104,11 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     @Override
-    public Response reply(String content, String contentType,
+    public Response reply(Object content, Codec codec,
                           Map<MessageOpOption, Object> options) throws Exception {
-        this.destination.send(content, contentType, replyOptions(options));
+        this.destination.send(content, codec, replyOptions(options));
 
-        return new HornetQResponse(requestID(), this.destination, this.connection);
-    }
-
-    @Override
-    public Response reply(byte[] content, String contentType,
-                          Map<MessageOpOption, Object> options) throws Exception {
-        this.destination.send(content, contentType, replyOptions(options));
-
-        return new HornetQResponse(requestID(), this.destination, this.connection);
+        return new HornetQResponse(requestID(), (new Codecs()).add(codec), this.destination, this.connection);
     }
 
     protected String requestID() {
@@ -136,6 +139,7 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     private final javax.jms.Message baseMessage;
+    private final Codec codec;
     private final HornetQConnection connection;
     private final Destination destination;
 }

@@ -21,4 +21,10 @@ public interface Codec<E,D> {
     E encode(D data);
 
     D decode(E encoded);
+
+    Class<E> encodesTo();
+
+    String name();
+
+    String contentType();
 }

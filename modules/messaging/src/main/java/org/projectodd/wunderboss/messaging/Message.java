@@ -27,7 +27,7 @@ public interface Message {
 
     Destination endpoint();
 
-    <V> V body(Class V);
+    Object body();
 
     boolean acknowledge() throws Exception;
 }

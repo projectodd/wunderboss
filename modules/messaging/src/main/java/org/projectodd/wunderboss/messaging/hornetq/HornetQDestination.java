@@ -18,6 +18,8 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.Pair;
+import org.projectodd.wunderboss.codecs.Codec;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -28,13 +30,13 @@ import javax.jms.Destination;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSException;
 import javax.jms.JMSProducer;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 
 public abstract class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
-    public static final String CONTENT_TYPE_PROPERTY = "contentType";
 
-     public HornetQDestination(Destination dest, HornetQMessaging broker) {
+    public HornetQDestination(Destination dest, HornetQMessaging broker) {
         this.destination = dest;
         this.broker = broker;
     }
@@ -46,11 +48,11 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     public abstract String jmsName();
 
     @Override
-    public Listener listen(MessageHandler handler, Map<ListenOption, Object> options) throws Exception {
+    public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
         HornetQConnection connection = connection(opts.get(ListenOption.CONNECTION));
         Listener listener = new MessageHandlerGroup(connection, handler,
-                                                    this,
+                                                    codecs, this,
                                                     opts).start();
         connection.addCloseable(listener);
         this.broker.addCloseableForDestination(this, listener);
@@ -59,15 +61,9 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     }
 
     @Override
-    public void send(String content, String contentType,
+    public void send(Object content, Codec codec,
                      Map<MessageOpOption, Object> options) throws Exception {
-        _send(content, contentType, options);
-    }
-
-    @Override
-    public void send(byte[] content, String contentType,
-                     Map<MessageOpOption, Object> options) throws Exception {
-        _send(content, contentType, options);
+        _send(content, codec, options, Collections.EMPTY_MAP);
     }
 
     protected static void fillInProperties(JMSProducer producer, Map<String, Object> properties) throws JMSException {
@@ -100,15 +96,10 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         return (HornetQConnection)connection;
     }
 
-    protected void _send(Object message, String contentType,
-                         Map<MessageOpOption, Object> options) throws Exception {
-        _send(message, contentType, options, Collections.EMPTY_MAP);
-    }
-
-    protected void _send(Object message, String contentType,
+    protected void _send(Object message, Codec codec,
                 Map<MessageOpOption, Object> options, Map<String, Object> additionalProperties) throws Exception {
-        if (contentType == null) {
-            throw new IllegalArgumentException("contentType can't be null");
+        if (codec == null) {
+            throw new IllegalArgumentException("codec can't be null");
         }
         Options<MessageOpOption> opts = new Options<>(options);
         Pair<Session, Boolean> sessionInfo = getSession(opts);
@@ -120,16 +111,22 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             fillInProperties(producer, (Map<String, Object>) opts.get(SendOption.PROPERTIES, Collections.emptyMap()));
             fillInProperties(producer, additionalProperties);
             producer
-                    .setProperty(CONTENT_TYPE_PROPERTY, contentType)
+                    .setProperty(HornetQMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
                     .setDeliveryMode((opts.getBoolean(SendOption.PERSISTENT) ?
                             DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
                     .setPriority(opts.getInt(SendOption.PRIORITY))
                     .setTimeToLive(opts.getLong(SendOption.TTL, producer.getTimeToLive()));
-            if (message instanceof String) {
-                producer.send(this.destination, (String)message);
+            Object encoded = codec.encode(message);
+            Class encodesTo = codec.encodesTo();
+
+            if (encodesTo == String.class) {
+                producer.send(this.destination, (String)encoded);
+            } else if (encodesTo == byte[].class) {
+                producer.send(this.destination, (byte[])encoded);
             } else {
-                producer.send(this.destination, (byte[])message);
+                producer.send(this.destination, (Serializable)encoded);
             }
+
         } finally {
             if (closeSession) {
                 session.close();
@@ -138,7 +135,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     }
 
     @Override
-    public Message receive(Map<MessageOpOption, Object> options) throws Exception {
+    public Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
         Pair<Session, Boolean> sessionInfo = getSession(opts);
@@ -156,7 +153,9 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             }
 
             if (message != null) {
-                return new HornetQMessage(message, this, connection(opts.get(ReceiveOption.CONNECTION)));
+                String contentType = HornetQMessage.contentType(message);
+                Codec codec = codecs.forContentType(contentType);
+                return new HornetQMessage(message, codec, this, connection(opts.get(ReceiveOption.CONNECTION)));
             } else {
                 return null;
             }

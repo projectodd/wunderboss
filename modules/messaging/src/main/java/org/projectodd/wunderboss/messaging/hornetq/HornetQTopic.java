@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -37,6 +38,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
 
     @Override
     public Listener subscribe(final String id, final MessageHandler handler,
+                              final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
         final HornetQConnection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
@@ -47,10 +49,11 @@ public class HornetQTopic extends HornetQDestination implements Topic {
                                                                              opts.getString(SubscribeOption.SELECTOR), false);
 
         final Listener listener = new JMSListener(handler,
-                                                      this,
-                                                      connection,
-                                                      session,
-                                                      consumer).start();
+                                                  codecs,
+                                                  this,
+                                                  connection,
+                                                  session,
+                                                  consumer).start();
 
         connection.addCloseable(listener);
         broker().addCloseableForDestination(this, listener);

@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.jboss.logging.Logger;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -28,11 +29,13 @@ import javax.jms.MessageListener;
 
 public class JMSListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
     public JMSListener(MessageHandler handler,
+                       Codecs codecs,
                        Destination endpoint,
                        HornetQConnection connection,
                        HornetQSession session,
                        JMSConsumer consumer) {
         this.handler = handler;
+        this.codecs = codecs;
         this.endpoint = endpoint;
         this.connection = connection;
         this.session = session;
@@ -160,9 +163,10 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
         final JMSContext context = this.session.context();
         try {
             HornetQSession.currentSession.set(this.session);
-            this.handler.onMessage(new org.projectodd.wunderboss.messaging.hornetq.HornetQMessage(message,
-                                                                                                  this.endpoint,
-                                                                                                  this.connection),
+            this.handler.onMessage(new HornetQMessage(message,
+                                                      this.codecs.forContentType(HornetQMessage.contentType(message)),
+                                                      this.endpoint,
+                                                      this.connection),
                                    this.session);
 
             if (context.getTransacted()) {
@@ -204,6 +208,7 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
     }*/
 
     private final MessageHandler handler;
+    private final Codecs codecs;
     private final Destination endpoint;
     private final HornetQConnection connection;
     private final HornetQSession session;

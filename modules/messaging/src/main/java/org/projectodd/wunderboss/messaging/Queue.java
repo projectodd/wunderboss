@@ -16,6 +16,9 @@
 
 package org.projectodd.wunderboss.messaging;
 
+import org.projectodd.wunderboss.codecs.Codec;
+import org.projectodd.wunderboss.codecs.Codecs;
+
 import java.util.Map;
 
 public interface Queue extends Destination {
@@ -24,14 +27,12 @@ public interface Queue extends Destination {
     }
 
     Listener respond(MessageHandler handler,
+                     Codecs codecs,
                      Map<ListenOption, Object> options) throws Exception;
 
 
     class RequestOption extends SendOption {}
 
-    Response request(String content, String contentType,
-                     Map<MessageOpOption, Object> options) throws Exception;
-
-    Response request(byte[] content, String contentType,
+    Response request(Object content, Codec codec,
                      Map<MessageOpOption, Object> options) throws Exception;
 }

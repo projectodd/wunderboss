@@ -18,6 +18,7 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Destination.ListenOption;
 import org.projectodd.wunderboss.messaging.Listener;
@@ -35,10 +36,12 @@ public class MessageHandlerGroup implements Listener {
 
     public MessageHandlerGroup(HornetQConnection connection,
                                MessageHandler handler,
+                               Codecs codecs,
                                HornetQDestination destination,
                                Options<ListenOption> options) {
         this.connection = connection;
         this.handler = handler;
+        this.codecs = codecs;
         this.destination = destination;
         this.options = options;
     }
@@ -49,6 +52,7 @@ public class MessageHandlerGroup implements Listener {
             while(concurrency-- > 0) {
                 HornetQSession session = createSession();
                 listeners.add(new JMSListener(this.handler,
+                                              this.codecs,
                                               this.destination,
                                               this.connection,
                                               session,
@@ -102,6 +106,7 @@ public class MessageHandlerGroup implements Listener {
     }
 
     private final MessageHandler handler;
+    private final Codecs codecs;
     private final HornetQDestination destination;
     private final Options<ListenOption> options;
     private HornetQConnection connection;

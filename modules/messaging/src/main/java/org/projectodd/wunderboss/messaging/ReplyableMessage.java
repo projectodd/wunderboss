@@ -16,13 +16,12 @@
 
 package org.projectodd.wunderboss.messaging;
 
+import org.projectodd.wunderboss.codecs.Codec;
+
 import java.util.Map;
 
 public interface ReplyableMessage extends Message {
 
-    Response reply(String content, String contentType,
-                   Map<Destination.MessageOpOption, Object> options) throws Exception;
-
-    Response reply(byte[] content, String contentType,
+    Response reply(Object content, Codec codec,
                    Map<Destination.MessageOpOption, Object> options) throws Exception;
 }
