@@ -33,7 +33,7 @@ public interface Web<S> extends Component {
     class RegisterOption extends Option {
         public static final RegisterOption PATH       = opt("path", "/", RegisterOption.class);
         public static final RegisterOption STATIC_DIR = opt("static_dir", RegisterOption.class);
-        public static final RegisterOption VHOSTS     = opt("virtual_hosts", RegisterOption.class);
+        public static final RegisterOption VHOSTS     = opt("virtual_host", RegisterOption.class);
     }
 
     /**
