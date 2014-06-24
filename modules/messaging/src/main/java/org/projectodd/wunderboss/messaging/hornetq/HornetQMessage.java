@@ -21,7 +21,6 @@ import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
-import org.projectodd.wunderboss.messaging.Destination.SendOption;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 
@@ -123,12 +122,12 @@ public class HornetQMessage implements ReplyableMessage {
     protected Options<MessageOpOption> replyOptions(Map<Destination.MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.SendOption.PROPERTIES);
-        if (properties == null) {
-            properties = new HashMap<>();
-            opts.put(SendOption.PROPERTIES, properties);
+        Map<String, Object> newProperties = new HashMap<>();
+        if (properties != null) {
+            newProperties.putAll(properties);
         }
-        //gross, we're modifying the original properties map
-        properties.put("JMSCorrelationID", requestID());
+        newProperties.put("JMSCorrelationID", requestID());
+        opts.put(Destination.SendOption.PROPERTIES, newProperties);
 
         return opts;
     }

@@ -17,7 +17,7 @@
   (:import [org.projectodd.wunderboss Option WunderBoss]
            [org.projectodd.wunderboss.codecs Codecs None StringCodec]
            [org.projectodd.wunderboss.messaging Messaging
-            Connection
+            Connection ConcreteReply
             Destination Destination$ListenOption Destination$ReceiveOption
             Destination$SendOption
             Queue
@@ -71,7 +71,7 @@
 (defn handler [f]
   (reify MessageHandler
     (onMessage [_ m _]
-      (f (.body m)))))
+      (ConcreteReply. (f (.body m)) nil))))
 
 (defn create-queue [& opts]
   (let [[name opts] opts

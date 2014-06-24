@@ -23,6 +23,7 @@ import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Queue;
+import org.projectodd.wunderboss.messaging.Reply;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 import org.projectodd.wunderboss.messaging.Session;
@@ -53,12 +54,13 @@ public class HornetQQueue extends HornetQDestination implements Queue {
 
         MessageHandler wrappedHandler = new MessageHandler() {
             @Override
-            public Object onMessage(Message msg, Session session) throws Exception {
-                Object result = handler.onMessage(msg, session);
+            public Reply onMessage(Message msg, Session session) throws Exception {
+                Reply result = handler.onMessage(msg, session);
                 Options<MessageOpOption> replyOptions = new Options<>();
                 replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL));
                 replyOptions.put(SendOption.SESSION, session);
-                ((ReplyableMessage)msg).reply(result, codecs.forContentType(msg.contentType()), replyOptions);
+                replyOptions.put(SendOption.PROPERTIES, result.properties());
+                ((ReplyableMessage)msg).reply(result.content(), codecs.forContentType(msg.contentType()), replyOptions);
 
                 return null;
             }
