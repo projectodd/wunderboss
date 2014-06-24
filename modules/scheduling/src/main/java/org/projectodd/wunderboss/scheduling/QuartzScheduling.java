@@ -112,7 +112,12 @@ public class QuartzScheduling implements Scheduling {
     @Override
     public synchronized boolean unschedule(String name) throws SchedulerException {
         if (currentJobs.containsKey(name)) {
-            this.scheduler.deleteJob(currentJobs.remove(name));
+            JobKey job = currentJobs.remove(name);
+            try {
+                this.scheduler.deleteJob(job);
+            } catch (SchedulerException ex) {
+                this.scheduler.deleteJob(job);
+            }
 
             return true;
         }
