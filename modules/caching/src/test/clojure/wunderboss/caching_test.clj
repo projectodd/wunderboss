@@ -22,7 +22,7 @@
 (def default (doto (WunderBoss/findOrCreateComponent Caching) (.start)))
 
 (deftest byte-array-keys
-  (let [c (.create default "bytes" (Options.))
+  (let [c (.findOrCreate default "bytes" (Options.))
         k (byte-array [1 2 3])
         v (byte-array [4 5 6])]
     (.put c k v)

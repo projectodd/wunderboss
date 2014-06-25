@@ -24,6 +24,8 @@ import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
 
+import java.util.Map;
+
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
@@ -66,20 +68,19 @@ public class InfinispanCaching implements Caching {
     }
     
     @Override
-    public Cache create(String name, Options<CreateOption> options) {
-        if (null != find(name)) {
-            log.warn("Removing existing cache: "+name);
-            manager.removeCache(name);
+    public Cache findOrCreate(String name, Map<CreateOption,Object> options) {
+        Cache result = find(name);
+        if (result == null) {
+            manager.defineConfiguration(name, Config.uration(new Options<CreateOption>(options)));
+            log.info("Creating cache: "+name);
+            result = manager.getCache(name);
         }
-        manager.defineConfiguration(name, Config.uration(options));
-        log.info("Creating cache: "+name);
-        return manager.getCache(name);
+        return result;
     }
 
     @Override
-    public Cache findOrCreate(String name, Options<CreateOption> options) {
-        Cache result = find(name);
-        return (result == null) ? create(name, options) : result;
+    public void stop(String name) {
+        manager.removeCache(name);
     }
 
     @Override

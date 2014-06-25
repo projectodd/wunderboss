@@ -19,8 +19,9 @@ package org.projectodd.wunderboss.caching;
 import org.infinispan.Cache;
 import org.projectodd.wunderboss.Component;
 import org.projectodd.wunderboss.Option;
-import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
+
+import java.util.Map;
 
 public interface Caching extends Component {
     class CreateOption extends Option {
@@ -34,8 +35,8 @@ public interface Caching extends Component {
         public static final CreateOption IDLE          = opt("idle",          -1,           CreateOption.class);
         public static final CreateOption TTL           = opt("ttl",           -1,           CreateOption.class);
     }
-    Cache create(String name, Options<CreateOption> options);
     Cache find(String name);
-    Cache findOrCreate(String name, Options<CreateOption> options);
+    Cache findOrCreate(String name, Map<CreateOption,Object> options);
     Cache encodedWith(Codec codec, Cache cache);
+    void  stop(String name);
 }
