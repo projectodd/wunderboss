@@ -142,7 +142,7 @@ public class EncodedCache extends AbstractDelegatingCache {
 
     @Override
     public Object get(Object key) {
-        return super.get(encode(key));
+        return decode(super.get(encode(key)));
     }
 
     @Override
@@ -152,7 +152,7 @@ public class EncodedCache extends AbstractDelegatingCache {
 
     @Override
     public Object remove(Object key) {
-        return super.remove(encode(key));
+        return decode(super.remove(encode(key)));
     }
 
     @Override
