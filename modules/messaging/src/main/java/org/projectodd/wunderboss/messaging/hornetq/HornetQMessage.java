@@ -19,6 +19,7 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
+import org.projectodd.wunderboss.codecs.None;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
@@ -37,7 +38,7 @@ public class HornetQMessage implements ReplyableMessage {
     HornetQMessage(javax.jms.Message message, Codec codec,
                           Destination destination, HornetQConnection connection) {
         this.baseMessage = message;
-        this.codec = codec;
+        this.codec = (codec == null ? None.INSTANCE : codec);
         this.connection = connection;
         this.destination = destination;
     }
