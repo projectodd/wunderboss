@@ -38,5 +38,5 @@ public interface Caching extends Component {
     Cache find(String name);
     Cache findOrCreate(String name, Map<CreateOption,Object> options);
     Cache encodedWith(Codec codec, Cache cache);
-    void  stop(String name);
+    boolean stop(String name);
 }

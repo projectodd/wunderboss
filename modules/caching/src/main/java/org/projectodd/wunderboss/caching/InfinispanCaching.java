@@ -29,24 +29,18 @@ import java.util.Map;
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
-        this.manager = new DefaultCacheManager(Config.uration(options), false);
+        this.manager = new DefaultCacheManager(Config.uration(options));
         this.name = name;
     }
 
     @Override
     public synchronized void start() throws Exception {
-        if (!started) {
-            this.manager.start();
-            this.started = true;
-        }
+        this.manager.start();
     }
 
     @Override
     public synchronized void stop() throws Exception {
-        if (started) {
-            this.manager.stop();
-            this.started = false;
-        }
+        this.manager.stop();
     }
 
     @Override
@@ -79,8 +73,10 @@ public class InfinispanCaching implements Caching {
     }
 
     @Override
-    public void stop(String name) {
+    public boolean stop(String name) {
+        boolean before = manager.isRunning(name);
         manager.removeCache(name);
+        return before != manager.isRunning(name);
     }
 
     @Override
@@ -89,14 +85,10 @@ public class InfinispanCaching implements Caching {
     }
 
     public EmbeddedCacheManager manager() {
-        if (this.started) {
-            return this.manager;
-        }
-        return null;
+        return this.manager;
     }
 
     private final String name;
-    private boolean started = false;
     private EmbeddedCacheManager manager;
 
     private static final Logger log = Logger.getLogger(Caching.class);
