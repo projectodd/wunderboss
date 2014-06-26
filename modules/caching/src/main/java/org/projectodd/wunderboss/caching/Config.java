@@ -33,7 +33,9 @@ import java.util.Arrays;
 public class Config {
 
     public static Configuration uration(Options<Caching.CreateOption> options) {
-        return builder(options).build();
+        Configuration c = (Configuration) options.get(Caching.CreateOption.CONFIGURATION);
+        return (c != null && options.size() == 1) ?
+            c : builder(options).build();
     }
 
     public static ConfigurationBuilder builder(Options<Caching.CreateOption> options) {
@@ -75,7 +77,7 @@ public class Config {
             LockingMode mode = LockingMode.valueOf(options.getString(Caching.CreateOption.LOCKING).toUpperCase());
             builder.transaction()
                 .transactionMode(TransactionMode.TRANSACTIONAL)
-                .transactionManagerLookup(new GenericTransactionManagerLookup())
+                .transactionManagerLookup(TM_LOOKUP)
                 .lockingMode(mode)
                 .recovery()
                 .versioning().enabled(mode==LockingMode.OPTIMISTIC).scheme(VersioningScheme.SIMPLE)
@@ -99,6 +101,7 @@ public class Config {
     private Options<Caching.CreateOption> options;
     ConfigurationBuilder builder = new ConfigurationBuilder();
     static final Equivalence EQUIVALENCE = new Equivalence();
+    static final GenericTransactionManagerLookup TM_LOOKUP = new GenericTransactionManagerLookup();
 
     static class Equivalence implements org.infinispan.commons.equivalence.Equivalence<Object> {
         private static boolean isByteArray(Object obj) {
