@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss;
+package org.projectodd.wunderboss.singleton;
 
-public interface SingletonContext extends Component, Runnable {
+public interface ClusterParticipant {
 
-    SingletonContext runnable(Runnable r);
+    boolean isMaster();
+
+    boolean isMasterWithoutInterrogatingCluster();
+
+    void setClusterChangeCallback(ClusterChangeCallback callback);
 }

@@ -16,19 +16,27 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.projectodd.wunderboss.AlwaysRunContext;
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.SingletonContext;
+import org.projectodd.wunderboss.singleton.ClusterParticipant;
+import org.projectodd.wunderboss.singleton.DaemonContext;
+import org.projectodd.wunderboss.singleton.SimpleContext;
+import org.projectodd.wunderboss.singleton.SingletonContext;
 
 public class SingletonContextProvider implements ComponentProvider<SingletonContext> {
 
     @Override
     public SingletonContext create(String name, Options options) {
+        ClusterParticipant participant = null;
         if (ClusterUtils.inCluster()) {
-            return new ClusteredSingletonContext(name);
-        } else {
-            return new AlwaysRunContext(name);
+            participant = new SingletonClusterParticipant(name);
         }
+
+        if (options.getBoolean(SingletonContext.CreateOption.DAEMON)) {
+            return new DaemonContext(name, participant, options);
+        } else {
+            return new SimpleContext(name, participant, options);
+        }
+
     }
 }

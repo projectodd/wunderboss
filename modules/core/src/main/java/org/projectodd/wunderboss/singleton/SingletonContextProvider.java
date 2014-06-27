@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss;
+package org.projectodd.wunderboss.singleton;
+
+import org.projectodd.wunderboss.ComponentProvider;
+import org.projectodd.wunderboss.Options;
 
 public class SingletonContextProvider implements ComponentProvider<SingletonContext> {
 
     @Override
     public SingletonContext create(String name, Options options) {
-        return new AlwaysRunContext(name);
+        if (options.getBoolean(SingletonContext.CreateOption.DAEMON)) {
+            return new DaemonContext(name, null, options);
+        } else {
+            return new SimpleContext(name, null, options);
+        }
     }
 }

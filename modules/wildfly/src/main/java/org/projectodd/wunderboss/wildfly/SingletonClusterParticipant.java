@@ -25,8 +25,9 @@ import org.jgroups.View;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
-import org.projectodd.wunderboss.AlwaysRunContext;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.singleton.ClusterChangeCallback;
+import org.projectodd.wunderboss.singleton.ClusterParticipant;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,19 +35,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
-public class ClusteredSingletonContext extends AlwaysRunContext implements RequestHandler, MembershipListener {
-    public ClusteredSingletonContext(String name) {
-        super(name);
+public class SingletonClusterParticipant implements ClusterParticipant, RequestHandler, MembershipListener {
+    public SingletonClusterParticipant(String name) {
+        this.name = name;
         this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class);
         this.channel = (JChannel)this.channelWrapper.channel();
         this.channelWrapper.registerHandler(name, this).addMembershipListener(this);
-    }
-
-    @Override
-    public void run() {
-        if (isMasterForContext()) {
-            runnable().run();
-        }
     }
 
     @Override
@@ -55,6 +49,10 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
             //TODO: synchronize access to currentMaster?
             // clear the master, since it no longer exists in the cluster
             this.currentMaster = null;
+        }
+
+        if (this.clusterChangeCallback != null) {
+            this.clusterChangeCallback.clusterChanged(isMasterWithoutInterrogatingCluster(), isMaster());
         }
     }
 
@@ -84,6 +82,21 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
 
         return oldMaster;
     }
+
+    public Address id() {
+        return this.channel.getAddress();
+    }
+
+    @Override
+    public boolean isMasterWithoutInterrogatingCluster() {
+        return id().equals(this.currentMaster);
+    }
+
+    @Override
+    public void setClusterChangeCallback(ClusterChangeCallback callback) {
+        this.clusterChangeCallback = callback;
+    }
+
     /*
      * - if master is known
      *     - run if we are it
@@ -98,24 +111,24 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
      *     - else throw
      *   - unlock
      */
-    protected boolean isMasterForContext() {
+    @Override
+    public boolean isMaster() {
         boolean isMaster = false;
 
         try {
-            final Address myId = this.channel.getAddress();
             if (this.currentMaster != null) {
-                isMaster = myId.equals(this.currentMaster);
+                isMaster = isMasterWithoutInterrogatingCluster();
             } else {
-                Lock lock = this.channelWrapper.getLock(name());
+                Lock lock = this.channelWrapper.getLock(this.name);
                 lock.lock();
                 try {
                     if (this.currentMaster != null) {
                         //I don't think we can become master while someone else holds the lock, but...
-                        isMaster = myId.equals(this.currentMaster);
+                        isMaster = isMasterWithoutInterrogatingCluster();
                     } else {
                         Map<String, Object> msg = new HashMap();
-                        msg.put("dispatch", name());
-                        msg.put("payload", myId);
+                        msg.put("dispatch", this.name);
+                        msg.put("payload", id());
 
                         //TODO: what happens on timeout?
                         RspList<Address> responses =
@@ -132,7 +145,7 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
                         }
 
                         if (possibleMasters.size() > 1) {
-                            throw new IllegalStateException("Cluster in broken state, multiple masters for " + name() +
+                            throw new IllegalStateException("Cluster in broken state, multiple masters for " + this.name +
                                                                     ": " + possibleMasters);
                         }
 
@@ -154,10 +167,11 @@ public class ClusteredSingletonContext extends AlwaysRunContext implements Reque
         return isMaster;
     }
 
-
-    private Address currentMaster = null;
-    private JChannel channel;
+    private final String name;
+    private final JChannel channel;
     private final ChannelWrapper channelWrapper;
+    private Address currentMaster = null;
+    private ClusterChangeCallback clusterChangeCallback;
 
-    private static final Logger log = Logger.getLogger(ClusteredSingletonContext.class);
+    private static final Logger log = Logger.getLogger(SingletonClusterParticipant.class);
 }

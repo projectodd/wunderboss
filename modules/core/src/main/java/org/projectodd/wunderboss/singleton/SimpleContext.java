@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss;
+package org.projectodd.wunderboss.singleton;
 
-public class AlwaysRunContext implements SingletonContext {
+import org.projectodd.wunderboss.Options;
 
-    public AlwaysRunContext(String name) {
+public class SimpleContext implements SingletonContext, ClusterChangeCallback {
+
+    public SimpleContext(String name, ClusterParticipant participant, Options<CreateOption> options) {
         this.name = name;
+        if (participant != null) {
+            participant.setClusterChangeCallback(this);
+        }
+        this.clusterParticipant = participant;
     }
 
     @Override
-    public SingletonContext runnable(Runnable r) {
+    public SingletonContext setRunnable(Runnable r) {
         this.runnable = r;
 
         return this;
@@ -31,7 +37,15 @@ public class AlwaysRunContext implements SingletonContext {
 
     @Override
     public void run() {
-        this.runnable.run();
+        if (this.clusterParticipant == null ||
+                this.clusterParticipant.isMaster()) {
+            this.runnable.run();
+        }
+    }
+
+    @Override
+    public void clusterChanged(boolean wasMaster, boolean isMaster) {
+        //don't care
     }
 
     @Override
@@ -41,7 +55,6 @@ public class AlwaysRunContext implements SingletonContext {
 
     @Override
     public void stop() throws Exception {
-
     }
 
     @Override
@@ -50,10 +63,14 @@ public class AlwaysRunContext implements SingletonContext {
     }
 
     protected Runnable runnable() {
-        return runnable;
+        return this.runnable;
+    }
+
+    protected ClusterParticipant clusterParticipant() {
+        return this.clusterParticipant;
     }
 
     private final String name;
+    private final ClusterParticipant clusterParticipant;
     private Runnable runnable;
-
 }
