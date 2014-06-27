@@ -87,7 +87,6 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
         return this.channel.getAddress();
     }
 
-    @Override
     public boolean isMasterWithoutInterrogatingCluster() {
         return id().equals(this.currentMaster);
     }

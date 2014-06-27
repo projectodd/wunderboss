@@ -20,7 +20,5 @@ public interface ClusterParticipant {
 
     boolean isMaster();
 
-    boolean isMasterWithoutInterrogatingCluster();
-
     void setClusterChangeCallback(ClusterChangeCallback callback);
 }
