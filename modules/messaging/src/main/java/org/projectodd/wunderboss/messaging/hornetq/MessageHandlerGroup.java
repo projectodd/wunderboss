@@ -88,8 +88,8 @@ public class MessageHandlerGroup implements Listener {
             //this.connection.jmsContext().getSession(true,
             //Session.SESSION_TRANSACTED);
 
-            return (HornetQSession)this.connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{put(
-                    Connection.CreateSessionOption.MODE, isTransacted() ? Session.Mode.TRANSACTED : Session.Mode.AUTO_ACK);
+            return (HornetQSession)this.connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{
+                put(Connection.CreateSessionOption.MODE, isTransacted() ? Session.Mode.TRANSACTED : Session.Mode.AUTO_ACK);
             }});
         //}
     }

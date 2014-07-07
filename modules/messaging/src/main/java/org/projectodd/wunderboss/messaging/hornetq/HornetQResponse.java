@@ -16,10 +16,6 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.codecs.Codecs;
-import org.projectodd.wunderboss.messaging.Destination;
-import org.projectodd.wunderboss.messaging.Destination.ReceiveOption;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.Response;
 
@@ -28,13 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class HornetQResponse implements Response {
-
-    public HornetQResponse(String requestId, Codecs codecs, Destination destination, HornetQConnection connection) {
-        this.requestId = requestId;
-        this.codecs = codecs;
-        this.destination = destination;
-        this.connection = connection;
-    }
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -47,7 +36,7 @@ public class HornetQResponse implements Response {
     }
 
     @Override
-    public boolean isDone() {
+    public synchronized boolean isDone() {
         return (this.value != null);
     }
 
@@ -64,21 +53,11 @@ public class HornetQResponse implements Response {
     }
 
     @Override
-    public Message get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public synchronized Message get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         if (!isDone()) {
-            try {
-                Options<Destination.MessageOpOption> options = new Options<>();
-                options.put(ReceiveOption.TIMEOUT, unit.toMillis(timeout));
-                options.put(ReceiveOption.SELECTOR, "JMSCorrelationID='" + this.requestId + "'");
-                options.put(ReceiveOption.CONNECTION, this.connection);
+            wait(unit.toMillis(timeout));
 
-                this.value = this.destination.receive(this.codecs, options);
-            } catch (Exception e) {
-                throw new ExecutionException(e);
-            }
-
-            // receive will return null when it times out, so we need to pass that timeout on
-            if (this.value == null) {
+            if (!isDone()) {
                 throw new TimeoutException();
             }
         }
@@ -86,9 +65,13 @@ public class HornetQResponse implements Response {
         return this.value;
     }
 
-    private final HornetQConnection connection;
-    private final String requestId;
-    private final Codecs codecs;
-    private final Destination destination;
+    public synchronized void deliver(Message value) {
+        if (this.value != null) {
+            throw new IllegalStateException("Delivery to a future that is already delivered.");
+        }
+        this.value = value;
+        notifyAll();
+    }
+
     private Message value = null;
 }

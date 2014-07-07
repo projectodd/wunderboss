@@ -22,6 +22,6 @@ import java.util.Map;
 
 public interface ReplyableMessage extends Message {
 
-    Response reply(Object content, Codec codec,
-                   Map<Destination.MessageOpOption, Object> options) throws Exception;
+    void reply(Object content, Codec codec,
+               Map<Destination.MessageOpOption, Object> options) throws Exception;
 }

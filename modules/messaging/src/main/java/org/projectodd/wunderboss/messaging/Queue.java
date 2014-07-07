@@ -33,6 +33,6 @@ public interface Queue extends Destination {
 
     class RequestOption extends SendOption {}
 
-    Response request(Object content, Codec codec,
+    Response request(Object content, Codec codec, Codecs codecs,
                      Map<MessageOpOption, Object> options) throws Exception;
 }

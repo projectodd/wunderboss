@@ -35,7 +35,9 @@ import java.util.UUID;
 
 public class HornetQQueue extends HornetQDestination implements Queue {
     protected static final String SYNC_PROPERTY = "synchronous";
+    protected static final String SYNC_RESPONSE_PROPERTY = "synchronous_response";
     protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
+    protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
     public HornetQQueue(javax.jms.Queue queue, HornetQMessaging broker) {
         super(queue, broker);
@@ -71,22 +73,42 @@ public class HornetQQueue extends HornetQDestination implements Queue {
 
     @Override
     public Response request(Object content, Codec codec,
+                            Codecs codecs,
                             Map<MessageOpOption, Object> options) throws Exception {
-        Options<MessageOpOption> opts = new Options<>(options);
+        final Options<MessageOpOption> opts = new Options<>(options);
         final String id = UUID.randomUUID().toString();
+        //TODO: there's probably a better way to get this
+        final String nodeId = System.getProperty("jboss.node.name", "node1");
+        final HornetQResponse response = new HornetQResponse();
+        Options<ListenOption> routerOpts = new Options<>();
+        routerOpts.put(ListenOption.SELECTOR,
+                       REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
+                               SYNC_RESPONSE_PROPERTY + " = TRUE");
+        if (opts.has(MessageOpOption.CONNECTION)) {
+            routerOpts.put(ListenOption.CONNECTION, opts.get(MessageOpOption.CONNECTION));
+        }
+
+        ResponseRouter.routerFor(this, codecs, routerOpts).registerResponse(id, response);
+
         _send(content, codec, options,
               new HashMap<String, Object>() {{
+                  put(REQUEST_NODE_ID_PROPERTY, nodeId);
                   put(SYNC_PROPERTY, true);
                   put(REQUEST_ID_PROPERTY, id);
               }});
 
-        return new HornetQResponse(id, (new Codecs()).add(codec), this, connection(opts.get(MessageOpOption.CONNECTION)));
+        return response;
     }
 
     public static String fullName(String name) {
         return "jms.queue." + name;
     }
 
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+        ResponseRouter.closeRouterFor(this);
+    }
     @Override
     public String jmsName() {
         return fullName(name());

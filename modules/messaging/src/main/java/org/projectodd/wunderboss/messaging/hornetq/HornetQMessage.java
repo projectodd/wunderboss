@@ -18,12 +18,10 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
-import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.codecs.None;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
-import org.projectodd.wunderboss.messaging.Response;
 
 import javax.jms.JMSException;
 import java.util.Collections;
@@ -103,11 +101,9 @@ public class HornetQMessage implements ReplyableMessage {
     }
 
     @Override
-    public Response reply(Object content, Codec codec,
-                          Map<MessageOpOption, Object> options) throws Exception {
+    public void reply(Object content, Codec codec,
+                      Map<MessageOpOption, Object> options) throws Exception {
         this.destination.send(content, codec, replyOptions(options));
-
-        return new HornetQResponse(requestID(), (new Codecs()).add(codec), this.destination, this.connection);
     }
 
     protected String requestID() {
@@ -120,6 +116,18 @@ public class HornetQMessage implements ReplyableMessage {
             return null;
         }
     }
+
+    protected String nodeID() {
+        try {
+
+            return this.baseMessage.getStringProperty(HornetQQueue.REQUEST_NODE_ID_PROPERTY);
+        } catch (JMSException ffs) {
+            ffs.printStackTrace();
+
+            return null;
+        }
+    }
+
     protected Options<MessageOpOption> replyOptions(Map<Destination.MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.SendOption.PROPERTIES);
@@ -127,7 +135,10 @@ public class HornetQMessage implements ReplyableMessage {
         if (properties != null) {
             newProperties.putAll(properties);
         }
-        newProperties.put("JMSCorrelationID", requestID());
+        newProperties.put(HornetQQueue.SYNC_RESPONSE_PROPERTY, true);
+        newProperties.put(HornetQQueue.REQUEST_ID_PROPERTY, requestID());
+        newProperties.put(HornetQQueue.REQUEST_NODE_ID_PROPERTY, nodeID());
+
         opts.put(Destination.SendOption.PROPERTIES, newProperties);
 
         return opts;

@@ -138,7 +138,7 @@
         q (create-queue "send-c")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.request q "boom" None/INSTANCE
+          (.request q "boom" None/INSTANCE codecs
             (coerce-send-options {:connection c}))))))
 
 (deftest request-should-use-the-passed-session
@@ -146,7 +146,7 @@
         q (create-queue "send-c")]
     (.close s)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.request q "boom" None/INSTANCE
+          (.request q "boom" None/INSTANCE codecs
             (coerce-send-options {:session s}))))))
 
 (deftest request-should-not-close-the-passed-session
@@ -157,7 +157,7 @@
             codecs
             nil)
         check-fn (fn []
-                   (let [response (.request q "success" None/INSTANCE
+                   (let [response (.request q "success" None/INSTANCE codecs
                                     (coerce-send-options {:session s}))]
                      (is (= "success" (.body (deref response 1000 :failure))))))]
     (check-fn)
@@ -308,7 +308,7 @@
                            (handler identity)
                            codecs
                            nil)]
-      (let [response (.request queue "hi" None/INSTANCE nil)]
+      (let [response (.request queue "hi" None/INSTANCE codecs nil)]
         (is (= "hi" (.body (.get response))))
         ;; result should be cached
         (is (= "hi" (.body (.get response))))))))
@@ -323,9 +323,9 @@
                                  (str "response-" time))))
                            codecs
                            (coerce-respond-options {:concurrency 5}))]
-      (let [response1 (.request queue "50" None/INSTANCE nil)
-            response2 (.request queue "100" None/INSTANCE nil)
-            response3 (.request queue "25" None/INSTANCE nil)]
+      (let [response1 (.request queue "50" None/INSTANCE codecs nil)
+            response2 (.request queue "100" None/INSTANCE codecs nil)
+            response3 (.request queue "25" None/INSTANCE codecs nil)]
         (is (= "response-50" (.body (.get response1))))
         (is (= "response-100" (.body (.get response2))))
         (is (= "response-25" (.body (.get response3))))))))
@@ -336,7 +336,7 @@
                            (handler identity)
                            codecs
                            (coerce-respond-options {:ttl 1}))]
-      (let [response (.request queue "nope" None/INSTANCE nil)]
+      (let [response (.request queue "nope" None/INSTANCE codecs nil)]
         (Thread/sleep 100)
         (is (thrown? java.util.concurrent.TimeoutException
               (.get response 1 TimeUnit/MILLISECONDS)))))))
