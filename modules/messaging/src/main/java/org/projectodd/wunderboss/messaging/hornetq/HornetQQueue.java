@@ -34,10 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public class HornetQQueue extends HornetQDestination implements Queue {
-    protected static final String SYNC_PROPERTY = "synchronous";
-    protected static final String SYNC_RESPONSE_PROPERTY = "synchronous_response";
-    protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
-    protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
     public HornetQQueue(javax.jms.Queue queue, HornetQMessaging broker) {
         super(queue, broker);
@@ -48,7 +44,7 @@ public class HornetQQueue extends HornetQDestination implements Queue {
                             final Codecs codecs,
                             Map<ListenOption, Object> options) throws Exception {
         final Options<ListenOption> opts = new Options<>(options);
-        String selector = SYNC_PROPERTY + " = TRUE";
+        String selector = HornetQMessage.SYNC_PROPERTY + " = TRUE";
         if (opts.has(ListenOption.SELECTOR)) {
             selector += " AND " + opts.getString(ListenOption.SELECTOR);
         }
@@ -82,8 +78,8 @@ public class HornetQQueue extends HornetQDestination implements Queue {
         final HornetQResponse response = new HornetQResponse();
         Options<ListenOption> routerOpts = new Options<>();
         routerOpts.put(ListenOption.SELECTOR,
-                       REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
-                               SYNC_RESPONSE_PROPERTY + " = TRUE");
+                       HornetQMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
+                               HornetQMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
         if (opts.has(MessageOpOption.CONNECTION)) {
             routerOpts.put(ListenOption.CONNECTION, opts.get(MessageOpOption.CONNECTION));
         }
@@ -92,9 +88,9 @@ public class HornetQQueue extends HornetQDestination implements Queue {
 
         _send(content, codec, options,
               new HashMap<String, Object>() {{
-                  put(REQUEST_NODE_ID_PROPERTY, nodeId);
-                  put(SYNC_PROPERTY, true);
-                  put(REQUEST_ID_PROPERTY, id);
+                  put(HornetQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
+                  put(HornetQMessage.SYNC_PROPERTY, true);
+                  put(HornetQMessage.REQUEST_ID_PROPERTY, id);
               }});
 
         return response;

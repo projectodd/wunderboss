@@ -32,6 +32,10 @@ import java.util.Map;
 public class HornetQMessage implements ReplyableMessage {
 
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
+    protected static final String SYNC_PROPERTY = "synchronous";
+    protected static final String SYNC_RESPONSE_PROPERTY = "synchronous_response";
+    protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
+    protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
     HornetQMessage(javax.jms.Message message, Codec codec,
                           Destination destination, HornetQConnection connection) {
@@ -109,7 +113,7 @@ public class HornetQMessage implements ReplyableMessage {
     protected String requestID() {
         try {
 
-            return this.baseMessage.getStringProperty(HornetQQueue.REQUEST_ID_PROPERTY);
+            return this.baseMessage.getStringProperty(REQUEST_ID_PROPERTY);
         } catch (JMSException ffs) {
             ffs.printStackTrace();
 
@@ -120,7 +124,7 @@ public class HornetQMessage implements ReplyableMessage {
     protected String nodeID() {
         try {
 
-            return this.baseMessage.getStringProperty(HornetQQueue.REQUEST_NODE_ID_PROPERTY);
+            return this.baseMessage.getStringProperty(REQUEST_NODE_ID_PROPERTY);
         } catch (JMSException ffs) {
             ffs.printStackTrace();
 
@@ -135,9 +139,9 @@ public class HornetQMessage implements ReplyableMessage {
         if (properties != null) {
             newProperties.putAll(properties);
         }
-        newProperties.put(HornetQQueue.SYNC_RESPONSE_PROPERTY, true);
-        newProperties.put(HornetQQueue.REQUEST_ID_PROPERTY, requestID());
-        newProperties.put(HornetQQueue.REQUEST_NODE_ID_PROPERTY, nodeID());
+        newProperties.put(SYNC_RESPONSE_PROPERTY, true);
+        newProperties.put(REQUEST_ID_PROPERTY, requestID());
+        newProperties.put(REQUEST_NODE_ID_PROPERTY, nodeID());
 
         opts.put(Destination.SendOption.PROPERTIES, newProperties);
 
