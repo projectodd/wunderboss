@@ -22,14 +22,13 @@ import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Reply;
 import org.projectodd.wunderboss.messaging.Session;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResponseRouter implements Listener, MessageHandler {
+public class ResponseRouter implements AutoCloseable, MessageHandler {
 
     public ResponseRouter(String id) {
         this.id = id;
@@ -42,7 +41,6 @@ public class ResponseRouter implements Listener, MessageHandler {
         if (response == null) {
             throw new IllegalStateException("No responder for id " + id);
         }
-
         response.deliver(msg);
 
         return null;
@@ -54,7 +52,7 @@ public class ResponseRouter implements Listener, MessageHandler {
     }
 
 
-    public synchronized static ResponseRouter routerFor(Queue queue, Codecs codecs,
+    public synchronized static ResponseRouter routerFor(HornetQQueue queue, Codecs codecs,
                                                         Options<Destination.ListenOption> options) {
         ResponseRouter router = routers.get(queue.name());
         if (router == null) {
@@ -64,18 +62,11 @@ public class ResponseRouter implements Listener, MessageHandler {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
+            queue.broker().addCloseableForDestination(queue, router);
             routers.put(router.id(), router);
         }
 
         return router;
-    }
-
-    public synchronized static void closeRouterFor(Queue queue) throws Exception {
-        ResponseRouter router = routers.get(queue.name());
-        if (router != null) {
-            router.close();
-        }
     }
 
     @Override

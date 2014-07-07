@@ -101,11 +101,6 @@ public class HornetQQueue extends HornetQDestination implements Queue {
     }
 
     @Override
-    public void stop() throws Exception {
-        super.stop();
-        ResponseRouter.closeRouterFor(this);
-    }
-    @Override
     public String jmsName() {
         return fullName(name());
     }
