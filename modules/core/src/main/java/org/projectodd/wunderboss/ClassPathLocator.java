@@ -18,13 +18,9 @@ package org.projectodd.wunderboss;
 
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 public class ClassPathLocator implements Locator {
 
@@ -34,7 +30,7 @@ public class ClassPathLocator implements Locator {
 
     @Override
     public synchronized Language findLanguage(String name) {
-        String lang = findProviderClassName("language", name);
+        Class lang = languageClassFor(name);
         if (lang != null) {
             return (Language)instantiate(lang);
         } else {
@@ -44,7 +40,7 @@ public class ClassPathLocator implements Locator {
 
     @Override
     public synchronized ComponentProvider findComponentProvider(Class<? extends Component> clazz) {
-        Class<?> providerClass = findProviderClass("componentProvider", clazz);
+        Class<?> providerClass = providerClassFor(clazz);
         if (providerClass != null) {
             return (ComponentProvider)instantiate(providerClass);
         } else {
@@ -52,107 +48,41 @@ public class ClassPathLocator implements Locator {
         }
     }
 
-    protected String findProviderClassName(String type, String name) {
-        log.debug("Looking for provider " + type + ":" + name);
+    protected Class languageClassFor(String lang) {
         try {
-            Enumeration<URL> urls = getWunderBossPropertyUrls();
+            return loadClassFromResourceFile("META-INF/wunderboss-languages/" + lang);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load langiage implementation for " + lang, e);
+        }
+    }
 
-            while(urls.hasMoreElements()) {
-                URL url = urls.nextElement();
-                log.debug("checking " + url);
+    protected Class<ComponentProvider> providerClassFor(Class clazz) {
+        try {
+            return (Class<ComponentProvider>)loadClassFromResourceFile("META-INF/wunderboss-providers/" + clazz.getCanonicalName());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load provider for " + clazz.getCanonicalName(), e);
+        }
+    }
 
-                Properties props = findPropertiesForUrl(url);
-
-                String cName;
-                if ((cName = props.getProperty(type + "." + name)) != null) {
-                    return cName;
-                }
+    protected Class loadClassFromResourceFile(String resourceName) throws Exception {
+        URL url = this.loader.getResource(resourceName);
+        if (url != null) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                return this.loader.loadClass(reader.readLine().trim());
             }
-        } catch (IOException e) {
-            //TODO: something better
-            e.printStackTrace();
         }
 
         return null;
-    }
-
-    protected Class<?> findProviderClass(String type, Class<?> clazz) {
-        log.debug("Looking for provider " + type + ":" + clazz.getName());
-        try {
-            Enumeration<URL> urls = getWunderBossPropertyUrls();
-
-            while(urls.hasMoreElements()) {
-                URL url = urls.nextElement();
-                log.debug("checking " + url);
-
-                Properties props = findPropertiesForUrl(url);
-                for(String each : props.stringPropertyNames()) {
-                    if (each.startsWith(type)) {
-                        String providerClassName = props.getProperty(each);
-                        if (providerClassName != null) {
-                            Class providerClass = this.loader.loadClass(providerClassName);
-                            if (clazz.isAssignableFrom(WunderBoss.getProvidedType(providerClass))) {
-
-                                return providerClass;
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            //TODO: something better
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    protected Enumeration<URL> getWunderBossPropertyUrls() throws IOException {
-        return this.loader.getResources("META-INF/wunderboss.properties");
-    }
-
-    protected Properties findPropertiesForUrl(URL url) throws IOException {
-        Properties props;
-
-        if (this.propertiesCache.containsKey(url)) {
-            props = this.propertiesCache.get(url);
-            log.debug("Found CACHED props: " + props);
-        } else {
-            props = new Properties();
-            InputStream propsStream = url.openStream();
-            try {
-                props.load(propsStream);
-            } finally {
-                propsStream.close();
-            }
-            this.propertiesCache.put(url, props);
-            log.debug("Found props: " + props);
-        }
-        return props;
-    }
-
-    private Object instantiate(String cName) {
-        try {
-            Class clazz = this.loader.loadClass(cName);
-            return instantiate(clazz);
-        } catch (ClassNotFoundException e) {
-            //TODO: something better
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private Object instantiate(Class clazz) {
         try {
             return clazz.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            //TODO: something better
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Failed to instantiate " + clazz.getCanonicalName(), e);
         }
     }
 
     private ClassLoader loader;
-    private final Map<URL, Properties> propertiesCache = new HashMap<>();
     private static final Logger log = Logger.getLogger(ClassPathLocator.class);
 }

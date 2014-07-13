@@ -20,11 +20,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.jboss.logging.Logger;
 
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -93,8 +90,8 @@ public class WunderBoss {
         return (findLanguage(name, false) != null);
     }
 
-    public static void registerComponentProvider(ComponentProvider<?> provider) {
-        componentProviders.add(provider);
+    public static void registerComponentProvider(Class iface, ComponentProvider<?> provider) {
+        componentProviders.put(iface, provider);
     }
 
     public static boolean providesComponent(Class<? extends Component> clazz) {
@@ -113,39 +110,20 @@ public class WunderBoss {
         languages.clear();
     }
 
-    private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> clazz, boolean throwIfMissing) {
-        ComponentProvider<T> provider = null;
-        Iterator<ComponentProvider<?>> iterator = componentProviders.descendingIterator();
-        while (iterator.hasNext()) {
-            ComponentProvider<?> providerCandidate = iterator.next();
-            if (clazz.isAssignableFrom(getProvidedType(providerCandidate.getClass()))) {
-                provider = (ComponentProvider<T>) providerCandidate;
-                break;
-            }
-        }
+    private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> iface, boolean throwIfMissing) {
+        ComponentProvider<T> provider = componentProviders.get(iface);
 
         if (provider == null &&
-                (provider = locator.findComponentProvider(clazz)) != null) {
-            registerComponentProvider(provider);
+                (provider = locator.findComponentProvider(iface)) != null) {
+            registerComponentProvider(iface, provider);
         }
 
         if (throwIfMissing &&
                 provider == null) {
-            throw new IllegalArgumentException("Unknown component: " + clazz.getName());
+            throw new IllegalArgumentException("Unknown component: " + iface.getName());
         }
 
         return provider;
-    }
-
-    static Class getProvidedType(Class providerClass) {
-        try {
-            Method createMethod = providerClass.getDeclaredMethod("create", String.class, Options.class);
-            return createMethod.getReturnType();
-        } catch (NoSuchMethodException e) {
-            // can't happen, but we should bitch if it does
-            log.error(e.getMessage());
-            return Void.class;
-        }
     }
 
     public static Logger logger(String name) {
@@ -193,7 +171,7 @@ public class WunderBoss {
     private static Locator locator;
     private static Options<String> options;
     private static final Map<String, Language> languages = new HashMap<>();
-    private static final LinkedList<ComponentProvider<?>> componentProviders = new LinkedList<>();
+    private static final Map<Class, ComponentProvider> componentProviders = new HashMap<>();
     private static final Map<String, Component> components = new HashMap<>();
     private static DynamicClassLoader classLoader;
     private static final Logger log = Logger.getLogger(WunderBoss.class);

@@ -27,7 +27,7 @@ public class WildFlyWebTest {
 
     @Test
     public void testCanFindWebComponent() {
-        WunderBoss.registerComponentProvider(new WildflyWebProvider(null));
+        WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(null));
         Web web = WunderBoss.findOrCreateComponent(Web.class);
         assertNotNull(web);
         assertTrue(web instanceof WildFlyWeb);

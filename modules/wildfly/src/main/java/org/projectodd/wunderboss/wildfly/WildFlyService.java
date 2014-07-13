@@ -31,6 +31,9 @@ import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.projectodd.wunderboss.ApplicationRunner;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.singleton.SingletonContext;
+import org.projectodd.wunderboss.web.Web;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.io.IOException;
@@ -58,17 +61,17 @@ public class WildFlyService implements Service<WildFlyService> {
         WunderBoss.putOption("default-context-path", getDefaultContextPath());
 
         try {
-            WunderBoss.registerComponentProvider(new WildflyWebProvider(undertowInjector.getValue()));
+            WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(undertowInjector.getValue()));
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our web
         }
         try {
-            WunderBoss.registerComponentProvider(new WildFlyMessagingProvider());
+            WunderBoss.registerComponentProvider(Messaging.class, new WildFlyMessagingProvider());
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our messaging
         }
-        WunderBoss.registerComponentProvider(new SingletonContextProvider());
-        WunderBoss.registerComponentProvider(new ChannelProvider());
+        WunderBoss.registerComponentProvider(SingletonContext.class, new SingletonContextProvider());
+        WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
 
         applicationRunner = new ApplicationRunner(deploymentName) {
             @Override

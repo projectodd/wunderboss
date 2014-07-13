@@ -48,7 +48,7 @@ public class WunderBossTest {
 
     @Test
     public void testCanRegisterComponent() {
-        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        WunderBoss.registerComponentProvider(TestComponent.class, new TestComponentProvider());
         assertTrue(WunderBoss.providesComponent(TestComponent.class));
     }
 
@@ -61,15 +61,15 @@ public class WunderBossTest {
                 return myComponent;
             }
         };
-        WunderBoss.registerComponentProvider(new TestComponentProvider());
-        WunderBoss.registerComponentProvider(myProvider);
+        WunderBoss.registerComponentProvider(TestComponent.class, new TestComponentProvider());
+        WunderBoss.registerComponentProvider(TestComponent.class, myProvider);
         TestComponent testComponent = WunderBoss.findOrCreateComponent(TestComponent.class, "uniquename123", null);
         assertEquals(testComponent, myComponent);
     }
 
     @Test
     public void testCachesComponents() {
-        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        WunderBoss.registerComponentProvider(TestComponent.class, new TestComponentProvider());
         Component comp = WunderBoss.findOrCreateComponent(TestComponent.class);
         assertEquals("default", comp.name());
         assertEquals(comp, WunderBoss.findOrCreateComponent(TestComponent.class));
@@ -78,7 +78,7 @@ public class WunderBossTest {
 
     @Test
     public void testCachesComponentsWithNames() {
-        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        WunderBoss.registerComponentProvider(TestComponent.class, new TestComponentProvider());
         Component comp = WunderBoss.findOrCreateComponent(TestComponent.class, "foobar", null);
         assertEquals("foobar", comp.name());
         assertEquals(comp, WunderBoss.findOrCreateComponent(TestComponent.class, "foobar", null));
@@ -86,7 +86,7 @@ public class WunderBossTest {
 
     @Test
     public void testCanStopContainer() throws Exception {
-        WunderBoss.registerComponentProvider(new TestComponentProvider());
+        WunderBoss.registerComponentProvider(TestComponent.class, new TestComponentProvider());
         TestComponent comp = WunderBoss.findOrCreateComponent(TestComponent.class);
         WunderBoss.shutdownAndReset();
         assertTrue(comp.stopped);
