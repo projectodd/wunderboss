@@ -18,7 +18,6 @@ package org.projectodd.wunderboss.wildfly;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
-import org.jboss.as.clustering.infinispan.DefaultCacheContainer;
 
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
@@ -42,7 +41,9 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public synchronized EmbeddedCacheManager manager() {
         if (this.manager == null) {
-            this.manager = new DefaultCacheManager(getGlobalConfiguration(), Config.uration(this.options));
+            // this.manager = new DefaultCacheManager(getGlobalConfiguration(), Config.uration(this.options));
+            this.manager = getWebCacheManager();
+            this.manager.getCache();
         }
         return this.manager;
     }
@@ -57,26 +58,23 @@ public class WildFlyCaching extends InfinispanCaching {
         return result;
     }
 
-    // GlobalConfiguration getGlobalConfiguration() {
-    //     ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
-    //     EmbeddedCacheManagerConfiguration service = (EmbeddedCacheManagerConfiguration) serviceRegistry.getRequiredService(WildFlyService.WEB_CACHE_MANAGER_CONFIG).getValue();
-    //     return service.getGlobalConfiguration();
-    // }
+    EmbeddedCacheManager getWebCacheManager() {
+        ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
+        return (EmbeddedCacheManager) serviceRegistry.getRequiredService(WildFlyService.WEB_CACHE_MANAGER).getValue();
+    }
 
-    // GlobalConfiguration getGlobalConfiguration() {
-    //     ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
-    //     DefaultCacheContainer cm = (DefaultCacheContainer) serviceRegistry.getRequiredService(WildFlyService.WEB_CACHE_MANAGER).getValue();
-    //     GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
-    //     return builder.read(cm.getCacheManagerConfiguration())
-    //         .classLoader(Thread.currentThread().getContextClassLoader())
-    //         .build();
-    // }
+    GlobalConfiguration getGlobalConfiguration() {
+        GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
+        return builder.read(getWebCacheManager().getCacheManagerConfiguration())
+            .classLoader(Thread.currentThread().getContextClassLoader())
+            .build();
+    }
 
     // This won't cluster inside wildfly, but nothing else will
     // either, and at least this won't toss exceptions like the failed
     // attempts above
-    GlobalConfiguration getGlobalConfiguration() {
-        GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
-        return builder.clusteredDefault().build();
-    }
+    // GlobalConfiguration getGlobalConfiguration() {
+    //     GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
+    //     return builder.clusteredDefault().build();
+    // }
 }
