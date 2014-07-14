@@ -41,9 +41,7 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public synchronized EmbeddedCacheManager manager() {
         if (this.manager == null) {
-            // this.manager = new DefaultCacheManager(getGlobalConfiguration(), Config.uration(this.options));
-            this.manager = getWebCacheManager();
-            this.manager.getCache();
+            this.manager = new DefaultCacheManager(getGlobalConfiguration(), Config.uration(this.options));
         }
         return this.manager;
     }
@@ -58,23 +56,16 @@ public class WildFlyCaching extends InfinispanCaching {
         return result;
     }
 
-    EmbeddedCacheManager getWebCacheManager() {
+    private EmbeddedCacheManager getWebCacheManager() {
         ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
         return (EmbeddedCacheManager) serviceRegistry.getRequiredService(WildFlyService.WEB_CACHE_MANAGER).getValue();
     }
 
-    GlobalConfiguration getGlobalConfiguration() {
+    private GlobalConfiguration getGlobalConfiguration() {
         GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
         return builder.read(getWebCacheManager().getCacheManagerConfiguration())
             .classLoader(Thread.currentThread().getContextClassLoader())
+            .transport().clusterName("wboss")
             .build();
     }
-
-    // This won't cluster inside wildfly, but nothing else will
-    // either, and at least this won't toss exceptions like the failed
-    // attempts above
-    // GlobalConfiguration getGlobalConfiguration() {
-    //     GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
-    //     return builder.clusteredDefault().build();
-    // }
 }
