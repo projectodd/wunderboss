@@ -32,6 +32,7 @@ import org.jboss.vfs.VirtualFile;
 import org.projectodd.wunderboss.ApplicationRunner;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.caching.Caching;
 import org.projectodd.wunderboss.singleton.SingletonContext;
 import org.projectodd.wunderboss.web.Web;
 import org.wildfly.extension.undertow.UndertowService;
@@ -69,6 +70,11 @@ public class WildFlyService implements Service<WildFlyService> {
             WunderBoss.registerComponentProvider(Messaging.class, new WildFlyMessagingProvider());
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our messaging
+        }
+        try {
+            WunderBoss.registerComponentProvider(Caching.class, new WildFlyCachingProvider());
+        } catch (LinkageError ignored) {
+            // Ignore - perhaps the user isn't using our caching
         }
         WunderBoss.registerComponentProvider(SingletonContext.class, new SingletonContextProvider());
         WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
@@ -154,4 +160,5 @@ public class WildFlyService implements Service<WildFlyService> {
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
 
     static final ServiceName JMS_MANAGER_SERVICE_NAME = ServiceName.JBOSS.append("messaging", "default", "jms", "manager");
+    static final ServiceName WEB_CACHE_MANAGER = ServiceName.JBOSS.append("infinispan", "web");
 }

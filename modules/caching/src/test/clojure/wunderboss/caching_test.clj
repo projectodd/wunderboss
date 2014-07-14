@@ -15,8 +15,9 @@
 (ns wunderboss.caching-test
   (:require [clojure.test :refer :all])
   (:import org.projectodd.wunderboss.WunderBoss
-           org.projectodd.wunderboss.caching.Caching
+           [org.projectodd.wunderboss.caching Caching Caching$CreateOption Config]
            org.projectodd.wunderboss.Options
+           org.infinispan.configuration.cache.CacheMode
            java.util.Arrays))
 
 (def default (doto (WunderBoss/findOrCreateComponent Caching) (.start)))
@@ -27,3 +28,10 @@
         v (byte-array [4 5 6])]
     (.put c k v)
     (is (Arrays/equals (byte-array [4 5 6]) (get c (byte-array [1 2 3]))))))
+
+(deftest mode-local-if-not-clustered
+  (let [options (Options. {Caching$CreateOption/MODE "repl_sync"})
+        config (Config/uration options)
+        c (.findOrCreate default "repl" options)]
+    (is (= CacheMode/REPL_SYNC (.. config clustering cacheMode)))
+    (is (= CacheMode/LOCAL (.. c getCacheConfiguration clustering cacheMode)))))

@@ -29,31 +29,31 @@ import java.util.Map;
 public class InfinispanCaching implements Caching {
 
     public InfinispanCaching(String name, Options<CreateOption> options) {
-        this.manager = new DefaultCacheManager(Config.uration(options));
         this.name = name;
+        this.options = options;
     }
 
     @Override
     public synchronized void start() throws Exception {
-        this.manager.start();
+        manager().start();
     }
 
     @Override
     public synchronized void stop() throws Exception {
-        this.manager.stop();
+        manager().stop();
     }
 
     @Override
     public String name() {
-        // manager.getName() ?
+        // manager().getName() ?
         return this.name;
     }
 
     @Override
     public Cache find(String name) {
         Cache result = null;
-        if (manager.isRunning(name)) {
-            result = manager.getCache(name);
+        if (manager().isRunning(name)) {
+            result = manager().getCache(name);
             if (!result.getStatus().allowInvocations()) {
                 result.start();
             }
@@ -65,18 +65,19 @@ public class InfinispanCaching implements Caching {
     public Cache findOrCreate(String name, Map<CreateOption,Object> options) {
         Cache result = find(name);
         if (result == null) {
-            manager.defineConfiguration(name, Config.uration(new Options<CreateOption>(options)));
+            manager().defineConfiguration(name, Config.uration(validate(options)));
             log.info("Creating cache: "+name);
-            result = manager.getCache(name);
+            result = manager().getCache(name);
         }
         return result;
     }
 
     @Override
     public boolean stop(String name) {
-        boolean before = manager.isRunning(name);
-        manager.removeCache(name);
-        return before != manager.isRunning(name);
+        EmbeddedCacheManager mgr = manager();
+        boolean before = mgr.isRunning(name);
+        mgr.removeCache(name);
+        return before != mgr.isRunning(name);
     }
 
     @Override
@@ -84,12 +85,26 @@ public class InfinispanCaching implements Caching {
         return new EncodedCache(cache, codec);
     }
 
-    public EmbeddedCacheManager manager() {
+    public synchronized EmbeddedCacheManager manager() {
+        if (this.manager == null) {
+            this.manager = new DefaultCacheManager(Config.uration(options));
+        }
         return this.manager;
     }
 
-    private final String name;
-    private EmbeddedCacheManager manager;
+    protected Options<CreateOption> validate(Map<CreateOption,Object> options) {
+        Options<CreateOption> result = new Options<CreateOption>(options);
+        String mode = result.getString(CreateOption.MODE);
+        if (mode != null && !"LOCAL".equalsIgnoreCase(mode)) {
+            log.warn("Requested mode only available in a cluster, setting to LOCAL");
+            result.put(CreateOption.MODE, "LOCAL");
+        }
+        return result;
+    }
 
-    private static final Logger log = Logger.getLogger(Caching.class);
+    private final String name;
+    protected final Options options;
+    protected EmbeddedCacheManager manager;
+
+    protected static final Logger log = Logger.getLogger(Caching.class);
 }

@@ -60,8 +60,10 @@ public class Config {
         }
     }
     void mode() {
-        // TODO: Force LOCAL mode until we figure out clustering
-        // builder.clustering().cacheMode(CacheMode.valueOf(options.getString(Caching.CreateOption.MODE).toUpperCase()));
+        String m = options.getString(Caching.CreateOption.MODE);
+        if (m != null) {
+            builder.clustering().cacheMode(CacheMode.valueOf(m.toUpperCase()));
+        }
     }
     void evict() {
         builder.eviction()

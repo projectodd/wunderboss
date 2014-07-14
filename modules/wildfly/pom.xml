@@ -42,6 +42,12 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.jboss.modules</groupId>
@@ -66,7 +72,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Dependencies>io.undertow.core,io.undertow.servlet,io.undertow.websocket,org.jboss.modules,org.wildfly.extension.undertow,org.hornetq optional,org.jboss.as.clustering.jgroups optional,org.jgroups optional</Dependencies>
+              <Dependencies>io.undertow.core,io.undertow.servlet,io.undertow.websocket,org.jboss.modules,org.wildfly.extension.undertow,org.hornetq optional,org.jboss.as.clustering.jgroups optional,org.jgroups optional,org.jboss.as.clustering.infinispan</Dependencies>
             </manifestEntries>
           </archive>
         </configuration>
