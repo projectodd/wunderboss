@@ -16,7 +16,9 @@
 
 package org.projectodd.wunderboss.wildfly;
 
+import io.undertow.servlet.api.SessionManagerFactory;
 import org.jboss.as.clustering.jgroups.ChannelFactory;
+import org.jboss.as.web.session.SessionIdentifierCodec;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.msc.inject.Injector;
@@ -62,7 +64,7 @@ public class WildFlyService implements Service<WildFlyService> {
         WunderBoss.putOption("default-context-path", getDefaultContextPath());
 
         try {
-            WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(undertowInjector.getValue()));
+            WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(this));
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our web
         }
@@ -143,6 +145,26 @@ public class WildFlyService implements Service<WildFlyService> {
         return undertowInjector;
     }
 
+    public UndertowService getUndertow() {
+        return undertowInjector.getValue();
+    }
+
+    public Injector<SessionManagerFactory> getSessionManagerFactoryInjector() {
+        return sessionManagerFactoryInjector;
+    }
+
+    public SessionManagerFactory getSessionManagerFactory() {
+        return sessionManagerFactoryInjector.getOptionalValue();
+    }
+
+    public Injector<SessionIdentifierCodec> getSessionIdentifierCodecInjector() {
+        return sessionIdentifierCodecInjector;
+    }
+
+    public SessionIdentifierCodec getSessionIdentifierCodec() {
+        return sessionIdentifierCodecInjector.getOptionalValue();
+    }
+
     public Injector<ChannelFactory> getChannelFactoryInjector() {
         return channelFactoryInjector;
     }
@@ -155,10 +177,13 @@ public class WildFlyService implements Service<WildFlyService> {
     private final ServiceRegistry registry;
     private InjectedValue<UndertowService> undertowInjector = new InjectedValue<>();
     private InjectedValue<ChannelFactory> channelFactoryInjector = new InjectedValue<>();
+    private InjectedValue<SessionManagerFactory> sessionManagerFactoryInjector = new InjectedValue<>();
+    private InjectedValue<SessionIdentifierCodec> sessionIdentifierCodecInjector = new InjectedValue<>();
     private ApplicationRunner applicationRunner;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
 
     static final ServiceName JMS_MANAGER_SERVICE_NAME = ServiceName.JBOSS.append("messaging", "default", "jms", "manager");
     static final ServiceName WEB_CACHE_MANAGER = ServiceName.JBOSS.append("infinispan", "web");
+
 }

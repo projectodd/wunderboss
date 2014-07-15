@@ -19,11 +19,10 @@ package org.projectodd.wunderboss.wildfly;
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.Web;
-import org.wildfly.extension.undertow.UndertowService;
 
 public class WildflyWebProvider implements ComponentProvider<Web> {
 
-    public WildflyWebProvider(UndertowService service) {
+    public WildflyWebProvider(WildFlyService service) {
         this.service = service;
 
     }
@@ -32,5 +31,5 @@ public class WildflyWebProvider implements ComponentProvider<Web> {
         return new WildFlyWeb(name, this.service);
     }
 
-    private final UndertowService service;
+    private final WildFlyService service;
 }

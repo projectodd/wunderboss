@@ -131,13 +131,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         // Support async servlets
         servletInfo.setAsyncSupported(true);
 
-        final DeploymentInfo servletBuilder = Servlets.deployment()
-                .setClassLoader(WunderBoss.class.getClassLoader())
-                .setContextPath(context)
-                // actually flush the response when we ask for it
-                .setIgnoreFlush(false)
-                .setDeploymentName(context)
-                .addServlet(servletInfo);
+        final DeploymentInfo servletBuilder = getDeploymentInfo(context, servletInfo);
 
         // Required for any websocket support in undertow
         final WebSocketDeploymentInfo wsInfo = new WebSocketDeploymentInfo();
@@ -175,6 +169,16 @@ public class UndertowWeb implements Web<HttpHandler> {
     @Override
     public Set<String> registeredContexts() {
         return Collections.unmodifiableSet(pathology.getActiveHandlers());
+    }
+
+    protected DeploymentInfo getDeploymentInfo(String context, ServletInfo servletInfo) {
+        return Servlets.deployment()
+            .setClassLoader(WunderBoss.class.getClassLoader())
+            .setContextPath(context)
+            // actually flush the response when we ask for it
+            .setIgnoreFlush(false)
+            .setDeploymentName(context)
+            .addServlet(servletInfo);
     }
 
     /**

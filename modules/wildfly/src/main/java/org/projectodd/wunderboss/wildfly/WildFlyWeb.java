@@ -17,12 +17,17 @@
 package org.projectodd.wunderboss.wildfly;
 
 import io.undertow.server.HttpHandler;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.SessionManagerFactory;
 import org.jboss.logging.Logger;
+import org.jboss.as.web.session.SessionIdentifierCodec;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.UndertowWeb;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.Server;
 import org.wildfly.extension.undertow.UndertowService;
+import org.wildfly.extension.undertow.session.CodecSessionConfigWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,9 +37,9 @@ import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 
 public class WildFlyWeb extends UndertowWeb {
 
-    public WildFlyWeb(String name, UndertowService undertowService) {
+    public WildFlyWeb(String name, WildFlyService service) {
         super(name, new Options<CreateOption>());
-        this.undertowService = undertowService;
+        this.wildflyService = service;
     }
 
     @Override
@@ -71,9 +76,24 @@ public class WildFlyWeb extends UndertowWeb {
         // no-op on WildFly
     }
 
+    protected DeploymentInfo getDeploymentInfo(String context, ServletInfo servletInfo) {
+        DeploymentInfo deploymentInfo = super.getDeploymentInfo(context, servletInfo);
+        SessionManagerFactory managerFactory = wildflyService.getSessionManagerFactory();
+        log.info("JC: managerFactory="+managerFactory);
+        if (managerFactory != null) {
+            deploymentInfo.setSessionManagerFactory(managerFactory);
+        }
+        SessionIdentifierCodec codec = wildflyService.getSessionIdentifierCodec();
+        log.info("JC: codec="+codec);
+        if (codec != null) {
+            deploymentInfo.setSessionConfigWrapper(new CodecSessionConfigWrapper(codec));
+        }
+        return deploymentInfo;
+    }
+
     private List<Host> getHosts() {
         List<Host> hosts = new ArrayList<Host>();
-        for (Server server : undertowService.getServers()) {
+        for (Server server : wildflyService.getUndertow().getServers()) {
             for (Host host : server.getHosts()) {
                 hosts.add(host);
             }
@@ -81,7 +101,8 @@ public class WildFlyWeb extends UndertowWeb {
         return hosts;
     }
 
-    private UndertowService undertowService;
+    private WildFlyService wildflyService;
+    
 
     private static final Logger log = Logger.getLogger(WildFlyWeb.class);
 }
