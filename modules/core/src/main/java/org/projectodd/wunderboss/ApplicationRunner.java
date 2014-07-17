@@ -45,7 +45,7 @@ public class ApplicationRunner {
         copyConfigProperties();
 
         WunderBoss.putOption("argv", args);
-        WunderBoss.putOption("root", requiredProperty(properties, "root"));
+        WunderBoss.putOption("root", properties.getProperty("root"));
         String language = requiredProperty(properties, "language");
         log.info("Initializing " + name + " as " + language);
         WunderBoss.findLanguage(language)
