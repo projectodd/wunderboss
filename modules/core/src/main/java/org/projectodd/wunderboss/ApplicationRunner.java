@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +69,7 @@ public class ApplicationRunner {
             properties.load(configStream);
         }
         Properties externalProperties = new Properties();
-        String externalPath = jarPath();
+        String externalPath = jarURL().getPath();
         if (externalPath.endsWith(".jar")) {
             externalPath = externalPath.replace(".jar", ".properties");
             log.debugf("Looking for properties file at %s", externalPath);
@@ -100,7 +102,14 @@ public class ApplicationRunner {
             }
         });
 
-        ZipInputStream zipStream = new ZipInputStream(new FileInputStream(jarPath()));
+        URLConnection jarConnection = jarURL().openConnection();
+        InputStream jarInputStream = jarConnection.getInputStream();
+        ZipInputStream zipStream;
+        if (jarInputStream instanceof ZipInputStream) {
+            zipStream = (ZipInputStream) jarInputStream;
+        } else {
+            zipStream = new ZipInputStream(jarInputStream);
+        }
         ZipEntry zipEntry = null;
         byte[] buffer = new byte[4096];
         while ((zipEntry = zipStream.getNextEntry()) != null) {
@@ -165,12 +174,16 @@ public class ApplicationRunner {
         }
     }
 
-    protected String jarPath() {
+    protected URL jarURL() {
         String mainPath = ApplicationRunner.class.getName().replace(".", "/") + ".class";
         String mainUrl = ApplicationRunner.class.getClassLoader().getResource(mainPath).toString();
         int from = "jar:file:".length();
         int to = mainUrl.indexOf("!/");
-        return mainUrl.substring(from, to);
+        try {
+            return new URL("file:///" + mainUrl.substring(from, to));
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error determining jar path", e);
+        }
     }
 
 

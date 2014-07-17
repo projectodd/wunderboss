@@ -38,13 +38,6 @@ public class WildFlyServiceActivator implements ServiceActivator {
         WildFlyService service = new WildFlyService(deploymentName, serviceActivatorContext.getServiceRegistry());
         serviceActivatorContext.getServiceTarget()
                 .addService(WildFlyService.serviceName(deploymentName), service)
-                .addDependency(UndertowService.UNDERTOW, UndertowService.class, service.getUndertowInjector())
-                .addDependency(ServiceBuilder.DependencyType.OPTIONAL, WildFlyService.JMS_MANAGER_SERVICE_NAME)
-                .addDependency(WildFlyService.WEB_CACHE_MANAGER)
-                .addDependency(ServiceBuilder.DependencyType.OPTIONAL,
-                        ChannelFactoryService.getServiceName(null),
-                        ChannelFactory.class,
-                        service.getChannelFactoryInjector())
                 .setInitialMode(ServiceController.Mode.ACTIVE)
                 .install();
     }
