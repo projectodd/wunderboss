@@ -41,7 +41,7 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public synchronized EmbeddedCacheManager manager() {
         if (this.manager == null) {
-            this.manager = new DefaultCacheManager(getGlobalConfiguration(), Config.uration(this.options));
+            this.manager = getWebCacheManager();
         }
         return this.manager;
     }
