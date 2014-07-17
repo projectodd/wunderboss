@@ -250,7 +250,7 @@ public class UndertowWeb implements Web<HttpHandler> {
     private String host;
     private Undertow undertow;
     private boolean autoStart;
-    private Pathology pathology = new Pathology();
+    protected Pathology pathology = new Pathology();
     private boolean started;
     private Map<String, Runnable> contextRegistrar = new HashMap<>();
 

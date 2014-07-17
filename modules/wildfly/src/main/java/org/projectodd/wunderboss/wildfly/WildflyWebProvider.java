@@ -21,16 +21,18 @@ import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.Web;
 import org.wildfly.extension.undertow.UndertowService;
 
+import javax.servlet.ServletContext;
+
 public class WildflyWebProvider implements ComponentProvider<Web> {
 
-    public WildflyWebProvider(UndertowService service) {
-        this.service = service;
+    public WildflyWebProvider(ServletContext servletContext) {
+        this.servletContext = servletContext;
 
     }
     @Override
     public Web create(String name, Options ignored) {
-        return new WildFlyWeb(name, this.service);
+        return new WildFlyWeb(name, this.servletContext);
     }
 
-    private final UndertowService service;
+    private final ServletContext servletContext;
 }

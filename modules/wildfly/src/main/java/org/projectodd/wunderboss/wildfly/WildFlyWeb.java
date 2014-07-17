@@ -16,49 +16,56 @@
 
 package org.projectodd.wunderboss.wildfly;
 
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.servlet.spec.ServletContextImpl;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.UndertowWeb;
-import org.wildfly.extension.undertow.Host;
-import org.wildfly.extension.undertow.Server;
-import org.wildfly.extension.undertow.UndertowService;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRegistration;
 import java.util.Map;
 
-import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
+import static org.projectodd.wunderboss.web.Web.RegisterOption.PATH;
 
 public class WildFlyWeb extends UndertowWeb {
 
-    public WildFlyWeb(String name, UndertowService undertowService) {
+    public WildFlyWeb(String name, ServletContext servletContext) {
         super(name, new Options<CreateOption>());
-        this.undertowService = undertowService;
+        this.servletContext = servletContext;
+        if (servletContext != null) {
+            addHandlerWrapper();
+        }
     }
 
     @Override
-    public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
+    public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
+        // TODO: Take mapping instead of path for servlets?
+        final String mapping = context.endsWith("/") ? context + "*" : context + "/*";
 
-        if (options.has(STATIC_DIR)) {
-            httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
-        }
-        for (Host host : getHosts()) {
-            log.info("Registered HTTP context '" + context + "' for host " + host.getName());
-            host.registerHandler(context, httpHandler);
-        }
-        // TODO: not sure how to handle vhosts here
-        final boolean replacement = register(context, null, httpHandler);
-        epilogue(httpHandler, new Runnable() {
-            public void run() {
-                for (Host host : getHosts()) {
-                    host.unregisterHandler(context);
-                }
+        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(context, servlet);
+        servletRegistration.addMapping(mapping);
+        servletRegistration.setLoadOnStartup(1);
+        servletRegistration.setAsyncSupported(true);
+
+        HttpHandler handler = new HttpHandler() {
+            @Override
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+                // Restore the relative and resolved paths we saved earlier
+                // so that the Servlet mapping will match correctly
+                final String originalRelativePath = exchange.getPathParameters().get(ORIGINAL_RELATIVE_PATH).remove();
+                final String originalResolvedPath = exchange.getPathParameters().get(ORIGINAL_RESOLVED_PATH).remove();
+                exchange.setRelativePath(originalRelativePath);
+                exchange.setResolvedPath(originalResolvedPath);
+                servletHandler.handleRequest(exchange);
             }
-        });
-        return replacement;
+        };
+        return registerHandler(handler, options);
     }
 
     @Override
@@ -71,17 +78,31 @@ public class WildFlyWeb extends UndertowWeb {
         // no-op on WildFly
     }
 
-    private List<Host> getHosts() {
-        List<Host> hosts = new ArrayList<Host>();
-        for (Server server : undertowService.getServers()) {
-            for (Host host : server.getHosts()) {
-                hosts.add(host);
+    private void addHandlerWrapper() {
+        ServletContextImpl servletContextImpl = (ServletContextImpl) servletContext;
+        // Hand off all requests to our own path matching logic
+        servletContextImpl.getDeployment().getDeploymentInfo().addInitialHandlerChainWrapper(new HandlerWrapper() {
+            @Override
+            public HttpHandler wrap(final HttpHandler handler) {
+                servletHandler = handler;
+                return new HttpHandler() {
+                    @Override
+                    public void handleRequest(HttpServerExchange exchange) throws Exception {
+                        // Save off the relative and resolved paths in case
+                        // this ends up being handled by a servlet
+                        exchange.addPathParam(ORIGINAL_RELATIVE_PATH, exchange.getRelativePath());
+                        exchange.addPathParam(ORIGINAL_RESOLVED_PATH, exchange.getResolvedPath());
+                        pathology.handler().handleRequest(exchange);
+                    }
+                };
             }
-        }
-        return hosts;
+        });
     }
 
-    private UndertowService undertowService;
+    private ServletContext servletContext;
+    private HttpHandler servletHandler;
 
+    private static final String ORIGINAL_RELATIVE_PATH = "wunderboss.wildfly.orig_relative_path";
+    private static final String ORIGINAL_RESOLVED_PATH = "wunderboss.wildfly.orig_resolved_path";
     private static final Logger log = Logger.getLogger(WildFlyWeb.class);
 }

@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.wildfly;
 
 import org.jboss.as.clustering.jgroups.ChannelFactory;
+import org.jboss.as.clustering.jgroups.subsystem.ChannelFactoryService;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.msc.inject.Injector;
@@ -38,6 +39,7 @@ import org.projectodd.wunderboss.web.Web;
 import org.wildfly.extension.undertow.UndertowService;
 
 import java.io.IOException;
+import java.net.URL;
 
 public class WildFlyService implements Service<WildFlyService> {
 
@@ -52,20 +54,15 @@ public class WildFlyService implements Service<WildFlyService> {
     public WildFlyService(String deploymentName, ServiceRegistry registry) {
         this.deploymentName = deploymentName;
         this.registry = registry;
+
+        // TODO: Get rid of these options and just make them statics here
+        WunderBoss.putOption("deployment-name", this.deploymentName);
+        WunderBoss.putOption("service-registry", this.registry);
+        WunderBoss.putOption("wildfly-service", this);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
-        WunderBoss.putOption("deployment-name", this.deploymentName);
-        WunderBoss.putOption("service-registry", this.registry);
-        WunderBoss.putOption("wildfly-service", this);
-        WunderBoss.putOption("default-context-path", getDefaultContextPath());
-
-        try {
-            WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(undertowInjector.getValue()));
-        } catch (LinkageError ignored) {
-            // Ignore - perhaps the user isn't using our web
-        }
         try {
             WunderBoss.registerComponentProvider(Messaging.class, new WildFlyMessagingProvider());
         } catch (LinkageError ignored) {
@@ -78,49 +75,10 @@ public class WildFlyService implements Service<WildFlyService> {
         }
         WunderBoss.registerComponentProvider(SingletonContext.class, new SingletonContextProvider());
         WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
-
-        applicationRunner = new ApplicationRunner(deploymentName) {
-            @Override
-            protected void updateClassPath() throws Exception {
-                super.updateClassPath();
-                ModuleUtils.addToModuleClasspath(Module.forClass(WildFlyService.class), classPathAdditions);
-            }
-            @Override
-            protected String jarPath() {
-                ServiceName contentServiceName = parentServiceName(deploymentName).append("contents");
-                VirtualFile contentFile = (VirtualFile) registry.getRequiredService(contentServiceName).getValue();
-                try {
-                    return VFSUtils.getPhysicalURL(contentFile).getPath();
-                } catch (IOException e) {
-                    log.errorf("Unable to locate deployment jar", e);
-                    return super.jarPath();
-                }
-            }
-        };
-
-        try {
-            applicationRunner.start(null);
-        } catch (Exception e) {
-            throw new StartException(e);
-        }
     }
 
     @Override
     public void stop(StopContext context) {
-        log.debug("Stopping WunderBoss application");
-        try {
-            WunderBoss.shutdownAndReset();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            if (applicationRunner != null) {
-                applicationRunner.stop();
-                applicationRunner = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -128,34 +86,8 @@ public class WildFlyService implements Service<WildFlyService> {
         return this;
     }
 
-    private String getDefaultContextPath() {
-        String path = deploymentName.replace(".jar", "");
-        if (path.equals("ROOT")) {
-            path = "/";
-        }
-        if (!path.startsWith("/")) {
-            path = "/" + path;
-        }
-        return path;
-    }
-
-    public Injector<UndertowService> getUndertowInjector() {
-        return undertowInjector;
-    }
-
-    public Injector<ChannelFactory> getChannelFactoryInjector() {
-        return channelFactoryInjector;
-    }
-
-    public ChannelFactory channelFactory() {
-        return this.channelFactoryInjector.getValue();
-    }
-
     private final String deploymentName;
     private final ServiceRegistry registry;
-    private InjectedValue<UndertowService> undertowInjector = new InjectedValue<>();
-    private InjectedValue<ChannelFactory> channelFactoryInjector = new InjectedValue<>();
-    private ApplicationRunner applicationRunner;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
 
