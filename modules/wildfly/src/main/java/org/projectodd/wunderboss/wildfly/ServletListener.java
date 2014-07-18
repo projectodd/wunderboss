@@ -14,6 +14,7 @@ import java.net.URL;
 public class ServletListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        WunderBoss.putOption("servlet-context-path", sce.getServletContext().getContextPath());
         try {
             WunderBoss.registerComponentProvider(Web.class, new WildflyWebProvider(sce.getServletContext()));
         } catch (LinkageError ignored) {
