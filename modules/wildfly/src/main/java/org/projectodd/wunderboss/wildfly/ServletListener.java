@@ -20,7 +20,7 @@ public class ServletListener implements ServletContextListener {
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our web
         }
-        applicationRunner = new ApplicationRunner("foo") {
+        applicationRunner = new ApplicationRunner(getName(sce)) {
             @Override
             protected void updateClassPath() throws Exception {
                 super.updateClassPath();
@@ -64,6 +64,14 @@ public class ServletListener implements ServletContextListener {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private String getName(ServletContextEvent sce) {
+        String result = sce.getServletContext().getServletContextName();
+        if (result == null) {
+            result = sce.getServletContext().getContextPath();
+        }
+        return result;
     }
 
     private ApplicationRunner applicationRunner;
