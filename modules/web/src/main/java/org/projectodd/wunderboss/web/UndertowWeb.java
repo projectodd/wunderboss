@@ -71,7 +71,6 @@ public class UndertowWeb implements Web<HttpHandler> {
         // TODO: Configurable non-lazy boot of Undertow
         if (!started) {
             undertow.start();
-            log.infof("Undertow listening on %s:%s", host, port);
             started = true;
         }
     }
@@ -80,7 +79,6 @@ public class UndertowWeb implements Web<HttpHandler> {
     public void stop() {
         if (started) {
             undertow.stop();
-            log.info("Undertow stopped");
             started = false;
         }
     }
@@ -91,12 +89,19 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     private void configure(Options<CreateOption> options) {
         autoStart = options.getBoolean(AUTO_START);
-        port = options.getInt(PORT);
-        host = options.getString(HOST);
-        undertow = Undertow.builder()
+        Undertow.Builder builder = (Undertow.Builder) options.get(CONFIGURATION);
+        if (builder != null) {
+            undertow = builder
+                .setHandler(Handlers.header(pathology.handler(), Headers.SERVER_STRING, "undertow"))
+                .build();
+        } else {
+            int port = options.getInt(PORT);
+            String host = options.getString(HOST);
+            undertow = Undertow.builder()
                 .addHttpListener(port, host)
                 .setHandler(Handlers.header(pathology.handler(), Headers.SERVER_STRING, "undertow"))
                 .build();
+        }
     }
 
     @Override
@@ -246,8 +251,6 @@ public class UndertowWeb implements Web<HttpHandler> {
     }
 
     private final String name;
-    private int port;
-    private String host;
     private Undertow undertow;
     private boolean autoStart;
     protected Pathology pathology = new Pathology();

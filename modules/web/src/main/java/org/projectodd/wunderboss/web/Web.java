@@ -28,6 +28,7 @@ public interface Web<S> extends Component {
         public static final CreateOption HOST       = opt("host", "localhost", CreateOption.class);
         public static final CreateOption PORT       = opt("port", 8080, CreateOption.class);
         public static final CreateOption AUTO_START = opt("auto_start", true, CreateOption.class);
+        public static final CreateOption CONFIGURATION = opt("configuration", CreateOption.class);
     }
 
     class RegisterOption extends Option {
