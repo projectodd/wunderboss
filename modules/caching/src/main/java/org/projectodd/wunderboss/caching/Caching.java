@@ -35,8 +35,9 @@ public interface Caching extends Component {
         public static final CreateOption IDLE          = opt("idle",          -1,           CreateOption.class);
         public static final CreateOption TTL           = opt("ttl",           -1,           CreateOption.class);
     }
-    Cache find(String name);
     Cache findOrCreate(String name, Map<CreateOption,Object> options);
-    Cache encodedWith(Codec codec, Cache cache);
+    Cache find(String name);
+    Cache withCodec(Cache cache, Codec codec);
+    Cache withExpiration(Cache cache, long ttl, long idle);
     boolean stop(String name);
 }

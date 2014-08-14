@@ -81,8 +81,13 @@ public class InfinispanCaching implements Caching {
     }
 
     @Override
-    public Cache encodedWith(Codec codec, Cache cache) {
-        return new EncodedCache(cache, codec);
+    public Cache withCodec(Cache cache, Codec codec) {
+        return (codec==null) ? cache : new CacheWithCodec(cache, codec);
+    }
+
+    @Override
+    public Cache withExpiration(Cache cache, long ttl, long idle) {
+        return new CacheWithExpiration(cache, ttl, idle);
     }
 
     public synchronized EmbeddedCacheManager manager() {

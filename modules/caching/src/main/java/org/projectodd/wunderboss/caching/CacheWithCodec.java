@@ -29,9 +29,9 @@ import java.util.HashSet;
 import java.util.ArrayList;
 
 
-public class EncodedCache extends AbstractDelegatingCache {
+public class CacheWithCodec extends AbstractDelegatingCache {
 
-    public EncodedCache(Cache cache, Codec codec) {
+    public CacheWithCodec(Cache cache, Codec codec) {
         super(cache);
         this.codec = codec;
     }
