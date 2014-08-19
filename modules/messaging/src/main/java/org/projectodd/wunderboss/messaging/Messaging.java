@@ -46,8 +46,12 @@ public interface Messaging extends Component {
 
     class CreateConnectionOption extends Option {
         public static final CreateConnectionOption HOST = opt("host", CreateConnectionOption.class);
-        public static final CreateConnectionOption PORT = opt("port", CreateConnectionOption.class);
+        public static final CreateConnectionOption PORT = opt("port", 5445, CreateConnectionOption.class);
         public static final CreateConnectionOption CLIENT_ID = opt("client_id", CreateConnectionOption.class);
+        public static final CreateConnectionOption USERNAME = opt("username", CreateConnectionOption.class);
+        public static final CreateConnectionOption PASSWORD = opt("password", CreateConnectionOption.class);
+        public static final CreateConnectionOption REMOTE_TYPE = opt("remote_type", CreateConnectionOption.class);
+
         /**
          * If true, and xa connection is returned.
          */

@@ -16,6 +16,7 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
+import org.hornetq.api.core.HornetQNotConnectedException;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.jms.HornetQJMSClient;
 import org.hornetq.api.jms.JMSFactoryType;
@@ -39,6 +40,8 @@ import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSContext;
+import javax.jms.JMSException;
+import javax.jms.JMSRuntimeException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +50,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class HornetQMessaging implements Messaging {
+
+    public static final String REMOTE_TYPE_WILDFLY = "hornetq-wildfly";
+    public static final String REMOTE_TYPE_STANDALONE = "hornetq-standalone";
 
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
@@ -138,36 +144,53 @@ public class HornetQMessaging implements Messaging {
         return this.defaultConnection;
     }
 
+    private JMSContext createContext(ConnectionFactory cf, Options<CreateConnectionOption> options) {
+        if (options.has(CreateConnectionOption.USERNAME)) {
+            return cf.createContext(options.getString(CreateConnectionOption.USERNAME),
+                                    options.getString(CreateConnectionOption.PASSWORD));
+        } else {
+            return cf.createContext();
+        }
+    }
+
+    private ConnectionFactory createHQConnectionFactory(final Options<CreateConnectionOption> options) {
+        //TODO: possibly cache the remote cf's?
+        TransportConfiguration config =
+                new TransportConfiguration("org.hornetq.core.remoting.impl.netty.NettyConnectorFactory",
+                        new HashMap() {{
+                            put("host", options.getString(CreateConnectionOption.HOST));
+                            put("port", options.getInt(CreateConnectionOption.PORT));
+                            put("http-upgrade-enabled",
+                                    REMOTE_TYPE_WILDFLY.equals(options.getString(CreateConnectionOption.REMOTE_TYPE)));
+                        }});
+        HornetQConnectionFactory hornetQcf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
+
+        hornetQcf.setReconnectAttempts(options.getInt(CreateConnectionOption.RECONNECT_ATTEMPTS));
+        hornetQcf.setRetryInterval(options.getLong(CreateConnectionOption.RECONNECT_RETRY_INTERVAL));
+        hornetQcf.setRetryIntervalMultiplier(options.getDouble(CreateConnectionOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
+        hornetQcf.setMaxRetryInterval(options.getLong(CreateConnectionOption.RECONNECT_MAX_RETRY_INTERVAL));
+
+        return hornetQcf;
+    }
+
     @Override
     public Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception {
         final Options<CreateConnectionOption> opts = new Options<>(options);
         ConnectionFactory cf;
+        JMSContext context;
+
         if (opts.has(CreateConnectionOption.HOST)) {
-            //TODO: possibly cache the remote cf's?
-            TransportConfiguration config =
-                    new TransportConfiguration("org.hornetq.core.remoting.impl.netty.NettyConnectorFactory",
-                                               new HashMap() {{
-                                                   put("host", opts.getString(CreateConnectionOption.HOST));
-                                                   put("port", opts.getInt(CreateConnectionOption.PORT, 5445));
-                                               }});
-            HornetQConnectionFactory hornetQcf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
-
-            hornetQcf.setReconnectAttempts(opts.getInt(CreateConnectionOption.RECONNECT_ATTEMPTS));
-            hornetQcf.setRetryInterval(opts.getLong(CreateConnectionOption.RECONNECT_RETRY_INTERVAL));
-            hornetQcf.setRetryIntervalMultiplier(opts.getDouble(CreateConnectionOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
-            hornetQcf.setMaxRetryInterval(opts.getLong(CreateConnectionOption.RECONNECT_MAX_RETRY_INTERVAL));
-
-            cf = hornetQcf;
+                context = createContext(createHQConnectionFactory(opts), opts);
         }  else {
             start();
+
             if (opts.getBoolean(CreateConnectionOption.XA)) {
             cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
             } else {
                 cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
             }
+            context = createContext(cf, opts);
         }
-
-        JMSContext context = cf.createContext();
 
         if (opts.has(CreateConnectionOption.CLIENT_ID)) {
             context.setClientID(opts.getString(CreateConnectionOption.CLIENT_ID));
