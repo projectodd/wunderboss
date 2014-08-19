@@ -71,8 +71,7 @@ public class ClojureLanguage implements Language {
                 }
             });
         } catch (Throwable e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException(e);
         }
     }
 
