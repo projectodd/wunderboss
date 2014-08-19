@@ -51,8 +51,8 @@ import java.util.Set;
 
 public class HornetQMessaging implements Messaging {
 
-    public static final String REMOTE_TYPE_WILDFLY = "hornetq-wildfly";
-    public static final String REMOTE_TYPE_STANDALONE = "hornetq-standalone";
+    public static final String REMOTE_TYPE_WILDFLY = "hornetq_wildfly";
+    public static final String REMOTE_TYPE_STANDALONE = "hornetq_standalone";
 
     public HornetQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
