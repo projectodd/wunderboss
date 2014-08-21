@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 
 import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
 
@@ -127,7 +128,7 @@ public class QuartzScheduling implements Scheduling {
 
     @Override
     public Set<String> scheduledJobs() {
-        return Collections.unmodifiableSet(this.currentJobs.keySet());
+        return Collections.unmodifiableSet(new HashSet<String>(this.currentJobs.keySet()));
     }
 
     public synchronized JobKey lookupJob(String name) {
