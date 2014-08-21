@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+  <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%date{HH:mm:ss.SSS} %-5level [%logger] \(%thread\) %message%n</pattern>
+    </encoder>
+  </appender>
+  <logger name="org.quartz.simpl.RAMJobStore" level="WARN"/>
+  <logger name="org.quartz.impl.DirectSchedulerFactory" level="WARN"/>
+  <logger name="org.quartz.core.SchedulerSignalerImpl" level="WARN"/>
+  <logger name="org.xnio" level="WARN"/>
+  <root level="INFO">
+    <appender-ref ref="Console"/>
+  </root>
+</configuration>

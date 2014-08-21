@@ -16,9 +16,8 @@
 
 package org.projectodd.wunderboss;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -126,12 +125,24 @@ public class WunderBoss {
         return provider;
     }
 
+
     public static Logger logger(String name) {
-        return Logger.getLogger(name);
+        return LoggerFactory.getLogger(name);
+    }
+
+    public static Logger logger(Class clazz) {
+        return LoggerFactory.getLogger(clazz);
     }
 
     public static void setLogLevel(String level) {
-        LogManager.getRootLogger().setLevel(Level.toLevel(level));
+        Logger logger = logger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        try {
+            logger.getClass().getClassLoader().loadClass("ch.qos.logback.classic.Logger");
+            ((ch.qos.logback.classic.Logger)logger)
+                    .setLevel(ch.qos.logback.classic.Level.toLevel(level));
+        } catch (ClassNotFoundException e) {
+            log.error("Failed to change root logging level - only supported when using logback");
+        }
     }
 
     public static void updateClassPath(List<URL> classpath) {
@@ -174,6 +185,6 @@ public class WunderBoss {
     private static final Map<Class, ComponentProvider> componentProviders = new HashMap<>();
     private static final Map<String, Component> components = new HashMap<>();
     private static DynamicClassLoader classLoader;
-    private static final Logger log = Logger.getLogger(WunderBoss.class);
+    private static final Logger log = logger(WunderBoss.class);
 
 }

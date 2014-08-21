@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.scheduling;
 
-import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.singleton.SingletonContext;
 import org.projectodd.wunderboss.WunderBoss;
@@ -31,6 +30,7 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
+import org.slf4j.Logger;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -200,5 +200,5 @@ public class QuartzScheduling implements Scheduling {
     private Scheduler scheduler;
     private final Map<String, JobKey> currentJobs = new HashMap<>();
 
-    private static final Logger log = Logger.getLogger(Scheduling.class);
+    private static final Logger log = WunderBoss.logger(Scheduling.class);
 }

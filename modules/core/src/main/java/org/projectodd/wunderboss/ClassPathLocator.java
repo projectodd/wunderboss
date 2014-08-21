@@ -16,7 +16,9 @@
 
 package org.projectodd.wunderboss;
 
-import org.jboss.logging.Logger;
+
+
+import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -84,5 +86,5 @@ public class ClassPathLocator implements Locator {
     }
 
     private ClassLoader loader;
-    private static final Logger log = Logger.getLogger(ClassPathLocator.class);
+    private static final Logger log = WunderBoss.logger(ClassPathLocator.class);
 }

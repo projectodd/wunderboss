@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.ruby;
 
-import org.jboss.logging.Logger;
 import org.jcodings.specific.USASCIIEncoding;
 import org.jruby.Ruby;
 import org.jruby.RubyHash;
@@ -25,6 +24,8 @@ import org.jruby.RubyString;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.util.ByteList;
+import org.projectodd.wunderboss.WunderBoss;
+import org.slf4j.Logger;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -100,7 +101,7 @@ public class RubyHelper {
         try {
             evalScriptlet( ruby, "require %q(" + requirement + ")" );
         } catch (Throwable t) {
-            log.errorf( t, "Unable to require file: %s", requirement );
+            log.error("Unable to require file: " + requirement, t );
         }
     }
 
@@ -124,7 +125,7 @@ public class RubyHelper {
         } catch (Throwable t) {
             success = false;
             if (logErrors) {
-                log.debugf( t, "Error encountered. Unable to require file: %s", requirement );
+                log.debug( "Error encountered. Unable to require file: " + requirement, t );
             }
         }
         return success;
@@ -134,7 +135,7 @@ public class RubyHelper {
         try {
             evalScriptlet( ruby, "require %q(" + requirement + ") unless defined?(" + constant + ")" );
         } catch (Throwable t) {
-            log.errorf( t, "Unable to require file: %s", requirement );
+            log.error("Unable to require file: " + requirement, t);
         }
     }
 
@@ -149,7 +150,7 @@ public class RubyHelper {
             return ruby.evalScriptlet( script );
         } catch (Exception e) {
             if (logErrors)
-                log.errorf( e, "Error during evaluation: %s", script );
+                log.error("Error during evaluation: " + script, e);
             throw e;
         }
     }
@@ -158,7 +159,7 @@ public class RubyHelper {
         try {
             return ruby.executeScript( script, location );
         } catch (Exception e) {
-            log.errorf( e, "Error during execution: %s", script );
+            log.error("Error during execution: " + script, e);
             throw e;
         }
     }
@@ -177,7 +178,7 @@ public class RubyHelper {
             try {
                 result = (IRubyObject) JavaEmbedUtils.invokeMethod( ruby, rubyClass, "new", parameters, IRubyObject.class );
             } catch (Exception e) {
-                log.errorf( e, "Unable to instantiate: %s", className );
+                log.error("Unable to instantiate: " + className, e);
                 throw e;
             }
         }
@@ -212,6 +213,6 @@ public class RubyHelper {
         return RubyString.newUnicodeString(runtime, string);
     }
 
-    private static final Logger log = Logger.getLogger(RubyHelper.class);
+    private static final Logger log = WunderBoss.logger(RubyHelper.class);
 }
 
