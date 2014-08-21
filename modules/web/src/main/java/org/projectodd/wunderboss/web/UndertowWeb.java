@@ -29,6 +29,10 @@ import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.server.session.SessionManager;
+import io.undertow.server.session.InMemorySessionManager;
+import io.undertow.server.session.SessionCookieConfig;
+import io.undertow.server.session.SessionAttachmentHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -60,6 +64,7 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     public UndertowWeb(String name, Options<CreateOption> opts) {
         this.name = name;
+        this.sessionManager = new InMemorySessionManager(name+"session-manager", -1);
         configure(opts);
     }
 
@@ -109,6 +114,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
 
+        httpHandler = wrapWithSessionHandler(httpHandler);
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
@@ -194,6 +200,10 @@ public class UndertowWeb implements Web<HttpHandler> {
         return pathology.add(path, vhosts, handler);
     }
 
+    protected HttpHandler wrapWithSessionHandler(HttpHandler handler) {
+        return new SessionAttachmentHandler(handler, sessionManager, new SessionCookieConfig());
+    }
+
     protected HttpHandler wrapWithStaticHandler(HttpHandler baseHandler, String path) {
         // static path is given relative to application root
         if (!new File(path).isAbsolute()) {
@@ -253,6 +263,7 @@ public class UndertowWeb implements Web<HttpHandler> {
     private final String name;
     private Undertow undertow;
     private boolean autoStart;
+    private SessionManager sessionManager;
     protected Pathology pathology = new Pathology();
     private boolean started;
     private Map<String, Runnable> contextRegistrar = new HashMap<>();
