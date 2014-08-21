@@ -31,10 +31,9 @@ public class WildFlyMessaging extends HornetQMessaging {
     public WildFlyMessaging(String name, Options<CreateOption> options) {
         super(name, options);
         try {
-            context = new InitialContext();
+            this.context = new InitialContext();
         } catch (NamingException ex) {
-            // TODO: something better
-            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
     }
 
@@ -76,11 +75,10 @@ public class WildFlyMessaging extends HornetQMessaging {
 
                 return lookupJNDIWithRetry(jndiName, attempt + 1);
             }
-            // TODO: something better
-            ex.printStackTrace();
+
+            throw new RuntimeException(ex);
         }
-        return null;
     }
 
-    private InitialContext context;
+    private final InitialContext context;
 }

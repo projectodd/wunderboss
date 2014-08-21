@@ -79,7 +79,6 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
             try {
                 this.session.close();
                 this.consumer.close();
-                //TODO: do we need to close the hornetQSession and clientConsumer?
             } catch (Exception e) {
                 log.error("Failed to stop handler: ", e);
             }

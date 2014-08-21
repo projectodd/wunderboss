@@ -67,7 +67,6 @@ public interface Messaging extends Component {
                 opt("reconnect_attempts", 0, CreateConnectionOption.class);
     }
 
-    //TODO: remote connections?
     Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
 
     Connection defaultConnection() throws Exception;
