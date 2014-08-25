@@ -13,12 +13,24 @@
 
   <packaging>pom</packaging>
 
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
   <developers>
     <developer>
       <id>wunderboss-team</id>
       <name>The WunderBoss Team</name>
     </developer>
   </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:projectodd/wunderboss-release.git</connection>
+    <developerConnection>scm:git:git@github.com:projectodd/wunderboss-release.git</developerConnection>
+    <url>https://github.com/projectodd/wunderboss/</url>
+  </scm>
 
   <licenses>
     <license>
@@ -47,6 +59,19 @@
       <url>http://clojars.org/repo/</url>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>sonatype-nexus-staging</id>
+      <name>Nexus Staging Repo</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+    <snapshotRepository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Nexus Snapshot Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <profiles>
     <profile>
