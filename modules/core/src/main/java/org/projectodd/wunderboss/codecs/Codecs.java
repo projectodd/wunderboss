@@ -16,10 +16,7 @@
 
 package org.projectodd.wunderboss.codecs;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Codecs {
 
@@ -38,8 +35,8 @@ public class Codecs {
         return codecs.get(contentType);
     }
 
-    public Collection<Codec> codecs() {
-        return Collections.unmodifiableCollection(codecs.values());
+    public Set<Codec> codecs() {
+        return Collections.unmodifiableSet(new HashSet<>(codecs.values()));
     }
 
     private final Map<String, Codec> codecs = new HashMap<>();
