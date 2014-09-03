@@ -16,6 +16,7 @@
 
 package org.projectodd.wunderboss;
 
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public class WunderBoss {
         locator = new ClassPathLocator(classLoader);
         options = new Options<>();
         options.put("root", ".");
+        configureLogback();
     }
 
     private WunderBoss() {}
@@ -125,7 +127,6 @@ public class WunderBoss {
         return provider;
     }
 
-
     public static Logger logger(String name) {
         return LoggerFactory.getLogger(name);
     }
@@ -138,10 +139,20 @@ public class WunderBoss {
         Logger logger = logger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         try {
             logger.getClass().getClassLoader().loadClass("ch.qos.logback.classic.Logger");
-            ((ch.qos.logback.classic.Logger)logger)
-                    .setLevel(ch.qos.logback.classic.Level.toLevel(level));
+            LogbackUtil.setLogLevel(logger, level);
         } catch (ClassNotFoundException e) {
             log.error("Failed to change root logging level - only supported when using logback");
+        }
+    }
+
+    private static void configureLogback() {
+        ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
+        ClassLoader cl = loggerFactory.getClass().getClassLoader();
+        try {
+            cl.loadClass("ch.qos.logback.classic.LoggerContext");
+            LogbackUtil.configureLogback(loggerFactory);
+        } catch (ClassNotFoundException ignored) {
+            // we're not using logback
         }
     }
 
