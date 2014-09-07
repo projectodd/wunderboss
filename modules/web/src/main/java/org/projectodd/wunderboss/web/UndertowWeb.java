@@ -40,15 +40,14 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.util.Headers;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
-import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
+import org.slf4j.Logger;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -122,7 +121,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         if (autoStart) {
             start();
         }
-        log.infof("Registered web context %s", context);
+        log.info("Registered web context %s", context);
 
         return replacement;
     }
@@ -210,10 +209,10 @@ public class UndertowWeb implements Web<HttpHandler> {
             path = WunderBoss.options().get("root", "").toString() + File.separator + path;
         }
         if (!new File(path).exists()) {
-            log.debugf("Not adding static handler for nonexistent directory %s", path);
+            log.debug("Not adding static handler for nonexistent directory %s", path);
             return baseHandler;
         }
-        log.debugf("Adding static handler for %s", path);
+        log.debug("Adding static handler for %s", path);
         final ResourceManager resourceManager =
                 new CachingResourceManager(1000, 1L, null,
                                            new FileResourceManager(new File(path), 1 * 1024 * 1024), 250);
@@ -268,7 +267,7 @@ public class UndertowWeb implements Web<HttpHandler> {
     private boolean started;
     private Map<String, Runnable> contextRegistrar = new HashMap<>();
 
-    private static final Logger log = Logger.getLogger(Web.class);
+    private static final Logger log = WunderBoss.logger(Web.class);
 
     public static class Pathology {
 
