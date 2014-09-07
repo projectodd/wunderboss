@@ -29,9 +29,6 @@
             Connection$CreateSessionOption]
            java.util.concurrent.TimeUnit))
 
-(System/setProperty "logging.configuration" "file:///home/tcrawley/tmp/hornetq-logging.properties")
-(System/setProperty "java.util.logging.manager" "org.jboss.logmanager.LogManager")
-
 (def default (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
 
 (defn create-opts-fn [class]
