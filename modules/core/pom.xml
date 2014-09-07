@@ -27,6 +27,14 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
 
+    <!--
+        Undertow and HornetQ both require jboss-logging, so we depend on it here
+        to make it easier for TorqueBox to have one copy in its core gem.
+    -->
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

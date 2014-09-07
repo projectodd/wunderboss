@@ -44,6 +44,7 @@
   <properties>
     <version.slf4j>1.7.5</version.slf4j>
     <version.logback>1.1.2</version.logback>
+    <version.jboss-logging>3.1.4.GA</version.jboss-logging>
     <version.junit>4.11</version.junit>
     <version.clojure>1.6.0</version.clojure>
     <version.lein>2.3.4</version.lein>
@@ -107,6 +108,12 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${version.logback}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${version.jboss-logging}</version>
       </dependency>
 
       <dependency>
