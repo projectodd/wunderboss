@@ -121,7 +121,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         if (autoStart) {
             start();
         }
-        log.info("Registered web context %s", context);
+        log.info("Registered web context {}", context);
 
         return replacement;
     }
@@ -159,8 +159,8 @@ public class UndertowWeb implements Web<HttpHandler> {
         try {
             HttpHandler handler = manager.start();
             replacement = registerHandler(handler, options);
-            epilogue(handler, new Runnable() { 
-                    public void run() { 
+            epilogue(handler, new Runnable() {
+                    public void run() {
                         try {
                             manager.stop();
                             manager.undeploy();
@@ -209,10 +209,10 @@ public class UndertowWeb implements Web<HttpHandler> {
             path = WunderBoss.options().get("root", "").toString() + File.separator + path;
         }
         if (!new File(path).exists()) {
-            log.debug("Not adding static handler for nonexistent directory %s", path);
+            log.debug("Not adding static handler for nonexistent directory {}", path);
             return baseHandler;
         }
-        log.debug("Adding static handler for %s", path);
+        log.debug("Adding static handler for {}", path);
         final ResourceManager resourceManager =
                 new CachingResourceManager(1000, 1L, null,
                                            new FileResourceManager(new File(path), 1 * 1024 * 1024), 250);
@@ -340,5 +340,5 @@ public class UndertowWeb implements Web<HttpHandler> {
         private Map<String, HttpHandler> activeHandlers = new HashMap<>();
         private Map<HttpHandler, Runnable> epilogues = new HashMap<>();
     }
-        
+
 }

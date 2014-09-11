@@ -62,20 +62,20 @@ public class ApplicationRunner {
 
     protected void loadProperties() throws Exception {
         String internalPath = "META-INF/app.properties";
-        log.debug("Looking for properties file at %s", internalPath);
+        log.debug("Looking for properties file at {}", internalPath);
         InputStream configStream = WunderBoss.classLoader().getResourceAsStream(internalPath);
         if (configStream != null) {
-            log.debug("Found properties file %s", internalPath);
+            log.debug("Found properties file {}", internalPath);
             properties.load(configStream);
         }
         Properties externalProperties = new Properties();
         String externalPath = jarURL().getPath();
         if (externalPath.endsWith(".jar")) {
             externalPath = externalPath.replace(".jar", ".properties");
-            log.debug("Looking for properties file at %s", externalPath);
+            log.debug("Looking for properties file at {}", externalPath);
             File externalFile = new File(externalPath);
             if (externalFile.exists()) {
-                log.debug("Found properties file %s", externalPath);
+                log.debug("Found properties file {}", externalPath);
                 externalProperties.load(new FileInputStream(externalFile));
                 properties.putAll(externalProperties);
             }
