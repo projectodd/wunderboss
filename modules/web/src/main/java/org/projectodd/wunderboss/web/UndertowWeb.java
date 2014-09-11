@@ -110,6 +110,10 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     @Override
     public boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts) {
+        return registerHandler(httpHandler, opts, null);
+    }
+
+    protected boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts, Runnable cleanup) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
 
@@ -118,6 +122,9 @@ public class UndertowWeb implements Web<HttpHandler> {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
         final boolean replacement = pathology.add(context, options.getList(VHOSTS), httpHandler);
+        if (cleanup != null) {
+            pathology.epilogue(httpHandler, cleanup);
+        }
         if (autoStart) {
             start();
         }
@@ -158,8 +165,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         boolean replacement = false;
         try {
             HttpHandler handler = manager.start();
-            replacement = registerHandler(handler, options);
-            epilogue(handler, new Runnable() {
+            replacement = registerHandler(handler, options, new Runnable() {
                     public void run() {
                         try {
                             manager.stop();
@@ -185,13 +191,6 @@ public class UndertowWeb implements Web<HttpHandler> {
     @Override
     public Set<String> registeredContexts() {
         return Collections.unmodifiableSet(pathology.getActiveHandlers());
-    }
-
-    /**
-     * Associate a resource cleanup function with a handler
-     */
-    protected void epilogue(HttpHandler handler, final Runnable cleanup) {
-        pathology.epilogue(handler, cleanup);
     }
 
     // For the WF subclass
