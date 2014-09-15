@@ -243,15 +243,18 @@ public class HornetQMessaging implements Messaging {
 
         return new HornetQTopic(topic, this);
     }
+    protected String jndiName(String name, String type) {
+        return ("java:/jms/" + type + '/' + name).replace("//", "/_/");
+    }
 
     protected javax.jms.Topic createTopic(String name) throws Exception {
-        this.jmsServerManager.createTopic(false, name, "java:/jms/topic/" + name);
+        this.jmsServerManager.createTopic(false, name, jndiName(name, "topic"));
 
         return lookupTopic(name);
     }
 
     protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
-        this.jmsServerManager.createQueue(false, name, selector, durable, "java:/jms/queue/" + name);
+        this.jmsServerManager.createQueue(false, name, selector, durable, jndiName(name, "queue"));
 
         return lookupQueue(name);
     }
