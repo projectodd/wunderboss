@@ -30,9 +30,6 @@
 (defn service-registry []
   (get (options) "service-registry"))
 
-(defn in-container? []
-  (not (nil? (service-registry))))
-
 (try
   (require '[dynapath.dynamic-classpath :as dp])
   (eval '(let [base-url-classloader
@@ -51,12 +48,12 @@
            ;; want the DynamicClassLoader to be used instead. Anything added
            ;; to the AppClassLoader won't be seen, since JBoss Modules is
            ;; between the ACL and the app.
-           (when (in-container?)
+           (when (WunderBoss/inContainer)
              (extend sun.misc.Launcher$AppClassLoader
                dp/DynamicClasspath
                (assoc base-url-classloader
                  :can-add? (constantly false))))))
   (catch Exception _))
 
-(if-not (in-container?)
+(if-not (WunderBoss/inContainer)
   (.addShutdownHook (Runtime/getRuntime) (Thread. exit!)))

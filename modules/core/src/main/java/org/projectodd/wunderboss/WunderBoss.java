@@ -127,6 +127,14 @@ public class WunderBoss {
         return provider;
     }
 
+    public static boolean inContainer() {
+        return inWildFly();
+    }
+
+    public static boolean inWildFly() {
+        return options().containsKey("service-registry");
+    }
+
     public static Logger logger(String name) {
         return LoggerFactory.getLogger(name);
     }
