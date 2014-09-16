@@ -30,6 +30,9 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
+import org.quartz.simpl.RAMJobStore;
+import org.quartz.simpl.SimpleThreadPool;
+import org.quartz.spi.JobStore;
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -56,7 +59,12 @@ public class QuartzScheduling implements Scheduling {
             System.setProperty("org.terracotta.quartz.skipUpdateCheck", "true");
             DirectSchedulerFactory factory = DirectSchedulerFactory.getInstance();
 
-            factory.createVolatileScheduler(numThreads);
+            SimpleThreadPool threadPool = new SimpleThreadPool(this.numThreads,
+                                                               Thread.NORM_PRIORITY);
+            threadPool.setThreadNamePrefix("scheduling-worker");
+            threadPool.initialize();
+            factory.createScheduler(threadPool, new RAMJobStore());
+
             this.scheduler = factory.getScheduler();
             this.scheduler.start();
             started = true;
