@@ -43,6 +43,9 @@ import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.slf4j.Logger;
+import org.xnio.OptionMap;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -158,6 +161,17 @@ public class UndertowWeb implements Web<HttpHandler> {
 
         // Required for any websocket support in undertow
         final WebSocketDeploymentInfo wsInfo = new WebSocketDeploymentInfo();
+
+        // without a worker, undertow complains with:
+        // UT026009: XNIO worker was not set on WebSocketDeploymentInfo, web socket client will not be available.
+        // so we give it a basic one, since we can't seem to get one from elsewhere.
+        // TODO: figure out if this is really the right thing to do
+        try {
+            wsInfo.setWorker(Xnio.getInstance().createWorker(OptionMap.create(org.xnio.Options.THREAD_DAEMON, true)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         servletBuilder.addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, wsInfo);
 
         final DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
