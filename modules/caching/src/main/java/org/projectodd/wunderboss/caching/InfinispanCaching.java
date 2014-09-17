@@ -44,6 +44,11 @@ public class InfinispanCaching implements Caching {
     }
 
     @Override
+    public boolean isRunning() {
+        return manager().getStatus().allowInvocations();
+    }
+
+    @Override
     public String name() {
         // manager().getName() ?
         return this.name;

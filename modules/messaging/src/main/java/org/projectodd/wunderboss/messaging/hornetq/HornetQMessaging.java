@@ -116,6 +116,11 @@ public class HornetQMessaging implements Messaging {
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return started;
+    }
+
     protected void closeDefaultConnection() throws Exception {
         if (this.defaultConnection != null) {
             this.defaultConnection.close();
@@ -185,7 +190,7 @@ public class HornetQMessaging implements Messaging {
             start();
 
             if (opts.getBoolean(CreateConnectionOption.XA)) {
-            cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
+                cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
             } else {
                 cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
             }

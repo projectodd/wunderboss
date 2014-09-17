@@ -81,6 +81,11 @@ public class QuartzScheduling implements Scheduling {
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return started;
+    }
+
     public Scheduler scheduler() {
         return this.scheduler;
     }

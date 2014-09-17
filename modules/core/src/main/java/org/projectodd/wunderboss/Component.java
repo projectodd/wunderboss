@@ -22,5 +22,7 @@ public interface Component {
 
     void stop() throws Exception;
 
+    boolean isRunning();
+
     String name();
 }

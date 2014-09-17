@@ -58,6 +58,11 @@ public class SimpleContext implements SingletonContext, ClusterChangeCallback {
     }
 
     @Override
+    public boolean isRunning() {
+        return this.clusterParticipant != null;
+    }
+
+    @Override
     public String name() {
         return this.name;
     }

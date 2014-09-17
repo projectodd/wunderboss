@@ -26,6 +26,7 @@ import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
 import javax.jms.Message;
 import javax.jms.MessageListener;
+import javax.transaction.xa.XAResource;
 
 public class JMSListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
     public JMSListener(MessageHandler handler,

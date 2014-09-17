@@ -34,6 +34,11 @@ public class TestComponent implements Component {
     }
 
     @Override
+    public boolean isRunning() {
+        return registered && !stopped;
+    }
+
+    @Override
     public String name() {
         return this.name;
     }

@@ -90,6 +90,11 @@ public class UndertowWeb implements Web<HttpHandler> {
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return started;
+    }
+
     public Undertow undertow() {
         return this.undertow;
     }

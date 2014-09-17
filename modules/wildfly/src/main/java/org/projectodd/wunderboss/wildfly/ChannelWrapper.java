@@ -62,6 +62,11 @@ public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, C
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return this.channel != null;
+    }
+
     public Channel channel() {
         if (this.channel == null) {
             try {
