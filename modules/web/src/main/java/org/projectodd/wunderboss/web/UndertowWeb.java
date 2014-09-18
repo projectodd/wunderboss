@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.UUID;
 
 import static org.projectodd.wunderboss.web.Web.CreateOption.*;
 import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
@@ -161,7 +162,7 @@ public class UndertowWeb implements Web<HttpHandler> {
                 .setContextPath(context)
                 // actually flush the response when we ask for it
                 .setIgnoreFlush(false)
-                .setDeploymentName(context)
+                .setDeploymentName(UUID.randomUUID().toString())
                 .addServlet(servletInfo);
 
         // Required for any websocket support in undertow
