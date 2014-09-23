@@ -55,5 +55,5 @@
                  :can-add? (constantly false))))))
   (catch Exception _))
 
-(if-not (WunderBoss/inContainer)
+(when-not (WunderBoss/inContainer)
   (.addShutdownHook (Runtime/getRuntime) (Thread. exit!)))

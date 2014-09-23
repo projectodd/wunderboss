@@ -10,6 +10,10 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Collections;
 
 public class ServletListener implements ServletContextListener {
     @Override
@@ -62,6 +66,19 @@ public class ServletListener implements ServletContextListener {
                 applicationRunner = null;
             }
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+        /*
+         Clear any drivers the app registered to prevent permgen leaks
+         getDrivers will only return drivers we have the right to see, so
+         this shouldn't affect drivers registered by other apps.
+         see IMMUTANT-417
+         */
+        try {
+            for(Driver driver : Collections.list(DriverManager.getDrivers())) {
+                DriverManager.deregisterDriver(driver);
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
