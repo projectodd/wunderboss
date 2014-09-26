@@ -100,15 +100,15 @@ public class WunderBoss {
     }
 
     public static void shutdownAndReset() throws Exception {
-        for (Component component : components.values()) {
-            component.stop();
-        }
-        components.clear();
-
         for (Language language : languages.values()) {
             language.shutdown();
         }
         languages.clear();
+
+        for (Component component : components.values()) {
+            component.stop();
+        }
+        components.clear();
     }
 
     private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> iface, boolean throwIfMissing) {
