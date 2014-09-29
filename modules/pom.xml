@@ -21,6 +21,7 @@
     <module>scheduling</module>
     <module>caching</module>
     <module>web</module>
+    <module>transactions</module>
     <module>wildfly</module>
 
     <module>ruby</module>
