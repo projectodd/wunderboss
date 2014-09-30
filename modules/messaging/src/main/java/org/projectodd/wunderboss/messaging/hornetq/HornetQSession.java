@@ -37,12 +37,16 @@ public class HornetQSession implements Session {
 
     @Override
     public void commit() {
-        this.context.commit();
+        if (this.context.getTransacted()) {
+            this.context.commit();
+        }
     }
 
     @Override
     public void rollback() {
-        this.context.rollback();
+        if (this.context.getTransacted()) {
+            this.context.rollback();
+        }
     }
 
     @Override

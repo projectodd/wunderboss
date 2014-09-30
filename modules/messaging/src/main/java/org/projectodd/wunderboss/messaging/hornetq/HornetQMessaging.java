@@ -39,7 +39,9 @@ import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.ConnectionFactory;
+import javax.jms.XAConnectionFactory;
 import javax.jms.JMSContext;
+import javax.jms.XAJMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSRuntimeException;
 import java.util.ArrayList;
@@ -158,6 +160,20 @@ public class HornetQMessaging implements Messaging {
         }
     }
 
+    private JMSContext createContext(String factoryName, Options<CreateConnectionOption> options) {
+        return createContext((ConnectionFactory)lookupJNDI(factoryName), options);
+    }
+
+    private XAJMSContext createXAContext(String factoryName, Options<CreateConnectionOption> options) {
+        XAConnectionFactory cf = (XAConnectionFactory)lookupJNDI(factoryName);
+        if (options.has(CreateConnectionOption.USERNAME)) {
+            return cf.createXAContext(options.getString(CreateConnectionOption.USERNAME),
+                                      options.getString(CreateConnectionOption.PASSWORD));
+        } else {
+            return cf.createXAContext();
+        }
+    }
+
     private ConnectionFactory createHQConnectionFactory(final Options<CreateConnectionOption> options) {
         //TODO: possibly cache the remote cf's?
         TransportConfiguration config =
@@ -181,20 +197,18 @@ public class HornetQMessaging implements Messaging {
     @Override
     public Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception {
         final Options<CreateConnectionOption> opts = new Options<>(options);
-        ConnectionFactory cf;
         JMSContext context;
 
         if (opts.has(CreateConnectionOption.HOST)) {
-                context = createContext(createHQConnectionFactory(opts), opts);
+            context = createContext(createHQConnectionFactory(opts), opts);
         }  else {
             start();
 
             if (opts.getBoolean(CreateConnectionOption.XA)) {
-                cf = (ConnectionFactory)lookupJNDI("java:/JmsXA");
+                context = createXAContext("java:/JmsXA", opts);
             } else {
-                cf = (ConnectionFactory)lookupJNDI("java:/ConnectionFactory");
+                context = createContext("java:/ConnectionFactory", opts);
             }
-            context = createContext(cf, opts);
         }
 
         if (opts.has(CreateConnectionOption.CLIENT_ID)) {

@@ -160,7 +160,6 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
 
     @Override
     public void onMessage(Message message) {
-        final JMSContext context = this.session.context();
         try {
             HornetQSession.currentSession.set(this.session);
             this.handler.onMessage(new HornetQMessage(message,
@@ -169,14 +168,10 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
                                                       this.connection),
                                    this.session);
 
-            if (context.getTransacted()) {
-                context.commit();
-            }
+            this.session.commit();
         } catch (Exception e) {
             log.warn("Unhandled exception thrown from onMessage", e);
-            if (context.getTransacted()) {
-                context.rollback();
-            }
+            this.session.rollback();
         } finally {
             HornetQSession.currentSession.remove();
         }

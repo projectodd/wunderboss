@@ -53,7 +53,7 @@ public interface Messaging extends Component {
         public static final CreateConnectionOption REMOTE_TYPE = opt("remote_type", CreateConnectionOption.class);
 
         /**
-         * If true, and xa connection is returned.
+         * If true, an xa connection is returned.
          */
         public static final CreateConnectionOption XA = opt("xa", false, CreateConnectionOption.class);
 

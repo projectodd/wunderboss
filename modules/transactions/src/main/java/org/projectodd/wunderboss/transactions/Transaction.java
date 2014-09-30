@@ -17,12 +17,12 @@
 package org.projectodd.wunderboss.transactions;
 
 import org.projectodd.wunderboss.Component;
-import javax.transaction.xa.XAResource;
+import javax.transaction.TransactionManager;
 import java.util.concurrent.Callable;
 
 
 public interface Transaction extends Component {
-    void enlist(XAResource resource) throws Exception;
+    TransactionManager manager();
 
     Object required(Callable f) throws Exception;
     Object requiresNew(Callable f) throws Exception;

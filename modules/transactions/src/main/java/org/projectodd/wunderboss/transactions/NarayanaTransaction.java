@@ -20,18 +20,12 @@ import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 
 import javax.transaction.TransactionManager;
-import javax.transaction.xa.XAResource;
 import java.util.concurrent.Callable;
 
 public class NarayanaTransaction implements Transaction {
 
     public NarayanaTransaction(String name, Options options) {
         this.name = name;
-    }
-
-    @Override
-    public void enlist(XAResource resource) throws Exception {
-        manager().getTransaction().enlistResource(resource);
     }
 
     @Override
@@ -98,11 +92,20 @@ public class NarayanaTransaction implements Transaction {
         return this.name;
     }
 
+    @Override
     public synchronized TransactionManager manager() {
         if (this.manager == null) {
             this.manager = com.arjuna.ats.jta.TransactionManager.transactionManager();
         }
         return this.manager;
+    }
+
+    public boolean isActive() throws Exception {
+        return null != current();
+    }
+
+    public javax.transaction.Transaction current() throws Exception {
+        return manager().getTransaction();
     }
 
     Object begin(Callable f) throws Exception {
@@ -128,14 +131,6 @@ public class NarayanaTransaction implements Transaction {
         } finally {
             mgr.resume(tx);
         }
-    }
-
-    javax.transaction.Transaction current() throws Exception {
-        return manager().getTransaction();
-    }
-
-    boolean isActive() throws Exception {
-        return null != current();
     }
 
     private final String name;
