@@ -16,15 +16,18 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
+import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Connection;
 
 import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAResource;
 import javax.jms.JMSContext;
+import javax.jms.XAJMSContext;
+import java.lang.reflect.Method;
 
 public class HornetQXASession extends HornetQSession {
-    public HornetQXASession(Connection connection, JMSContext context, Mode mode, TransactionManager tm) {
+    public HornetQXASession(Connection connection, JMSContext context, Mode mode) {
         super(connection, context, mode);
-        this.tm = tm;
     }
 
     @Override
@@ -41,5 +44,21 @@ public class HornetQXASession extends HornetQSession {
         }
     }
 
-    private TransactionManager tm;
+    @Override
+    public boolean enlist() throws Exception {
+        XAResource resource = ((XAJMSContext) context()).getXAResource();
+        return tm.getTransaction().enlistResource(resource);
+    }
+
+    public static final TransactionManager tm;
+    static {
+        TransactionManager found = null;
+        try {
+            Class clazz = Class.forName("org.projectodd.wunderboss.transactions.Transaction");
+            Method method = clazz.getDeclaredMethod("manager");
+            Object component = WunderBoss.findOrCreateComponent(clazz);
+            found = (TransactionManager) method.invoke(component);
+        } catch (Throwable ignored) {}
+        tm = found;
+    }
 }

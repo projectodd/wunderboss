@@ -54,7 +54,11 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         JMSContext session = this.jmsContext.createContext(mode);
         this.closeables.add(session);
 
-        return sessionator.create(this, session, optMode);
+        if (session.getTransacted() && isXAEnabled() && HornetQXASession.tm != null) {
+            return new HornetQXASession(this, session, optMode);
+        } else {
+            return new HornetQSession(this, session, optMode);
+        }
     }
 
     @Override
@@ -88,7 +92,6 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     private final JMSContext jmsContext;
     private final Messaging broker;
-    private final Sessionator sessionator = new Sessionator();
     private final Options<Messaging.CreateConnectionOption> creationOptions;
     private final List<AutoCloseable> closeables = new ArrayList<>();
 

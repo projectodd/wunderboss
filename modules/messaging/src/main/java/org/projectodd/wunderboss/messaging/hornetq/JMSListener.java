@@ -169,9 +169,9 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
                                    this.session);
 
             this.session.commit();
-        } catch (Exception e) {
-            log.warn("Unhandled exception thrown from onMessage", e);
+        } catch (Throwable e) {
             this.session.rollback();
+            throw new RuntimeException("Unexpected error handling message", e);
         } finally {
             HornetQSession.currentSession.remove();
         }

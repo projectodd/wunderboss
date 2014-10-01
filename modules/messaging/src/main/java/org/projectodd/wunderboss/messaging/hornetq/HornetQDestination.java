@@ -84,7 +84,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             session = connection(options.get(MessageOpOption.CONNECTION)).createSession(null);
             shouldClose = true;
         }
-
+        session.enlist();
         return new Pair(session, shouldClose);
     }
 

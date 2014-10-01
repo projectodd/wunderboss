@@ -60,6 +60,11 @@ public class HornetQSession implements Session {
     }
 
     @Override
+    public boolean enlist() throws Exception {
+        return false;
+    }
+
+    @Override
     public void close() throws Exception {
         this.context.close();
     }

@@ -28,4 +28,6 @@ public interface Session extends AutoCloseable {
     void acknowledge();
 
     Connection connection();
+
+    boolean enlist() throws Exception;
 }
