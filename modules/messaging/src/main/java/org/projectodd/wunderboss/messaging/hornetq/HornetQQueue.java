@@ -28,15 +28,16 @@ import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
 import org.projectodd.wunderboss.messaging.Session;
 
-import javax.jms.JMSException;
+import javax.jms.Destination;
+import javax.jms.JMSContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class HornetQQueue extends HornetQDestination implements Queue {
 
-    public HornetQQueue(javax.jms.Queue queue, HornetQMessaging broker) {
-        super(queue, broker);
+    public HornetQQueue(String name, Destination destination, HornetQMessaging broker) {
+        super(name, destination, broker);
     }
 
     @Override
@@ -96,23 +97,26 @@ public class HornetQQueue extends HornetQDestination implements Queue {
         return response;
     }
 
-    public static String fullName(String name) {
+    public static String jmsName(String name) {
         return "jms.queue." + name;
+    }
+
+    public static String fullName(String name) {
+        if (isJndiName(name)) {
+            return name;
+        } else {
+            return jmsName(name);
+        }
     }
 
     @Override
     public String jmsName() {
-        return fullName(name());
+        return jmsName(name());
     }
 
     @Override
-    public String name() {
-        try {
-            return ((javax.jms.Queue)destination()).getQueueName();
-        } catch (JMSException ffs) {
-            ffs.printStackTrace();
-            return null;
-        }
+    public String fullName() {
+        return fullName(name());
     }
 
 }

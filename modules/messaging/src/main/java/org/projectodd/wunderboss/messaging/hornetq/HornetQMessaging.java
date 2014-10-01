@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.hornetq.api.core.HornetQNotConnectedException;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.jms.HornetQJMSClient;
 import org.hornetq.api.jms.JMSFactoryType;
@@ -33,10 +32,12 @@ import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Connection;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Topic;
+import org.slf4j.Logger;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.XAConnectionFactory;
@@ -44,7 +45,9 @@ import javax.jms.JMSContext;
 import javax.jms.XAJMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSRuntimeException;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -230,16 +233,19 @@ public class HornetQMessaging implements Messaging {
             start();
 
             queue = lookupQueue(name);
-            String selector = opts.getString(CreateQueueOption.SELECTOR, "");
-
             if (queue == null) {
-                queue = createQueue(name, selector,
-                                    opts.getBoolean(CreateQueueOption.DURABLE));
-                this.createdDestinations.add(HornetQQueue.fullName(name));
+                if (HornetQDestination.isJndiName(name)) {
+                    throw new IllegalArgumentException("queue " + name + " does not exist, and jndi names are lookup only.");
+                } else {
+                    queue = createQueue(name,
+                                        opts.getString(CreateQueueOption.SELECTOR, ""),
+                                        opts.getBoolean(CreateQueueOption.DURABLE));
+                    this.createdDestinations.add(HornetQQueue.fullName(name));
+                }
             }
         }
 
-        return new HornetQQueue(queue, this);
+        return new HornetQQueue(name, queue, this);
     }
 
     @Override
@@ -252,34 +258,35 @@ public class HornetQMessaging implements Messaging {
             topic = ((HornetQConnection)opts.get(CreateTopicOption.CONNECTION)).jmsContext().createTopic(name);
         } else {
             start();
-            topic = lookupTopic(name);
 
+            topic = lookupTopic(name);
             if (topic == null) {
-                topic = createTopic(name);
-                this.createdDestinations.add(HornetQTopic.jmsName(name));
+                if (HornetQDestination.isJndiName(name)) {
+                    throw new IllegalArgumentException("topic " + name + " does not exist, and jndi names are lookup only.");
+                } else {
+                    topic = createTopic(name);
+                    this.createdDestinations.add(HornetQTopic.fullName(name));
+                }
             }
         }
 
-        return new HornetQTopic(topic, this);
-    }
-    protected String jndiName(String name, String type) {
-        return ("java:/jms/" + type + '/' + name).replace("//", "/_/");
+        return new HornetQTopic(name, topic, this);
     }
 
     protected javax.jms.Topic createTopic(String name) throws Exception {
-        this.jmsServerManager.createTopic(false, name, jndiName(name, "topic"));
+        this.jmsServerManager.createTopic(false, name, HornetQDestination.jndiName(name, "topic"));
 
         return lookupTopic(name);
     }
 
     protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
-        this.jmsServerManager.createQueue(false, name, selector, durable, jndiName(name, "queue"));
+        this.jmsServerManager.createQueue(false, name, selector, durable, HornetQDestination.jndiName(name, "queue"));
 
         return lookupQueue(name);
     }
 
     protected boolean destroyDestination(HornetQDestination dest) throws Exception {
-        String fullName = dest.jmsName();
+        String fullName = dest.fullName();
         if (this.closeablesForDestination.containsKey(fullName)) {
             for(AutoCloseable each : this.closeablesForDestination.get(fullName)) {
                 each.close();
@@ -289,9 +296,9 @@ public class HornetQMessaging implements Messaging {
 
         if (this.createdDestinations.contains(fullName)) {
             if (dest instanceof HornetQQueue) {
-                this.jmsServerManager().destroyQueue(dest.name(), true);
+                destroyQueue(dest.name());
             } else {
-                this.jmsServerManager().destroyTopic(dest.name(), true);
+                destroyTopic(dest.name());
             }
             this.createdDestinations.remove(fullName);
 
@@ -301,8 +308,16 @@ public class HornetQMessaging implements Messaging {
         return false;
     }
 
+    protected void destroyQueue(String name) throws Exception {
+        this.jmsServerManager().destroyQueue(name, true);
+    }
+
+    protected void destroyTopic(String name) throws Exception {
+        this.jmsServerManager().destroyTopic(name, true);
+    }
+
     protected void addCloseableForDestination(HornetQDestination dest, AutoCloseable c) {
-        String fullName = dest.jmsName();
+        String fullName = dest.fullName();
         List<AutoCloseable> closeables = this.closeablesForDestination.get(fullName);
         if (closeables == null) {
             closeables = new ArrayList<>();
@@ -313,29 +328,44 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected javax.jms.Topic lookupTopic(String name) {
-        String[] jndiNames = jmsServerManager.getJNDIOnTopic(name);
-        for (String jndiName : jndiNames) {
-            Object jndiObject = lookupJNDI(jndiName);
-            if (jndiObject != null) {
-                return (javax.jms.Topic)jndiObject;
-            }
+        List<String> jndiNames = new ArrayList<>();
+
+        if (this.jmsServerManager != null) {
+            jndiNames.addAll(Arrays.asList(this.jmsServerManager.getJNDIOnTopic(name)));
         }
-        return null;
+        jndiNames.add(name);
+        jndiNames.add(HornetQTopic.jmsName(name));
+        jndiNames.add(HornetQDestination.jndiName(name, "topic"));
+
+        return (javax.jms.Topic)lookupJNDI(jndiNames);
     }
 
     protected javax.jms.Queue lookupQueue(String name) {
-        String[] jndiNames = jmsServerManager.getJNDIOnQueue(name);
-        for (String jndiName : jndiNames) {
-            Object jndiObject = lookupJNDI(jndiName);
-            if (jndiObject != null) {
-                return (javax.jms.Queue)jndiObject;
-            }
+        List<String> jndiNames = new ArrayList<>();
+
+        if (this.jmsServerManager != null) {
+            jndiNames.addAll(Arrays.asList(this.jmsServerManager.getJNDIOnQueue(name)));
         }
-        return null;
+        jndiNames.add(name);
+        jndiNames.add(HornetQQueue.jmsName(name));
+        jndiNames.add(HornetQDestination.jndiName(name, "queue"));
+
+        return (javax.jms.Queue)lookupJNDI(jndiNames);
     }
 
     protected Object lookupJNDI(String jndiName) {
         return jmsServerManager.getRegistry().lookup(jndiName);
+    }
+
+    protected Object lookupJNDI(List<String> jndiNames) {
+        for (String jndiName : jndiNames) {
+            Object jndiObject = lookupJNDI(jndiName);
+            if (jndiObject != null) {
+                return jndiObject;
+            }
+        }
+
+        return null;
     }
 
     private final String name;
@@ -346,4 +376,5 @@ public class HornetQMessaging implements Messaging {
     protected boolean started = false;
     protected JMSServerManager jmsServerManager;
 
+    private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.messaging.hornetq");
 }

@@ -16,32 +16,24 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.jboss.as.clustering.jgroups.ChannelFactory;
-import org.jboss.as.clustering.jgroups.subsystem.ChannelFactoryService;
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
-import org.jboss.vfs.VFSUtils;
-import org.jboss.vfs.VirtualFile;
-import org.projectodd.wunderboss.ApplicationRunner;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.caching.Caching;
+import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.singleton.SingletonContext;
-import org.projectodd.wunderboss.web.Web;
-import org.wildfly.extension.undertow.UndertowService;
 
-import java.io.IOException;
-import java.net.URL;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 public class WildFlyService implements Service<WildFlyService> {
+    public static final String KEY = "wildfly-service";
 
     public static ServiceName parentServiceName(String deploymentName) {
         return ServiceName.JBOSS.append("deployment").append("unit").append(deploymentName);
@@ -51,14 +43,16 @@ public class WildFlyService implements Service<WildFlyService> {
         return parentServiceName(deploymentName).append("wunderboss");
     }
 
-    public WildFlyService(String deploymentName, ServiceRegistry registry) {
+    public WildFlyService(String deploymentName, ServiceRegistry registry, ServiceTarget serviceTarget, Context namingContext) {
         this.deploymentName = deploymentName;
-        this.registry = registry;
+        this.serviceRegistry = registry;
+        this.serviceTarget = serviceTarget;
+        this.namingContext = namingContext;
 
         // TODO: Get rid of these options and just make them statics here
         WunderBoss.putOption("deployment-name", this.deploymentName);
-        WunderBoss.putOption("service-registry", this.registry);
-        WunderBoss.putOption("wildfly-service", this);
+        WunderBoss.putOption("service-registry", this.serviceRegistry);
+        WunderBoss.putOption(KEY, this);
     }
 
     @Override
@@ -86,8 +80,22 @@ public class WildFlyService implements Service<WildFlyService> {
         return this;
     }
 
+    public ServiceTarget serviceTarget() {
+        return this.serviceTarget;
+    }
+
+    public ServiceRegistry serviceRegistry() {
+        return this.serviceRegistry;
+    }
+
+    public Context namingContext() {
+        return this.namingContext;
+    }
+
     private final String deploymentName;
-    private final ServiceRegistry registry;
+    private final ServiceRegistry serviceRegistry;
+    private final ServiceTarget serviceTarget;
+    private final Context namingContext;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.wildfly");
 

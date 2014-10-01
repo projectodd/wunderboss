@@ -96,7 +96,7 @@ public class MessageHandlerGroup implements Listener {
 
     protected JMSConsumer createConsumer(JMSContext context) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
-        javax.jms.Destination destination = this.destination.destination();
+        javax.jms.Destination destination = this.destination.jmsDestination();
 
         return context.createConsumer(destination, selector);
     }

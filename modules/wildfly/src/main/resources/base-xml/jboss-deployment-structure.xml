@@ -8,13 +8,13 @@
       <module name="io.undertow.websocket"/>
       <module name="org.jboss.modules"/>
       <module name="org.wildfly.extension.undertow"/>
-      <module name="org.hornetq" optional="true"/>
       <module name="org.jboss.as.clustering.jgroups" optional="true"/>
       <module name="org.jgroups" optional="true"/>
       <module name="org.infinispan"/>
       <module name="org.infinispan.commons"/>
       <module name="org.jboss.as.clustering.infinispan"/>
       <module name="org.jboss.xnio"/>
+      <module name="org.jboss.as.messaging"/>
     </dependencies>
 
   </deployment>

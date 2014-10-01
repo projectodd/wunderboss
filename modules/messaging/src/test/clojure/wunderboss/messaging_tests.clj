@@ -83,8 +83,8 @@
   (let [queue (create-queue "a-queue")]
 
     ;; findOrCreateQueue should return the same queue for the same name
-    (is (= (.destination queue)
-          (.destination (create-queue "a-queue"))))
+    (is (= (.jmsDestination queue)
+          (.jmsDestination (create-queue "a-queue"))))
 
     ;; we should be able to send and rcv
     (.send queue "hi" None/INSTANCE nil)

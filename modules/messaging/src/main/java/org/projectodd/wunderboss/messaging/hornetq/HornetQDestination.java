@@ -28,6 +28,7 @@ import org.projectodd.wunderboss.messaging.Session;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSConsumer;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import java.io.Serializable;
@@ -36,14 +37,22 @@ import java.util.Map;
 
 public abstract class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
 
-    public HornetQDestination(Destination dest, HornetQMessaging broker) {
-        this.destination = dest;
+    public HornetQDestination(String name, Destination destination, HornetQMessaging broker) {
+        this.name = name;
+        this.jmsDestination = destination;
         this.broker = broker;
     }
 
-    public Destination destination() {
-        return this.destination;
+    @Override
+    public String name() {
+        return this.name;
     }
+
+    public Destination jmsDestination() {
+        return this.jmsDestination;
+    }
+
+    public abstract String fullName();
 
     public abstract String jmsName();
 
@@ -105,9 +114,11 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         Pair<Session, Boolean> sessionInfo = getSession(opts);
         Session session = sessionInfo.first;
         boolean closeSession = sessionInfo.second;
+        JMSContext context = ((HornetQSession)session).context();
+        javax.jms.Destination destination = jmsDestination();
 
         try {
-            JMSProducer producer = ((HornetQSession)session).context().createProducer();
+            JMSProducer producer = context.createProducer();
             fillInProperties(producer, (Map<String, Object>) opts.get(SendOption.PROPERTIES, Collections.emptyMap()));
             fillInProperties(producer, additionalProperties);
             producer
@@ -120,11 +131,11 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             Class encodesTo = codec.encodesTo();
 
             if (encodesTo == String.class) {
-                producer.send(this.destination, (String)encoded);
+                producer.send(destination, (String)encoded);
             } else if (encodesTo == byte[].class) {
-                producer.send(this.destination, (byte[])encoded);
+                producer.send(destination, (byte[])encoded);
             } else {
-                producer.send(this.destination, (Serializable)encoded);
+                producer.send(destination, (Serializable)encoded);
             }
 
         } finally {
@@ -141,10 +152,11 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         Pair<Session, Boolean> sessionInfo = getSession(opts);
         Session session = sessionInfo.first;
         boolean closeSession = sessionInfo.second;
-
+        JMSContext context = ((HornetQSession)session).context();
+        javax.jms.Destination destination = jmsDestination();
         String selector = opts.getString(ReceiveOption.SELECTOR);
 
-        try (JMSConsumer consumer = ((HornetQSession)session).context().createConsumer(this.destination, selector)) {
+        try (JMSConsumer consumer = context.createConsumer(destination, selector)) {
             javax.jms.Message message;
             if (timeout == -1) {
                 message = consumer.receiveNoWait();
@@ -178,7 +190,18 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         return this.broker;
     }
 
-    private final Destination destination;
+
+    public static String jndiName(String name, String type) {
+        return ("java:/jms/" + type + '/' + name).replace("//", "/_/");
+    }
+
+    public
+    static boolean isJndiName(String name) {
+        return name.startsWith("java:");
+    }
+
+    private final String name;
+    private final Destination jmsDestination;
     private boolean stopped = false;
     private final HornetQMessaging broker;
 }

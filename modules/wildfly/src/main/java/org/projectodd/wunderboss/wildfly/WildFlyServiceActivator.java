@@ -16,15 +16,15 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.jboss.as.clustering.jgroups.ChannelFactory;
-import org.jboss.as.clustering.jgroups.subsystem.ChannelFactoryService;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceActivator;
 import org.jboss.msc.service.ServiceActivatorContext;
-import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceRegistryException;
-import org.wildfly.extension.undertow.UndertowService;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 public class WildFlyServiceActivator implements ServiceActivator {
     @Override
@@ -35,7 +35,17 @@ public class WildFlyServiceActivator implements ServiceActivator {
             deploymentName = deploymentName.replace("deployment.", "");
         }
 
-        WildFlyService service = new WildFlyService(deploymentName, serviceActivatorContext.getServiceRegistry());
+        Context namingContext;
+        try {
+            namingContext = new InitialContext();
+        } catch (NamingException e) {
+            throw new ServiceRegistryException(e);
+        }
+
+        WildFlyService service = new WildFlyService(deploymentName,
+                                                    serviceActivatorContext.getServiceRegistry(),
+                                                    serviceActivatorContext.getServiceTarget(),
+                                                    namingContext);
         serviceActivatorContext.getServiceTarget()
                 .addService(WildFlyService.serviceName(deploymentName), service)
                 .setInitialMode(ServiceController.Mode.ACTIVE)

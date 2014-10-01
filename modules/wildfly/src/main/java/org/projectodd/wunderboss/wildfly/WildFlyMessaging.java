@@ -16,43 +16,128 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.hornetq.jms.server.JMSServerManager;
+import org.jboss.as.messaging.MessagingServices;
+import org.jboss.as.messaging.jms.JMSQueueService;
+import org.jboss.as.messaging.jms.JMSServices;
+import org.jboss.as.messaging.jms.JMSTopicService;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.messaging.hornetq.HornetQDestination;
 import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
+import org.slf4j.Logger;
 
-import javax.naming.InitialContext;
+import javax.jms.Queue;
+import javax.jms.Topic;
+import javax.naming.Context;
 import javax.naming.NamingException;
 
 public class WildFlyMessaging extends HornetQMessaging {
 
-    public WildFlyMessaging(String name, Options<CreateOption> options) {
+    public WildFlyMessaging(String name, WildFlyService service, Options<CreateOption> options) {
         super(name, options);
-        try {
-            this.context = new InitialContext();
-        } catch (NamingException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.wildFlyService = service;
+        this.context = service.namingContext();
     }
 
     @Override
     public synchronized void start() throws Exception {
-        if (!started) {
-            ServiceRegistry serviceRegistry = (ServiceRegistry) WunderBoss.options().get("service-registry");
-            ServiceName hornetQServiceName = WildFlyService.JMS_MANAGER_SERVICE_NAME;
-            jmsServerManager = (JMSServerManager) serviceRegistry.getRequiredService(hornetQServiceName).getValue();
-            started = true;
-        }
+        started = true;
     }
 
     @Override
     public synchronized void stop() throws Exception {
         if (started) {
             closeDefaultConnection();
-            jmsServerManager = null;
             started = false;
+        }
+    }
+
+    @Override
+    protected Queue createQueue(final String name, final String selector, final boolean durable) throws Exception {
+        Queue queue = (Queue)waitForValueAvailabilityChange(
+                JMSQueueService.installService(null, null, name, this.wildFlyService.serviceTarget(),
+                                               hqServiceName(),
+                                               selector, durable, new String[]{HornetQDestination.jndiName(name, "queue")}),
+                false);
+
+        if (queue == null) {
+            throwTimeout("creation of queue " + name);
+        }
+
+        return queue;
+    }
+
+    @Override
+    protected Topic createTopic(final String name) throws Exception {
+        Topic topic =
+                (Topic)waitForValueAvailabilityChange(
+                        JMSTopicService.installService(null, null, name, hqServiceName(),
+                                                       this.wildFlyService.serviceTarget(),
+                                                       new String[]{HornetQDestination.jndiName(name, "topic")}),
+                        false);
+
+        if (topic == null) {
+            throwTimeout("creation of topic " + name);
+        }
+
+        return topic;
+    }
+
+    @Override
+    protected void destroyQueue(final String name) {
+        ServiceController controller = this.wildFlyService.serviceRegistry()
+                .getService(JMSServices.getJmsQueueBaseServiceName(hqServiceName()).append(name));
+        controller.setMode(ServiceController.Mode.REMOVE);
+
+        if (waitForValueAvailabilityChange(controller, true) != null) {
+            throwTimeout("removal of queue " + name);
+        }
+    }
+
+    @Override
+    protected void destroyTopic(final String name) {
+        ServiceController controller = this.wildFlyService.serviceRegistry()
+                .getService(JMSServices.getJmsTopicBaseServiceName(hqServiceName()).append(name));
+        controller.setMode(ServiceController.Mode.REMOVE);
+
+        if (waitForValueAvailabilityChange(controller, true) != null) {
+            throwTimeout("removal of topic" + name);
+        }
+    }
+
+    private void throwTimeout(String message) {
+        throw new RuntimeException("Gave up waiting for " + message + " after " +
+                valueChangeTimeout() + "ms. If that time is too short, you can adjust with the " +
+                TIMEOUT_PROP + " system property.");
+    }
+
+    private ServiceName hqServiceName() {
+        return MessagingServices.getHornetQServiceName("default");
+    }
+
+    private Object waitForValueAvailabilityChange(Value value, boolean toNull) {
+        Object v = value.getValue();
+        long nap = 10;
+        long count = valueChangeTimeout() / nap;
+        while ((toNull ? v != null : v == null)
+                && count > 0) {
+            try { Thread.sleep(nap); } catch (InterruptedException ignored) {}
+            count--;
+            v = value.getValue();
+        }
+
+        return v;
+    }
+
+    private long valueChangeTimeout() {
+        String timeout = System.getProperty(TIMEOUT_PROP);
+        if (timeout != null) {
+            return Long.parseLong(timeout);
+        } else {
+            return 60000;
         }
     }
 
@@ -76,9 +161,13 @@ public class WildFlyMessaging extends HornetQMessaging {
                 return lookupJNDIWithRetry(jndiName, attempt + 1);
             }
 
-            throw new RuntimeException(ex);
+            return null;
         }
     }
 
-    private final InitialContext context;
+        private final WildFlyService wildFlyService;
+    private final Context context;
+
+    private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.wildfly");
+    private final static String TIMEOUT_PROP = "wunderboss.messaging.destination-availability-timeout";
 }

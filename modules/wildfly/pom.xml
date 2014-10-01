@@ -17,7 +17,7 @@
 
   <properties>
     <version.jboss.modules>1.3.0.Final</version.jboss.modules>
-    <version.wildfly>8.0.0.Final</version.wildfly>
+    <version.wildfly>8.1.0.Final</version.wildfly>
   </properties>
 
   <dependencies>
@@ -56,6 +56,13 @@
     <dependency>
       <groupId>org.wildfly</groupId>
       <artifactId>wildfly-undertow</artifactId>
+      <version>${version.wildfly}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-messaging</artifactId>
       <version>${version.wildfly}</version>
       <scope>provided</scope>
     </dependency>

@@ -25,15 +25,15 @@ import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Session;
 import org.projectodd.wunderboss.messaging.Topic;
 
+import javax.jms.Destination;
 import javax.jms.JMSConsumer;
-import javax.jms.JMSException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class HornetQTopic extends HornetQDestination implements Topic {
 
-    public HornetQTopic(javax.jms.Topic topic, HornetQMessaging broker) {
-        super(topic, broker);
+    public HornetQTopic(String name, Destination destination, HornetQMessaging broker) {
+        super(name, destination, broker);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         final HornetQConnection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
         final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONNECTION);
         final HornetQSession session = session(opts, connection);
-        final JMSConsumer consumer = session.context().createDurableConsumer((javax.jms.Topic)this.destination(),
+        final JMSConsumer consumer = session.context().createDurableConsumer((javax.jms.Topic)jmsDestination(),
                                                                              id,
                                                                              opts.getString(SubscribeOption.SELECTOR), false);
 
@@ -93,19 +93,27 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         return "jms.topic." + name;
     }
 
+    public static String fullName(String name) {
+        if (isJndiName(name)) {
+            return name;
+        } else {
+            return jmsName(name);
+        }
+    }
+
     @Override
     public String jmsName() {
         return jmsName(name());
     }
 
     @Override
-    public String name() {
-        try {
-            return ((javax.jms.Topic)destination()).getTopicName();
-        } catch (JMSException ffs) {
-            ffs.printStackTrace();
-            return null;
-        }
+    public String fullName() {
+        return fullName(name());
+    }
+
+    @Override
+    public Destination jmsDestination() {
+        return broker().lookupTopic(name());
     }
 
     protected HornetQConnection connection(final String id, Object connection) throws Exception {
