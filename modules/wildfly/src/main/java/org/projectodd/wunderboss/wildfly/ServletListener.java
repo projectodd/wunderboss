@@ -87,7 +87,11 @@ public class ServletListener implements ServletContextListener {
         String result = sce.getServletContext().getServletContextName();
         if (result == null) {
             result = sce.getServletContext().getContextPath();
+            if ("".equals(result)) {
+                result = "/";
+            }
         }
+        
         return result;
     }
 
