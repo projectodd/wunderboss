@@ -38,8 +38,11 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
     public Session createSession(Map<CreateSessionOption, Object> options) throws Exception {
         Options<CreateSessionOption> opts = new Options<>(options);
         Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE);
-        int mode = 0;
-        switch (optMode) {
+        if (isXAEnabled() && HornetQXASession.tm != null) {
+            return new HornetQXASession(this, this.jmsContext, optMode);
+        } else {
+            int mode = 0;
+            switch (optMode) {
             case AUTO_ACK:
                 mode = JMSContext.AUTO_ACKNOWLEDGE;
                 break;
@@ -49,14 +52,9 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
             case TRANSACTED:
                 mode = JMSContext.SESSION_TRANSACTED;
                 break;
-        }
-
-        JMSContext session = this.jmsContext.createContext(mode);
-        this.closeables.add(session);
-
-        if (session.getTransacted() && isXAEnabled() && HornetQXASession.tm != null) {
-            return new HornetQXASession(this, session, optMode);
-        } else {
+            }
+            JMSContext session = this.jmsContext.createContext(mode);
+            this.closeables.add(session);
             return new HornetQSession(this, session, optMode);
         }
     }

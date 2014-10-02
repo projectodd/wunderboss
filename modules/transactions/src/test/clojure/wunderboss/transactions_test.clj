@@ -50,13 +50,10 @@
 
 (deftest verify-transaction-success
   (is (nil? (attempt-transaction)))
-  (is (= "kiwi" (.body (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 2000})))))
+  (is (= "kiwi" (.body (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000})))))
   (is (= 1 (:a cache))))
 
 (deftest verify-transaction-failure
   (is (= "force rollback" (attempt-transaction #(throw (Exception. "force rollback")))))
-
-  ;; TODO: figure out why this fails...
-  ;; (is (nil? (.body (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 2000})))))
-
+  (is (nil? (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000}))))
   (is (nil? (:a cache))))
