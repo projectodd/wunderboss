@@ -50,6 +50,12 @@ public class HornetQXASession extends HornetQSession {
         return tm.getTransaction().enlistResource(resource);
     }
 
+    @Override
+    public void close() throws Exception {
+        // do nothing for XAJMSContext; they get closed when they're
+        // parent connection is closed
+    }
+
     public static final TransactionManager tm;
     static {
         TransactionManager found = null;
