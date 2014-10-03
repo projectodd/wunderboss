@@ -164,8 +164,7 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
             HornetQSession.currentSession.set(this.session);
             this.handler.onMessage(new HornetQMessage(message,
                                                       this.codecs.forContentType(HornetQMessage.contentType(message)),
-                                                      this.endpoint,
-                                                      this.connection),
+                                                      this.endpoint),
                                    this.session);
 
             this.session.commit();

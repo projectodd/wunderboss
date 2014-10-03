@@ -167,7 +167,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             if (message != null) {
                 String contentType = HornetQMessage.contentType(message);
                 Codec codec = codecs.forContentType(contentType);
-                return new HornetQMessage(message, codec, this, connection(opts.get(ReceiveOption.CONNECTION)));
+                return new HornetQMessage(message, codec, this);
             } else {
                 return null;
             }

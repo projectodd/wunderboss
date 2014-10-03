@@ -38,10 +38,9 @@ public class HornetQMessage implements ReplyableMessage {
     protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
     HornetQMessage(javax.jms.Message message, Codec codec,
-                          Destination destination, HornetQConnection connection) {
+                          Destination destination) {
         this.baseMessage = message;
         this.codec = (codec == null ? None.INSTANCE : codec);
-        this.connection = connection;
         this.destination = destination;
     }
 
@@ -154,6 +153,5 @@ public class HornetQMessage implements ReplyableMessage {
 
     private final javax.jms.Message baseMessage;
     private final Codec codec;
-    private final HornetQConnection connection;
     private final Destination destination;
 }
