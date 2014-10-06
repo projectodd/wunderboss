@@ -383,3 +383,10 @@
              (coerce-listen-options {:transacted false}))]
     (.send q1 "whatevs" None/INSTANCE nil)
     (is (= "whatevs" (deref p 1000 :failure)))))
+
+(deftest toss-when-xa-unavailable
+  (is (thrown-with-msg? NullPointerException
+        #"TransactionManager not found"
+        (-> default
+          (.createConnection (coerce-connection-options {:xa true}))
+          (.createSession nil)))))

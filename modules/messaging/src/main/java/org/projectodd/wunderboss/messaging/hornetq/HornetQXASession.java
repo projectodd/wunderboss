@@ -19,13 +19,14 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Connection;
 
+import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import javax.jms.JMSContext;
 import javax.jms.XAJMSContext;
 import java.lang.reflect.Method;
 
-public class HornetQXASession extends HornetQSession {
+public class HornetQXASession extends HornetQSession implements Synchronization {
     public HornetQXASession(Connection connection, JMSContext context, Mode mode) {
         super(connection, context, mode);
     }
@@ -52,7 +53,20 @@ public class HornetQXASession extends HornetQSession {
 
     @Override
     public void close() throws Exception {
-        connection().close();
+        tm.getTransaction().registerSynchronization(this);
+    }
+
+    @Override
+    public void afterCompletion(int status) {
+        try {
+            connection().close();
+        } catch (Exception e) {
+            throw new RuntimeException("Error after tx complete", e);
+        }
+    }
+    @Override
+    public void beforeCompletion() {
+        // nothing
     }
 
     public static final TransactionManager tm;
