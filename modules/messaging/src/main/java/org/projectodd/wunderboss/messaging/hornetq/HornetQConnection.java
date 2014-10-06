@@ -22,11 +22,12 @@ import org.projectodd.wunderboss.messaging.Session;
 import org.projectodd.wunderboss.messaging.Connection;
 
 import javax.jms.JMSContext;
+import javax.transaction.Synchronization;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQConnection implements Connection {
+public class HornetQConnection implements Connection, Synchronization {
 
     public HornetQConnection(JMSContext jmsContext, Messaging broker,
                              Options<Messaging.CreateConnectionOption> creationOptions) {
@@ -42,16 +43,29 @@ public class HornetQConnection implements Connection {
 
     @Override
     public void close() throws Exception {
-        for(AutoCloseable each : this.closeables) {
-            each.close();
+        if (isXAEnabled()) {
+            HornetQXASession.tm.getTransaction().registerSynchronization(this);
+        } else {
+            shutItDown();
         }
-        this.closeables.clear();
-        this.jmsContext.close();
     }
 
     @Override
     public void addCloseable(AutoCloseable closeable) {
         this.closeables.add(closeable);
+    }
+
+    @Override
+    public void afterCompletion(int status) {
+        try {
+            shutItDown();
+        } catch (Exception e) {
+            throw new RuntimeException("Error after tx complete", e);
+        }
+    }
+    @Override
+    public void beforeCompletion() {
+        // nothing
     }
 
     public JMSContext jmsContext() {
@@ -70,10 +84,20 @@ public class HornetQConnection implements Connection {
         return this.creationOptions;
     }
 
+    void shutItDown() throws Exception {
+        for(AutoCloseable each : this.closeables) {
+            each.close();
+        }
+        this.closeables.clear();
+        this.jmsContext.close();
+    }
+
     Session createSession(Map<CreateSessionOption, Object> options, Connection conn) throws Exception {
         Options<CreateSessionOption> opts = new Options<>(options);
         Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE);
-        if (isXAEnabled() && HornetQXASession.tm != null) {
+        // TODO: really should be testing conn here, or better yet,
+        // introduce HQXAConnection?
+        if (isXAEnabled()) {
             return new HornetQXASession(conn, this.jmsContext, optMode);
         } else {
             int mode = 0;
