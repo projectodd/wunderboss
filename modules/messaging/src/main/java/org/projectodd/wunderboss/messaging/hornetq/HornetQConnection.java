@@ -133,10 +133,6 @@ public class HornetQConnection implements Connection, Synchronization {
         public void close() throws Exception {
             // Nope
         }
-
-        void closeForRealz() throws Exception {
-            HornetQConnection.this.close();
-        }
     }
 
     private final JMSContext jmsContext;

@@ -153,7 +153,6 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         } finally {
             if (closeSession) {
                 session.close();
-                session.connection().close();
             }
         }
     }
@@ -187,7 +186,6 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         } finally {
             if (closeSession) {
                 session.close();
-                session.connection().close();
             }
         }
     }

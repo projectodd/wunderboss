@@ -52,8 +52,7 @@ public class HornetQXASession extends HornetQSession {
 
     @Override
     public void close() throws Exception {
-        // do nothing for XAJMSContext; they get closed when they're
-        // parent connection is closed
+        connection().close();
     }
 
     public static final TransactionManager tm;
