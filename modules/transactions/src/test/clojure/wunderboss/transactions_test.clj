@@ -18,7 +18,7 @@
            [org.projectodd.wunderboss.caching Caching Caching$CreateOption]
            [org.projectodd.wunderboss.transactions Transaction]
            [org.projectodd.wunderboss.codecs Codecs None]
-           [org.projectodd.wunderboss.messaging Messaging
+           [org.projectodd.wunderboss.messaging Messaging Connection
             Destination$ReceiveOption Destination$MessageOpOption
             Messaging$CreateConnectionOption Messaging$CreateQueueOption]))
 
@@ -37,23 +37,43 @@
 ;;; Clear cache before each test
 (use-fixtures :each (fn [f] (.clear cache) (f)))
 
-(defn attempt-transaction [& [f]]
+(defn attempt-transaction-external [& [f]]
   (try
     (with-open [conn (.createConnection msg (Options. {Messaging$CreateConnectionOption/XA true}))]
       (.required tx
         (fn []
           (.send queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONNECTION conn}))
           (.put cache :a 1)
-          (if f (f))  )))
+          (if f (f)))))
     (catch Exception e
       (-> e .getCause .getMessage))))
 
-(deftest verify-transaction-success
-  (is (nil? (attempt-transaction)))
+(defn attempt-transaction-internal [& [f]]
+  (try
+    (.required tx
+      (fn []
+        (.send queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONNECTION Connection/XA}))
+        (.put cache :a 1)
+        (if f (f))))
+    (catch Exception e
+      (-> e .getCause .getMessage))))
+
+(deftest verify-transaction-success-external
+  (is (nil? (attempt-transaction-external)))
   (is (= "kiwi" (.body (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000})))))
   (is (= 1 (:a cache))))
 
-(deftest verify-transaction-failure
-  (is (= "force rollback" (attempt-transaction #(throw (Exception. "force rollback")))))
+(deftest verify-transaction-failure-external
+  (is (= "force rollback" (attempt-transaction-external #(throw (Exception. "force rollback")))))
+  (is (nil? (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000}))))
+  (is (nil? (:a cache))))
+
+(deftest verify-transaction-success-internal
+  (is (nil? (attempt-transaction-internal)))
+  (is (= "kiwi" (.body (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000})))))
+  (is (= 1 (:a cache))))
+
+(deftest verify-transaction-failure-internal
+  (is (= "force rollback" (attempt-transaction-internal #(throw (Exception. "force rollback")))))
   (is (nil? (.receive queue codecs (Options. {Destination$ReceiveOption/TIMEOUT 1000}))))
   (is (nil? (:a cache))))
