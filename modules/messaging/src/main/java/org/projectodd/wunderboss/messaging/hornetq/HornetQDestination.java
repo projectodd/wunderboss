@@ -22,8 +22,10 @@ import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
+import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Session;
+import org.projectodd.wunderboss.messaging.Connection;
 
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
@@ -34,6 +36,7 @@ import javax.jms.JMSProducer;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
+import java.util.HashMap;
 
 public abstract class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
 
@@ -59,10 +62,12 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        HornetQConnection connection = connection(opts.get(ListenOption.CONNECTION));
+        Connection connection = connection(opts.get(ListenOption.CONNECTION));
         Listener listener = new MessageHandlerGroup(connection, handler,
                                                     codecs, this,
                                                     opts).start();
+        // TODO: Not sure when this connection will be closed. XA ones will
+        // potentially leak if it doesn't happen
         connection.addCloseable(listener);
         this.broker.addCloseableForDestination(this, listener);
 
@@ -97,12 +102,19 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         return new Pair(session, shouldClose);
     }
 
-    protected HornetQConnection connection(Object connection) throws Exception {
+    // TODO: we may need to pass options here since we may need to
+    // pass through HOST and CLIENT_ID to createConnection
+    protected Connection connection(Object connection) throws Exception {
         if (connection == null) {
-            connection = this.broker.defaultConnection();
+            return this.broker.defaultConnection();
         }
-
-        return (HornetQConnection)connection;
+        if (connection == Connection.XA) {
+            return this.broker.createConnection(new HashMap() {{
+                put(Messaging.CreateConnectionOption.XA, true);
+            }});
+        }
+        HornetQConnection c = (HornetQConnection) connection;
+        return c.new NonClosing();
     }
 
     protected void _send(Object message, Codec codec,
@@ -141,6 +153,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         } finally {
             if (closeSession) {
                 session.close();
+                session.connection().close();
             }
         }
     }
@@ -174,6 +187,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         } finally {
             if (closeSession) {
                 session.close();
+                session.connection().close();
             }
         }
     }

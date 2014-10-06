@@ -19,13 +19,14 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Session;
+import org.projectodd.wunderboss.messaging.Connection;
 
 import javax.jms.JMSContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQConnection implements org.projectodd.wunderboss.messaging.Connection {
+public class HornetQConnection implements Connection {
 
     public HornetQConnection(JMSContext jmsContext, Messaging broker,
                              Options<Messaging.CreateConnectionOption> creationOptions) {
@@ -36,27 +37,7 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     @Override
     public Session createSession(Map<CreateSessionOption, Object> options) throws Exception {
-        Options<CreateSessionOption> opts = new Options<>(options);
-        Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE);
-        if (isXAEnabled() && HornetQXASession.tm != null) {
-            return new HornetQXASession(this, this.jmsContext, optMode);
-        } else {
-            int mode = 0;
-            switch (optMode) {
-            case AUTO_ACK:
-                mode = JMSContext.AUTO_ACKNOWLEDGE;
-                break;
-            case CLIENT_ACK:
-                mode = JMSContext.CLIENT_ACKNOWLEDGE;
-                break;
-            case TRANSACTED:
-                mode = JMSContext.SESSION_TRANSACTED;
-                break;
-            }
-            JMSContext session = this.jmsContext.createContext(mode);
-            this.closeables.add(session);
-            return new HornetQSession(this, session, optMode);
-        }
+        return createSession(options, this);
     }
 
     @Override
@@ -87,6 +68,51 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     public Options<Messaging.CreateConnectionOption> creationOptions() {
         return this.creationOptions;
+    }
+
+    Session createSession(Map<CreateSessionOption, Object> options, Connection conn) throws Exception {
+        Options<CreateSessionOption> opts = new Options<>(options);
+        Session.Mode optMode = (Session.Mode)opts.get(CreateSessionOption.MODE);
+        if (isXAEnabled() && HornetQXASession.tm != null) {
+            return new HornetQXASession(conn, this.jmsContext, optMode);
+        } else {
+            int mode = 0;
+            switch (optMode) {
+            case AUTO_ACK:
+                mode = JMSContext.AUTO_ACKNOWLEDGE;
+                break;
+            case CLIENT_ACK:
+                mode = JMSContext.CLIENT_ACKNOWLEDGE;
+                break;
+            case TRANSACTED:
+                mode = JMSContext.SESSION_TRANSACTED;
+                break;
+            }
+            JMSContext session = this.jmsContext.createContext(mode);
+            this.closeables.add(session);
+            return new HornetQSession(conn, session, optMode);
+        }
+    }
+
+    class NonClosing implements Connection {
+        @Override
+        public Session createSession(Map<CreateSessionOption, Object> options) throws Exception {
+            return HornetQConnection.this.createSession(options, this);
+        }
+
+        @Override
+        public void addCloseable(AutoCloseable closeable) {
+            HornetQConnection.this.addCloseable(closeable);
+        }
+
+        @Override
+        public void close() throws Exception {
+            // Nope
+        }
+
+        void closeForRealz() throws Exception {
+            HornetQConnection.this.close();
+        }
     }
 
     private final JMSContext jmsContext;

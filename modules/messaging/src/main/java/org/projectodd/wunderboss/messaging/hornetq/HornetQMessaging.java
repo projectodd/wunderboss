@@ -128,7 +128,7 @@ public class HornetQMessaging implements Messaging {
 
     protected void closeDefaultConnection() throws Exception {
         if (this.defaultConnection != null) {
-            this.defaultConnection.close();
+            this.defaultConnection.closeForRealz();
             this.defaultConnection = null;
         }
     }
@@ -149,7 +149,8 @@ public class HornetQMessaging implements Messaging {
     @Override
     public Connection defaultConnection() throws Exception {
         if (this.defaultConnection == null) {
-            this.defaultConnection = createConnection(null);
+            HornetQConnection c = (HornetQConnection) createConnection(null);
+            this.defaultConnection = c.new NonClosing();
         }
         return this.defaultConnection;
     }
@@ -372,7 +373,7 @@ public class HornetQMessaging implements Messaging {
     private final Options<CreateOption> options;
     private final Set<String> createdDestinations = new HashSet<>();
     private final Map<String, List<AutoCloseable>> closeablesForDestination = new HashMap<>();
-    private Connection defaultConnection;
+    private HornetQConnection.NonClosing defaultConnection;
     protected boolean started = false;
     protected JMSServerManager jmsServerManager;
 
