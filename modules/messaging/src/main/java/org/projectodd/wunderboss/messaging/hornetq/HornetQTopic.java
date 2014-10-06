@@ -41,7 +41,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
                               final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
-        final HornetQConnection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
+        final Connection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
         final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONNECTION);
         final HornetQSession session = session(opts, connection);
         final JMSConsumer consumer = session.context().createDurableConsumer((javax.jms.Topic)jmsDestination(),
@@ -51,7 +51,6 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         final Listener listener = new JMSListener(handler,
                                                   codecs,
                                                   this,
-                                                  connection,
                                                   session,
                                                   consumer).start();
 
@@ -73,7 +72,7 @@ public class HornetQTopic extends HornetQDestination implements Topic {
     @Override
     public void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception {
         final Options<UnsubscribeOption> opts = new Options<>(options);
-        HornetQConnection connection = connection(id, opts.get(UnsubscribeOption.CONNECTION));
+        Connection connection = connection(id, opts.get(UnsubscribeOption.CONNECTION));
         HornetQSession session = null;
         try {
             session = session(null, connection);
@@ -116,17 +115,17 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         return broker().lookupTopic(name());
     }
 
-    protected HornetQConnection connection(final String id, Object connection) throws Exception {
+    protected Connection connection(final String id, Object connection) throws Exception {
         if (connection == null) {
             connection = broker().createConnection(new HashMap<Messaging.CreateConnectionOption, Object>() {{
                 put(Messaging.CreateConnectionOption.CLIENT_ID, id);
             }});
         }
 
-        return (HornetQConnection)connection;
+        return (Connection)connection;
     }
 
-    protected HornetQSession session(final Options<SubscribeOption> options, HornetQConnection connection) throws Exception {
+    protected HornetQSession session(final Options<SubscribeOption> options, Connection connection) throws Exception {
         final Options<SubscribeOption> opts = new Options<>(options);
         return (HornetQSession)connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{
             put(Connection.CreateSessionOption.MODE, opts.getBoolean(SubscribeOption.TRANSACTED) ?

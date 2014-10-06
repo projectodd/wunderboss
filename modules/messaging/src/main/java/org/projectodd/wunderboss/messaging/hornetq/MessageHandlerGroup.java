@@ -34,7 +34,7 @@ import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(HornetQConnection connection,
+    public MessageHandlerGroup(Connection connection,
                                MessageHandler handler,
                                Codecs codecs,
                                HornetQDestination destination,
@@ -54,7 +54,6 @@ public class MessageHandlerGroup implements Listener {
                 listeners.add(new JMSListener(this.handler,
                                               this.codecs,
                                               this.destination,
-                                              this.connection,
                                               session,
                                               createConsumer(session.context()))
                                       .start());
@@ -109,7 +108,7 @@ public class MessageHandlerGroup implements Listener {
     private final Codecs codecs;
     private final HornetQDestination destination;
     private final Options<ListenOption> options;
-    private HornetQConnection connection;
+    private Connection connection;
     private final List<JMSListener> listeners = new ArrayList<>();
     private boolean started = false;
 

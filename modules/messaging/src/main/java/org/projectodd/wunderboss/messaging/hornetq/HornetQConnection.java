@@ -68,6 +68,11 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
         this.jmsContext.close();
     }
 
+    @Override
+    public void addCloseable(AutoCloseable closeable) {
+        this.closeables.add(closeable);
+    }
+
     public JMSContext jmsContext() {
         return this.jmsContext;
     }
@@ -82,10 +87,6 @@ public class HornetQConnection implements org.projectodd.wunderboss.messaging.Co
 
     public Options<Messaging.CreateConnectionOption> creationOptions() {
         return this.creationOptions;
-    }
-
-    protected void addCloseable(AutoCloseable closeable) {
-        this.closeables.add(closeable);
     }
 
     private final JMSContext jmsContext;

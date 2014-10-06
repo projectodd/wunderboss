@@ -27,4 +27,6 @@ public interface Connection extends AutoCloseable {
     }
 
     Session createSession(Map<CreateSessionOption, Object> options) throws Exception;
+
+    void addCloseable(AutoCloseable closeable);
 }

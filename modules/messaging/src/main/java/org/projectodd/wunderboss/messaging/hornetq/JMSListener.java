@@ -32,13 +32,11 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
     public JMSListener(MessageHandler handler,
                        Codecs codecs,
                        Destination endpoint,
-                       HornetQConnection connection,
                        HornetQSession session,
                        JMSConsumer consumer) {
         this.handler = handler;
         this.codecs = codecs;
         this.endpoint = endpoint;
-        this.connection = connection;
         this.session = session;
         this.consumer = consumer;
     }
@@ -204,7 +202,6 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
     private final MessageHandler handler;
     private final Codecs codecs;
     private final Destination endpoint;
-    private final HornetQConnection connection;
     private final HornetQSession session;
     private final JMSConsumer consumer;
     //private final boolean xa;
