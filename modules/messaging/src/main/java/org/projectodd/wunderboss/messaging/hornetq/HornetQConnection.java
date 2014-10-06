@@ -43,7 +43,7 @@ public class HornetQConnection implements Connection, Synchronization {
 
     @Override
     public void close() throws Exception {
-        if (isXAEnabled()) {
+        if (isXAEnabled() && HornetQXASession.tm.getTransaction() != null) {
             HornetQXASession.tm.getTransaction().registerSynchronization(this);
         } else {
             shutItDown();
