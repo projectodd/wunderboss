@@ -328,12 +328,16 @@
         (is (= "response-25" (.body (.get response3))))))))
 
 (deftest request-response-with-ttl
-  (let [queue (create-queue "rr-queue")]
+  (let [queue (create-queue "rr-queue")
+        latch (java.util.concurrent.CountDownLatch. 1)]
     (with-open [listener (.respond queue
-                           (handler identity)
+                           (handler (fn [m]
+                                      (.countDown latch)
+                                      m))
                            codecs
                            (coerce-respond-options {:ttl 1}))]
       (let [response (.request queue "nope" None/INSTANCE codecs nil)]
+        (.await latch 10 TimeUnit/SECONDS)
         (Thread/sleep 100)
         (is (thrown? java.util.concurrent.TimeoutException
               (.get response 1 TimeUnit/MILLISECONDS)))))))
