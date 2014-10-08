@@ -22,7 +22,7 @@ import java.util.Map;
 
 public interface Connection extends AutoCloseable {
 
-    static final Object XA = new Object();
+    public static final Object XA = new Object();
 
     class CreateSessionOption extends Option {
         public static final CreateSessionOption MODE = opt("mode", Session.Mode.AUTO_ACK, CreateSessionOption.class);
