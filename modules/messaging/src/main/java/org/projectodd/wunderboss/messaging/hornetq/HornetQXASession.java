@@ -53,7 +53,11 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
 
     @Override
     public void close() throws Exception {
-        tm.getTransaction().registerSynchronization(this);
+        if (tm.getTransaction() == null) {
+            connection().close();
+        } else {
+            tm.getTransaction().registerSynchronization(this);
+        }
     }
 
     @Override

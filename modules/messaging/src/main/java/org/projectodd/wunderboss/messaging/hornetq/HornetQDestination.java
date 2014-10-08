@@ -66,8 +66,6 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         Listener listener = new MessageHandlerGroup(connection, handler,
                                                     codecs, this,
                                                     opts).start();
-        // TODO: Not sure when this connection will be closed. XA ones will
-        // potentially leak if it doesn't happen
         connection.addCloseable(listener);
         this.broker.addCloseableForDestination(this, listener);
 
