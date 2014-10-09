@@ -47,8 +47,12 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
 
     @Override
     public boolean enlist() throws Exception {
-        XAResource resource = ((XAJMSContext) context()).getXAResource();
-        return tm.getTransaction().enlistResource(resource);
+        if (!WunderBoss.inContainer()) {
+            XAResource resource = ((XAJMSContext) context()).getXAResource();
+            return tm.getTransaction().enlistResource(resource);
+        } else {
+            return true;
+        }
     }
 
     @Override
