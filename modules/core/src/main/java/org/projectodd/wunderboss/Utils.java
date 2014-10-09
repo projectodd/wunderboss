@@ -49,10 +49,6 @@ public class Utils {
         return cp.trim().split(":");
     }
 
-    public static boolean inContainer() {
-        return WunderBoss.options().has("deployment-name");
-    }
-
     public static void deleteRecursively(File directory) {
         if (directory.isDirectory()) {
             File[] children = directory.listFiles();
