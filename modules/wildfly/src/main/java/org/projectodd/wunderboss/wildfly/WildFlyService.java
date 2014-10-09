@@ -27,6 +27,7 @@ import org.jboss.msc.service.StopContext;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.caching.Caching;
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.transactions.Transaction;
 import org.projectodd.wunderboss.singleton.SingletonContext;
 
 import javax.naming.Context;
@@ -67,6 +68,11 @@ public class WildFlyService implements Service<WildFlyService> {
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our caching
         }
+        try {
+            WunderBoss.registerComponentProvider(Transaction.class, new WildFlyTransactionProvider());
+        } catch (LinkageError ignored) {
+            // Ignore - perhaps the user isn't using our caching
+        }
         WunderBoss.registerComponentProvider(SingletonContext.class, new SingletonContextProvider());
         WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
     }
@@ -101,4 +107,5 @@ public class WildFlyService implements Service<WildFlyService> {
 
     static final ServiceName JMS_MANAGER_SERVICE_NAME = ServiceName.JBOSS.append("messaging", "default", "jms", "manager");
     static final ServiceName WEB_CACHE_MANAGER = ServiceName.JBOSS.append("infinispan", "web");
+    static final ServiceName TRANSACTION_MANAGER = ServiceName.JBOSS.append("txn", "TransactionManager");
 }
