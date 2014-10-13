@@ -54,6 +54,11 @@ public class HornetQConnection implements Connection {
         this.closeables.add(closeable);
     }
 
+    @Override
+    public boolean isRemote() {
+        return this.creationOptions.has(Messaging.CreateConnectionOption.HOST);
+    }
+
     public JMSContext jmsContext() {
         return this.jmsContext;
     }
@@ -106,6 +111,11 @@ public class HornetQConnection implements Connection {
         @Override
         public void addCloseable(AutoCloseable closeable) {
             HornetQConnection.this.addCloseable(closeable);
+        }
+
+        @Override
+        public boolean isRemote() {
+            return HornetQConnection.this.isRemote();
         }
 
         @Override

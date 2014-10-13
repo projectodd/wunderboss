@@ -28,6 +28,7 @@ import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
 import org.hornetq.core.server.JournalType;
 import org.hornetq.core.server.impl.HornetQServerImpl;
 import org.hornetq.jms.client.HornetQConnectionFactory;
+import org.hornetq.jms.client.HornetQXAConnectionFactory;
 import org.hornetq.jms.server.JMSServerManager;
 import org.hornetq.jms.server.impl.JMSServerManagerImpl;
 import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
@@ -167,14 +168,17 @@ public class HornetQMessaging implements Messaging {
         return createContext((ConnectionFactory)lookupJNDI(factoryName), options);
     }
 
-    private XAJMSContext createXAContext(String factoryName, Options<CreateConnectionOption> options) {
-        XAConnectionFactory cf = (XAConnectionFactory)lookupJNDI(factoryName);
+    private XAJMSContext createXAContext(XAConnectionFactory cf, Options<CreateConnectionOption> options) {
         if (options.has(CreateConnectionOption.USERNAME)) {
             return cf.createXAContext(options.getString(CreateConnectionOption.USERNAME),
                                       options.getString(CreateConnectionOption.PASSWORD));
         } else {
             return cf.createXAContext();
         }
+    }
+
+    private XAJMSContext createXAContext(String factoryName, Options<CreateConnectionOption> options) {
+        return createXAContext((XAConnectionFactory)lookupJNDI(factoryName), options);
     }
 
     private ConnectionFactory createHQConnectionFactory(final Options<CreateConnectionOption> options) {
@@ -187,7 +191,11 @@ public class HornetQMessaging implements Messaging {
                             put("http-upgrade-enabled",
                                     REMOTE_TYPE_WILDFLY.equals(options.getString(CreateConnectionOption.REMOTE_TYPE)));
                         }});
-        HornetQConnectionFactory hornetQcf = HornetQJMSClient.createConnectionFactoryWithoutHA(JMSFactoryType.CF, config);
+        HornetQConnectionFactory hornetQcf = HornetQJMSClient
+                .createConnectionFactoryWithoutHA(options.has(CreateConnectionOption.XA) ?
+                                                          JMSFactoryType.XA_CF :
+                                                          JMSFactoryType.CF,
+                                                  config);
 
         hornetQcf.setReconnectAttempts(options.getInt(CreateConnectionOption.RECONNECT_ATTEMPTS));
         hornetQcf.setRetryInterval(options.getLong(CreateConnectionOption.RECONNECT_RETRY_INTERVAL));
@@ -203,7 +211,11 @@ public class HornetQMessaging implements Messaging {
         JMSContext context;
 
         if (opts.has(CreateConnectionOption.HOST)) {
-            context = createContext(createHQConnectionFactory(opts), opts);
+            if (opts.getBoolean(CreateConnectionOption.XA)) {
+                context = createXAContext((HornetQXAConnectionFactory)createHQConnectionFactory(opts), opts);
+            } else {
+                context = createContext(createHQConnectionFactory(opts), opts);
+            }
         }  else {
             start();
 

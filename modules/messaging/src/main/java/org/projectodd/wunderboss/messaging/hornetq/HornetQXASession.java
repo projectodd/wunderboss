@@ -19,11 +19,11 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Connection;
 
+import javax.jms.JMSContext;
+import javax.jms.XAJMSContext;
 import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
-import javax.jms.JMSContext;
-import javax.jms.XAJMSContext;
 import java.lang.reflect.Method;
 
 public class HornetQXASession extends HornetQSession implements Synchronization {
@@ -47,7 +47,10 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
 
     @Override
     public boolean enlist() throws Exception {
-        if (!WunderBoss.inContainer()) {
+        if (tm.getTransaction() == null) {
+            return false;
+        } else if (!WunderBoss.inContainer() ||
+                    this.connection().isRemote()) {
             XAResource resource = ((XAJMSContext) context()).getXAResource();
             return tm.getTransaction().enlistResource(resource);
         } else {

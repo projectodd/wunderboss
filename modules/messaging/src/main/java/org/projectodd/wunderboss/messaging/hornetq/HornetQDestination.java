@@ -89,14 +89,20 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         boolean shouldClose = false;
 
         if (session == null) {
-            session = HornetQSession.currentSession.get();
+            Connection connection = connection(options.get(MessageOpOption.CONNECTION));
+            Session threadSession = HornetQSession.currentSession.get();
+
+            if (threadSession != null &&
+                    threadSession.connection() == connection) {
+                session = threadSession;
+            } else {
+                session = connection.createSession(null);
+                shouldClose = true;
+            }
         }
 
-        if (session == null) {
-            session = connection(options.get(MessageOpOption.CONNECTION)).createSession(null);
-            shouldClose = true;
-        }
         session.enlist();
+
         return new Pair(session, shouldClose);
     }
 
