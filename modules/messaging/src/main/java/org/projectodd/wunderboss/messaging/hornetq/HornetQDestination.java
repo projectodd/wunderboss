@@ -92,7 +92,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             Connection connection = connection(options.get(MessageOpOption.CONNECTION));
             Session threadSession = HornetQSession.currentSession.get();
 
-            if (threadSession != null && !connection.isRemote()) {
+            if (threadSession != null && threadSession.connection() == connection) {
                 session = threadSession;
             } else {
                 session = connection.createSession(null);
