@@ -68,13 +68,11 @@ public class MessageHandlerGroup implements Listener {
     @Override
     public synchronized void close() throws Exception {
         if (this.started) {
+            this.started = false;
             for(JMSListener each : this.listeners) {
                 each.stop();
             }
-
             this.listeners.clear();
-
-            this.started = false;
         }
     }
 

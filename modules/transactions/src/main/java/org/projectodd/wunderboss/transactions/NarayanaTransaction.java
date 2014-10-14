@@ -118,6 +118,7 @@ public class NarayanaTransaction implements Transaction {
         } catch (javax.transaction.RollbackException ignored) {
             return null;
         } catch (Throwable e) {
+            log.warn("Exception occurred during transaction; rolling back", e);
             mgr.rollback();
             throw new RuntimeException("Transaction rolled back", e);
         }

@@ -40,6 +40,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jboss</groupId>
+      <artifactId>jboss-transaction-spi</artifactId>
+      <version>7.1.0.Final</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-messaging</artifactId>
       <version>${project.version}</version>
