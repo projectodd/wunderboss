@@ -391,6 +391,5 @@
 (deftest toss-when-xa-unavailable
   (is (thrown-with-msg? NullPointerException
         #"TransactionManager not found"
-        (-> default
-          (.createConnection (coerce-connection-options {:xa true}))
-          (.createSession nil)))))
+        (with-open [conn (.createConnection default (coerce-connection-options {:xa true}))]
+          (.createSession conn nil)))))
