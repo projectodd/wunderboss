@@ -45,7 +45,7 @@
       (fn []
         (.put cache :a 1)
         (.required tx #(.put cache :b 2))
-        (throw (Exception.)))))
+        (throw (Exception. "force rollback")))))
   (is (empty? cache)))
 
 (deftest required-rollback-parent-sro
@@ -64,7 +64,7 @@
         (.required tx
           (fn []
             (.put cache :b 2)
-            (throw (Exception.)))))))
+            (throw (Exception. "force rollback")))))))
   (is (empty? cache)))
 
 (deftest required-rollback-child-sro
@@ -91,7 +91,7 @@
       (fn []
         (.put cache :a 1)
         (.requiresNew tx #(.put cache :b 2))
-        (throw (Exception.)))))
+        (throw (Exception. "force rollback")))))
   (is (nil? (:a cache)))
   (is (= 2 (:b cache))))
 
@@ -112,7 +112,7 @@
         (.requiresNew tx
           (fn []
             (.put cache :b 2)
-            (throw (Exception.)))))))
+            (throw (Exception. "force rollback")))))))
   (is (= 1 (:a cache)))
   (is (nil? (:b cache))))
 
@@ -162,7 +162,7 @@
       (fn []
         (.put cache :a 1)
         (.notSupported tx #(.put cache :b 2))
-        (throw (Exception.)))))
+        (throw (Exception. "force rollback")))))
   (is (nil? (:a cache)))
   (is (= 2 (:b cache))))
 
@@ -183,7 +183,7 @@
         (.notSupported tx
           (fn []
             (.put cache :b 2)
-            (throw (Exception.)))))))
+            (throw (Exception. "force rollback")))))))
   (is (= 1 (:a cache)))
   (is (= 2 (:b cache))))
 
@@ -192,7 +192,7 @@
     (.supports tx
       (fn []
         (.put cache :a 1)
-        (throw (Exception.)))))
+        (throw (Exception. "force rollback")))))
   (is (= 1 (:a cache))))
 
 (deftest supports-rollback-parent
@@ -201,7 +201,7 @@
       (fn []
         (.put cache :a 1)
         (.supports tx #(.put cache :b 2))
-        (throw (Exception.)))))
+        (throw (Exception. "force rollback")))))
   (is (empty? cache)))
 
 (deftest supports-rollback-parent-sro
@@ -220,7 +220,7 @@
         (.supports tx
           (fn []
             (.put cache :b 2)
-            (throw (Exception.)))))))
+            (throw (Exception. "force rollback")))))))
   (is (empty? cache)))
 
 (deftest supports-rollback-child-sro
