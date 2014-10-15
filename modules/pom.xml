@@ -48,6 +48,7 @@
           <testSourceDirectories>
             <testSourceDirectory>src/test/clojure</testSourceDirectory>
           </testSourceDirectories>
+          <clojureOptions>-Dhornetq.data.dir=target/hornetq-data</clojureOptions>
         </configuration>
       </plugin>
     </plugins>

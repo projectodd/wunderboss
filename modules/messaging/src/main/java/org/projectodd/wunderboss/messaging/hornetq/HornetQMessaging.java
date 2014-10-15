@@ -19,19 +19,9 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.hornetq.api.core.TransportConfiguration;
 import org.hornetq.api.jms.HornetQJMSClient;
 import org.hornetq.api.jms.JMSFactoryType;
-import org.hornetq.core.config.Configuration;
-import org.hornetq.core.config.impl.ConfigurationImpl;
-import org.hornetq.core.registry.MapBindingRegistry;
-import org.hornetq.core.remoting.impl.invm.InVMAcceptorFactory;
-import org.hornetq.core.remoting.impl.invm.InVMConnectorFactory;
-import org.hornetq.core.remoting.impl.netty.NettyAcceptorFactory;
-import org.hornetq.core.server.JournalType;
-import org.hornetq.core.server.impl.HornetQServerImpl;
 import org.hornetq.jms.client.HornetQConnectionFactory;
 import org.hornetq.jms.client.HornetQXAConnectionFactory;
 import org.hornetq.jms.server.JMSServerManager;
-import org.hornetq.jms.server.impl.JMSServerManagerImpl;
-import org.hornetq.spi.core.security.HornetQSecurityManagerImpl;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Connection;
@@ -41,12 +31,9 @@ import org.projectodd.wunderboss.messaging.Topic;
 import org.slf4j.Logger;
 
 import javax.jms.ConnectionFactory;
-import javax.jms.XAConnectionFactory;
 import javax.jms.JMSContext;
+import javax.jms.XAConnectionFactory;
 import javax.jms.XAJMSContext;
-import javax.jms.JMSException;
-import javax.jms.JMSRuntimeException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,45 +55,18 @@ public class HornetQMessaging implements Messaging {
     @Override
     public synchronized void start() throws Exception {
         if (!started) {
-            Configuration config = new ConfigurationImpl();
-            Set<TransportConfiguration> transports = new HashSet<>();
+            this.server = new EmbeddedServer();
 
-            transports.add(new TransportConfiguration(NettyAcceptorFactory.class.getName()));
-            transports.add(new TransportConfiguration(InVMAcceptorFactory.class.getName()));
+            ClassLoader cl = this.getClass().getClassLoader();
+            if (cl.getResource("hornetq-configuration.xml") == null) {
+                this.server.setConfigResourcePath("default-hornetq-configuration.xml");
+            }
 
-            config.setAcceptorConfigurations(transports);
+            if (cl.getResource("hornetq-jms.xml") == null) {
+                this.server.setJmsConfigResourcePath("default-hornetq-jms.xml");
+            }
 
-            Map<String, TransportConfiguration> connectors = new HashMap<>();
-            connectors.put("in-vm", new TransportConfiguration(InVMConnectorFactory.class.getName()));
-
-            config.setConnectorConfigurations(connectors);
-
-            config.setJournalType(JournalType.NIO);
-            config.setJournalDirectory("target/data/journal");
-
-            // TODO: security?
-            config.setSecurityEnabled(false);
-
-            config.setPersistenceEnabled(true);
-
-            config.setBindingsDirectory("target/data/bindings");
-            config.setLargeMessagesDirectory("target/data/largemessages");
-
-            //TODO: mbean server
-            this.jmsServerManager =
-                    new JMSServerManagerImpl(new HornetQServerImpl(config, new HornetQSecurityManagerImpl()),
-                                             new MapBindingRegistry());
-            this.jmsServerManager.start();
-
-            List<String> connectorNames = new ArrayList<>();
-            connectorNames.add("in-vm");
-
-            this.jmsServerManager.createConnectionFactory("cf", false,
-                                                          JMSFactoryType.CF,
-                                                          connectorNames, "java:/ConnectionFactory");
-            this.jmsServerManager.createConnectionFactory("xa-cf", false,
-                                                          JMSFactoryType.XA_CF,
-                                                          connectorNames, "java:/JmsXA");
+            this.server.start();
 
             this.started = true;
         }
@@ -116,8 +76,8 @@ public class HornetQMessaging implements Messaging {
     public synchronized void stop() throws Exception {
         if (started) {
             closeDefaultConnection();
-            this.jmsServerManager.stop();
-            this.jmsServerManager = null;
+            this.server.stop();
+            this.server = null;
             this.started = false;
         }
     }
@@ -136,7 +96,7 @@ public class HornetQMessaging implements Messaging {
 
     public JMSServerManager jmsServerManager() {
         if (this.started) {
-            return this.jmsServerManager;
+            return this.server.serverManager();
         }
 
         return null;
@@ -178,7 +138,7 @@ public class HornetQMessaging implements Messaging {
     }
 
     private XAJMSContext createXAContext(String factoryName, Options<CreateConnectionOption> options) {
-        return createXAContext((XAConnectionFactory)lookupJNDI(factoryName), options);
+        return createXAContext((XAConnectionFactory) lookupJNDI(factoryName), options);
     }
 
     private ConnectionFactory createHQConnectionFactory(final Options<CreateConnectionOption> options) {
@@ -286,13 +246,17 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected javax.jms.Topic createTopic(String name) throws Exception {
-        this.jmsServerManager.createTopic(false, name, HornetQDestination.jndiName(name, "topic"));
+        this.server
+                .serverManager()
+                .createTopic(false, name, HornetQDestination.jndiName(name, "topic"));
 
         return lookupTopic(name);
     }
 
     protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
-        this.jmsServerManager.createQueue(false, name, selector, durable, HornetQDestination.jndiName(name, "queue"));
+        this.server
+                .serverManager()
+                .createQueue(false, name, selector, durable, HornetQDestination.jndiName(name, "queue"));
 
         return lookupQueue(name);
     }
@@ -342,8 +306,8 @@ public class HornetQMessaging implements Messaging {
     protected javax.jms.Topic lookupTopic(String name) {
         List<String> jndiNames = new ArrayList<>();
 
-        if (this.jmsServerManager != null) {
-            jndiNames.addAll(Arrays.asList(this.jmsServerManager.getJNDIOnTopic(name)));
+        if (this.server != null) {
+            jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnTopic(name)));
         }
         jndiNames.add(name);
         jndiNames.add(HornetQTopic.jmsName(name));
@@ -355,8 +319,8 @@ public class HornetQMessaging implements Messaging {
     protected javax.jms.Queue lookupQueue(String name) {
         List<String> jndiNames = new ArrayList<>();
 
-        if (this.jmsServerManager != null) {
-            jndiNames.addAll(Arrays.asList(this.jmsServerManager.getJNDIOnQueue(name)));
+        if (this.server != null) {
+            jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnQueue(name)));
         }
         jndiNames.add(name);
         jndiNames.add(HornetQQueue.jmsName(name));
@@ -366,7 +330,7 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected Object lookupJNDI(String jndiName) {
-        return jmsServerManager.getRegistry().lookup(jndiName);
+        return server.getRegistry().lookup(jndiName);
     }
 
     protected Object lookupJNDI(List<String> jndiNames) {
@@ -386,7 +350,7 @@ public class HornetQMessaging implements Messaging {
     private final Map<String, List<AutoCloseable>> closeablesForDestination = new HashMap<>();
     private Connection defaultConnection;
     protected boolean started = false;
-    protected JMSServerManager jmsServerManager;
+    protected EmbeddedServer server;
 
     private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.messaging.hornetq");
 }
