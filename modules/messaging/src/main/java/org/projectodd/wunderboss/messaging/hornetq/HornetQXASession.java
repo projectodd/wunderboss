@@ -83,6 +83,14 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
         // nothing
     }
 
+    public static boolean isTransactionActive() {
+        try {
+            return tm != null && tm.getTransaction() != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean closed = false;
 
     public static final TransactionManager tm;

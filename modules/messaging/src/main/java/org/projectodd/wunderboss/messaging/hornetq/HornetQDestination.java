@@ -109,12 +109,13 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     // pass through HOST and CLIENT_ID to createConnection
     protected Connection connection(Object connection) throws Exception {
         if (connection == null) {
-            return this.broker.defaultConnection();
-        }
-        if (connection == Connection.XA) {
-            return this.broker.createConnection(new HashMap() {{
-                put(Messaging.CreateConnectionOption.XA, true);
-            }});
+            if (HornetQXASession.isTransactionActive()) {
+                return this.broker.createConnection(new HashMap() {{
+                    put(Messaging.CreateConnectionOption.XA, true);
+                }});
+            } else {
+                return this.broker.defaultConnection();
+            }
         }
         HornetQConnection c = (HornetQConnection) connection;
         return c.new NonClosing();
