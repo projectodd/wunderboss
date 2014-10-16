@@ -18,12 +18,12 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Reply;
-import org.projectodd.wunderboss.messaging.Session;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,9 +35,9 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
     @Override
-    public Reply onMessage(Message msg, Session session) throws Exception {
-        String id = ((HornetQMessage)msg).requestID();
-        HornetQResponse response = responses.remove(id);
+    public Reply onMessage(Message msg, Context ignored) throws Exception {
+        String id = ((HQMessage)msg).requestID();
+        HQResponse response = responses.remove(id);
         if (response == null) {
             throw new IllegalStateException("No responder for id " + id);
         }
@@ -47,12 +47,12 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
 
-    public void registerResponse(String id, HornetQResponse response) {
+    public void registerResponse(String id, HQResponse response) {
         this.responses.put(id, response);
     }
 
 
-    public synchronized static ResponseRouter routerFor(HornetQQueue queue, Codecs codecs,
+    public synchronized static ResponseRouter routerFor(HQQueue queue, Codecs codecs,
                                                         Options<Destination.ListenOption> options) {
         ResponseRouter router = routers.get(queue.name());
         if (router == null) {
@@ -87,7 +87,7 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
     private final static Map<String, ResponseRouter> routers = new HashMap<>();
-    private final Map<String, HornetQResponse> responses = new HashMap<>();
+    private final Map<String, HQResponse> responses = new HashMap<>();
     private final String id;
     private Listener enclosingListener;
 

@@ -26,7 +26,7 @@ public interface Destination {
     String name();
 
     class ListenOption extends Option {
-        public static final ListenOption CONNECTION = opt("connection", ListenOption.class);
+        public static final ListenOption CONTEXT = opt("context", ListenOption.class);
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         public static final ListenOption TRANSACTED = opt("transacted", true, ListenOption.class);
@@ -37,8 +37,7 @@ public interface Destination {
                     Map<ListenOption, Object> options) throws Exception;
 
     class MessageOpOption extends Option {
-        public static final MessageOpOption CONNECTION = opt("connection", MessageOpOption.class);
-        public static final MessageOpOption SESSION = opt("session", MessageOpOption.class);
+        public static final MessageOpOption CONTEXT = opt("context", MessageOpOption.class);
     }
 
     class SendOption extends MessageOpOption {

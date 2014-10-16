@@ -24,7 +24,7 @@ import org.hornetq.jms.client.HornetQXAConnectionFactory;
 import org.hornetq.jms.server.JMSServerManager;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Topic;
@@ -42,12 +42,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class HornetQMessaging implements Messaging {
+public class HQMessaging implements Messaging {
 
     public static final String REMOTE_TYPE_WILDFLY = "hornetq_wildfly";
     public static final String REMOTE_TYPE_STANDALONE = "hornetq_standalone";
 
-    public HornetQMessaging(String name, Options<CreateOption> options) {
+    public HQMessaging(String name, Options<CreateOption> options) {
         this.name = name;
         this.options = options;
     }
@@ -88,9 +88,9 @@ public class HornetQMessaging implements Messaging {
     }
 
     protected void closeDefaultConnection() throws Exception {
-        if (this.defaultConnection != null) {
-            this.defaultConnection.close();
-            this.defaultConnection = null;
+        if (this.defaultContext != null) {
+            this.defaultContext.close();
+            this.defaultContext = null;
         }
     }
 
@@ -108,89 +108,140 @@ public class HornetQMessaging implements Messaging {
     }
 
     @Override
-    public Connection defaultConnection() throws Exception {
-        if (this.defaultConnection == null) {
-            this.defaultConnection = createConnection(null);
+    public Context defaultContext() throws Exception {
+        if (this.defaultContext == null) {
+            this.defaultContext = createContext("java:/ConnectionFactory",
+                                                new Options());
         }
-        return this.defaultConnection;
+
+        return this.defaultContext.asNonCloseable();
     }
 
-    private JMSContext createContext(ConnectionFactory cf, Options<CreateConnectionOption> options) {
-        if (options.has(CreateConnectionOption.USERNAME)) {
-            return cf.createContext(options.getString(CreateConnectionOption.USERNAME),
-                                    options.getString(CreateConnectionOption.PASSWORD));
+    private HQContext createContext(ConnectionFactory cf, Options<CreateContextOption> options) {
+        int mode = 0;
+        switch ((Context.Mode)options.get(Messaging.CreateContextOption.MODE)) {
+            case AUTO_ACK:
+                mode = JMSContext.AUTO_ACKNOWLEDGE;
+                break;
+            case CLIENT_ACK:
+                mode = JMSContext.CLIENT_ACKNOWLEDGE;
+                break;
+            case TRANSACTED:
+                mode = JMSContext.SESSION_TRANSACTED;
+                break;
+        }
+        JMSContext jmsContext;
+        HQContext parentContext = null;
+
+        if (options.has(CreateContextOption.USERNAME)) {
+            jmsContext = cf.createContext(options.getString(CreateContextOption.USERNAME),
+                                          options.getString(CreateContextOption.PASSWORD),
+                                          mode);
         } else {
-            return cf.createContext();
+            parentContext = (HQContext)options.get(CreateContextOption.CONTEXT);
+            if (parentContext != null) {
+                jmsContext = parentContext
+                        .jmsContext()
+                        .createContext(mode);
+            } else if (options.has(CreateContextOption.HOST)
+                    || options.has(CreateContextOption.CLIENT_ID)
+                    || this.defaultContext == null) {
+                // always create a new top-level context when it's remote,
+                // requires an id, or we don't yet have a default
+                // (which means we're trying to create the default)
+                jmsContext = cf.createContext(mode);
+            } else {
+                try {
+                    parentContext = (HQContext)this.defaultContext();
+                    jmsContext = parentContext
+                            .jmsContext()
+                            .createContext(mode);
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
         }
+
+        return new ConcreteHQContext(jmsContext, this, options, parentContext);
     }
 
-    private JMSContext createContext(String factoryName, Options<CreateConnectionOption> options) {
-        return createContext((ConnectionFactory)lookupJNDI(factoryName), options);
+    private HQContext createContext(String factoryName, Options<CreateContextOption> options) {
+        return createContext((ConnectionFactory) lookupJNDI(factoryName), options);
     }
 
-    private XAJMSContext createXAContext(XAConnectionFactory cf, Options<CreateConnectionOption> options) {
-        if (options.has(CreateConnectionOption.USERNAME)) {
-            return cf.createXAContext(options.getString(CreateConnectionOption.USERNAME),
-                                      options.getString(CreateConnectionOption.PASSWORD));
+    private HQContext createXAContext(XAConnectionFactory cf, Options<CreateContextOption> options) {
+        XAJMSContext context;
+
+        if (HQXAContext.tm == null) {
+            throw new NullPointerException("TransactionManager not found; is transactions module on the classpath?");
+        }
+
+        if (options.has(CreateContextOption.USERNAME)) {
+            context = cf.createXAContext(options.getString(CreateContextOption.USERNAME),
+                                      options.getString(CreateContextOption.PASSWORD));
         } else {
-            return cf.createXAContext();
+            context = cf.createXAContext();
         }
+
+        return new HQXAContext(context, this, options);
     }
 
-    private XAJMSContext createXAContext(String factoryName, Options<CreateConnectionOption> options) {
+    private HQContext createXAContext(String factoryName, Options<CreateContextOption> options) {
         return createXAContext((XAConnectionFactory) lookupJNDI(factoryName), options);
     }
 
-    private ConnectionFactory createHQConnectionFactory(final Options<CreateConnectionOption> options) {
+    private ConnectionFactory createHQConnectionFactory(final Options<CreateContextOption> options) {
         //TODO: possibly cache the remote cf's?
         TransportConfiguration config =
                 new TransportConfiguration("org.hornetq.core.remoting.impl.netty.NettyConnectorFactory",
                         new HashMap() {{
-                            put("host", options.getString(CreateConnectionOption.HOST));
-                            put("port", options.getInt(CreateConnectionOption.PORT));
+                            put("host", options.getString(CreateContextOption.HOST));
+                            put("port", options.getInt(CreateContextOption.PORT));
                             put("http-upgrade-enabled",
-                                    REMOTE_TYPE_WILDFLY.equals(options.getString(CreateConnectionOption.REMOTE_TYPE)));
+                                    REMOTE_TYPE_WILDFLY.equals(options.getString(CreateContextOption.REMOTE_TYPE)));
                         }});
         HornetQConnectionFactory hornetQcf = HornetQJMSClient
-                .createConnectionFactoryWithoutHA(options.has(CreateConnectionOption.XA) ?
+                .createConnectionFactoryWithoutHA(options.has(CreateContextOption.XA) ?
                                                           JMSFactoryType.XA_CF :
                                                           JMSFactoryType.CF,
                                                   config);
 
-        hornetQcf.setReconnectAttempts(options.getInt(CreateConnectionOption.RECONNECT_ATTEMPTS));
-        hornetQcf.setRetryInterval(options.getLong(CreateConnectionOption.RECONNECT_RETRY_INTERVAL));
-        hornetQcf.setRetryIntervalMultiplier(options.getDouble(CreateConnectionOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
-        hornetQcf.setMaxRetryInterval(options.getLong(CreateConnectionOption.RECONNECT_MAX_RETRY_INTERVAL));
+        hornetQcf.setReconnectAttempts(options.getInt(CreateContextOption.RECONNECT_ATTEMPTS));
+        hornetQcf.setRetryInterval(options.getLong(CreateContextOption.RECONNECT_RETRY_INTERVAL));
+        hornetQcf.setRetryIntervalMultiplier(options.getDouble(CreateContextOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
+        hornetQcf.setMaxRetryInterval(options.getLong(CreateContextOption.RECONNECT_MAX_RETRY_INTERVAL));
 
         return hornetQcf;
     }
 
     @Override
-    public Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception {
-        final Options<CreateConnectionOption> opts = new Options<>(options);
-        JMSContext context;
+    public Context createContext(Map<CreateContextOption, Object> options) throws Exception {
+        final Options<CreateContextOption> opts = new Options<>(options);
+        HQContext context;
 
-        if (opts.has(CreateConnectionOption.HOST)) {
-            if (opts.getBoolean(CreateConnectionOption.XA)) {
-                context = createXAContext((HornetQXAConnectionFactory)createHQConnectionFactory(opts), opts);
+        boolean xa = opts.getBoolean(CreateContextOption.XA);
+        if (opts.has(CreateContextOption.HOST)) {
+            if (xa) {
+                context = createXAContext((HornetQXAConnectionFactory) createHQConnectionFactory(opts), opts);
             } else {
                 context = createContext(createHQConnectionFactory(opts), opts);
             }
         }  else {
             start();
 
-            if (opts.getBoolean(CreateConnectionOption.XA)) {
+            if (xa) {
                 context = createXAContext("java:/JmsXA", opts);
             } else {
                 context = createContext("java:/ConnectionFactory", opts);
             }
         }
 
-        if (opts.has(CreateConnectionOption.CLIENT_ID)) {
-            context.setClientID(opts.getString(CreateConnectionOption.CLIENT_ID));
+        if (opts.has(CreateContextOption.CLIENT_ID)) {
+            context.jmsContext().setClientID(opts.getString(CreateContextOption.CLIENT_ID));
         }
 
-        return new HornetQConnection(context, this, opts);
+
+        return context;
     }
 
     @Override
@@ -198,26 +249,26 @@ public class HornetQMessaging implements Messaging {
                                                 Map<CreateQueueOption, Object> options) throws Exception {
         Options<CreateQueueOption> opts = new Options<>(options);
         javax.jms.Queue queue;
-        if (opts.has(CreateQueueOption.CONNECTION)) {
+        if (opts.has(CreateQueueOption.CONTEXT)) {
             // assume it's remote, so we just need a ref to it
-            queue = ((HornetQConnection)opts.get(CreateQueueOption.CONNECTION)).jmsContext().createQueue(name);
+            queue = ((HQContext)opts.get(CreateQueueOption.CONTEXT)).jmsContext().createQueue(name);
         } else {
             start();
 
             queue = lookupQueue(name);
             if (queue == null) {
-                if (HornetQDestination.isJndiName(name)) {
+                if (HQDestination.isJndiName(name)) {
                     throw new IllegalArgumentException("queue " + name + " does not exist, and jndi names are lookup only.");
                 } else {
                     queue = createQueue(name,
                                         opts.getString(CreateQueueOption.SELECTOR, ""),
                                         opts.getBoolean(CreateQueueOption.DURABLE));
-                    this.createdDestinations.add(HornetQQueue.fullName(name));
+                    this.createdDestinations.add(HQQueue.fullName(name));
                 }
             }
         }
 
-        return new HornetQQueue(name, queue, this);
+        return new HQQueue(name, queue, this);
     }
 
     @Override
@@ -225,30 +276,30 @@ public class HornetQMessaging implements Messaging {
                                                 Map<CreateTopicOption, Object> options) throws Exception {
         Options<CreateTopicOption> opts = new Options<>(options);
         javax.jms.Topic topic;
-        if (opts.has(CreateTopicOption.CONNECTION)) {
+        if (opts.has(CreateTopicOption.CONTEXT)) {
             // assume it's remote, so we just need a ref to it
-            topic = ((HornetQConnection)opts.get(CreateTopicOption.CONNECTION)).jmsContext().createTopic(name);
+            topic = ((HQContext)opts.get(CreateTopicOption.CONTEXT)).jmsContext().createTopic(name);
         } else {
             start();
 
             topic = lookupTopic(name);
             if (topic == null) {
-                if (HornetQDestination.isJndiName(name)) {
+                if (HQDestination.isJndiName(name)) {
                     throw new IllegalArgumentException("topic " + name + " does not exist, and jndi names are lookup only.");
                 } else {
                     topic = createTopic(name);
-                    this.createdDestinations.add(HornetQTopic.fullName(name));
+                    this.createdDestinations.add(HQTopic.fullName(name));
                 }
             }
         }
 
-        return new HornetQTopic(name, topic, this);
+        return new HQTopic(name, topic, this);
     }
 
     protected javax.jms.Topic createTopic(String name) throws Exception {
         this.server
                 .serverManager()
-                .createTopic(false, name, HornetQDestination.jndiName(name, "topic"));
+                .createTopic(false, name, HQDestination.jndiName(name, "topic"));
 
         return lookupTopic(name);
     }
@@ -256,12 +307,12 @@ public class HornetQMessaging implements Messaging {
     protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
         this.server
                 .serverManager()
-                .createQueue(false, name, selector, durable, HornetQDestination.jndiName(name, "queue"));
+                .createQueue(false, name, selector, durable, HQDestination.jndiName(name, "queue"));
 
         return lookupQueue(name);
     }
 
-    protected boolean destroyDestination(HornetQDestination dest) throws Exception {
+    protected boolean destroyDestination(HQDestination dest) throws Exception {
         String fullName = dest.fullName();
         if (this.closeablesForDestination.containsKey(fullName)) {
             for(AutoCloseable each : this.closeablesForDestination.get(fullName)) {
@@ -271,7 +322,7 @@ public class HornetQMessaging implements Messaging {
         }
 
         if (this.createdDestinations.contains(fullName)) {
-            if (dest instanceof HornetQQueue) {
+            if (dest instanceof HQQueue) {
                 destroyQueue(dest.name());
             } else {
                 destroyTopic(dest.name());
@@ -292,7 +343,7 @@ public class HornetQMessaging implements Messaging {
         this.jmsServerManager().destroyTopic(name, true);
     }
 
-    protected void addCloseableForDestination(HornetQDestination dest, AutoCloseable c) {
+    protected void addCloseableForDestination(HQDestination dest, AutoCloseable c) {
         String fullName = dest.fullName();
         List<AutoCloseable> closeables = this.closeablesForDestination.get(fullName);
         if (closeables == null) {
@@ -310,8 +361,8 @@ public class HornetQMessaging implements Messaging {
             jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnTopic(name)));
         }
         jndiNames.add(name);
-        jndiNames.add(HornetQTopic.jmsName(name));
-        jndiNames.add(HornetQDestination.jndiName(name, "topic"));
+        jndiNames.add(HQTopic.jmsName(name));
+        jndiNames.add(HQDestination.jndiName(name, "topic"));
 
         return (javax.jms.Topic)lookupJNDI(jndiNames);
     }
@@ -323,8 +374,8 @@ public class HornetQMessaging implements Messaging {
             jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnQueue(name)));
         }
         jndiNames.add(name);
-        jndiNames.add(HornetQQueue.jmsName(name));
-        jndiNames.add(HornetQDestination.jndiName(name, "queue"));
+        jndiNames.add(HQQueue.jmsName(name));
+        jndiNames.add(HQDestination.jndiName(name, "queue"));
 
         return (javax.jms.Queue)lookupJNDI(jndiNames);
     }
@@ -348,7 +399,7 @@ public class HornetQMessaging implements Messaging {
     private final Options<CreateOption> options;
     private final Set<String> createdDestinations = new HashSet<>();
     private final Map<String, List<AutoCloseable>> closeablesForDestination = new HashMap<>();
-    private Connection defaultConnection;
+    private HQContext defaultContext;
     protected boolean started = false;
     protected EmbeddedServer server;
 

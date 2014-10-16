@@ -17,5 +17,5 @@
 package org.projectodd.wunderboss.messaging;
 
 public interface MessageHandler {
-    Reply onMessage(Message msg, Session session) throws Exception;
+    Reply onMessage(Message msg, Context context) throws Exception;
 }

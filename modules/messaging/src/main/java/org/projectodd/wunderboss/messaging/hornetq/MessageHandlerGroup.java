@@ -19,14 +19,13 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
-import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Destination.ListenOption;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Session;
+import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.JMSConsumer;
-import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,12 +33,14 @@ import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(Connection connection,
+    public MessageHandlerGroup(Context context,
+                               Messaging broker,
                                MessageHandler handler,
                                Codecs codecs,
-                               HornetQDestination destination,
+                               HQDestination destination,
                                Options<ListenOption> options) {
-        this.connection = connection;
+        this.context = context;
+        this.broker = broker;
         this.handler = handler;
         this.codecs = codecs;
         this.destination = destination;
@@ -50,12 +51,12 @@ public class MessageHandlerGroup implements Listener {
         if (!this.started) {
             int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
             while(concurrency-- > 0) {
-                HornetQSession session = createSession();
-                listeners.add(new JMSListener(this.handler,
-                                              this.codecs,
-                                              this.destination,
-                                              session,
-                                              createConsumer(session.context()))
+                HQContext subContext = createContext();
+                listeners.add((new JMSListener(this.handler,
+                                               this.codecs,
+                                               this.destination,
+                                               subContext,
+                                               createConsumer(subContext)))
                                       .start());
             }
 
@@ -76,26 +77,18 @@ public class MessageHandlerGroup implements Listener {
         }
     }
 
-    protected HornetQSession createSession() throws Exception {
-       // if (isTransacted()) {
-         //   return null; //((XAConnection)this.connection.jmsContext()).createXASession();
-        //} else {
-            // Use local transactions for non-XA message processors
-            //return
-            //this.connection.jmsContext().getSession(true,
-            //Session.SESSION_TRANSACTED);
-
-            return (HornetQSession)this.connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{
-                put(Connection.CreateSessionOption.MODE, isTransacted() ? Session.Mode.TRANSACTED : Session.Mode.AUTO_ACK);
-            }});
-        //}
+    protected HQContext createContext() throws Exception {
+        return (HQContext)this.broker.createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
+            put(Messaging.CreateContextOption.CONTEXT, context);
+            put(Messaging.CreateContextOption.MODE, isTransacted() ? Context.Mode.TRANSACTED : Context.Mode.AUTO_ACK);
+        }});
     }
 
-    protected JMSConsumer createConsumer(JMSContext context) throws JMSException {
+    protected JMSConsumer createConsumer(HQContext context) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
         javax.jms.Destination destination = this.destination.jmsDestination();
 
-        return context.createConsumer(destination, selector);
+        return context.jmsContext().createConsumer(destination, selector);
     }
 
     protected boolean isTransacted() {
@@ -104,9 +97,10 @@ public class MessageHandlerGroup implements Listener {
 
     private final MessageHandler handler;
     private final Codecs codecs;
-    private final HornetQDestination destination;
+    private final HQDestination destination;
     private final Options<ListenOption> options;
-    private Connection connection;
+    private final Context context;
+    private final Messaging broker;
     private final List<JMSListener> listeners = new ArrayList<>();
     private boolean started = false;
 

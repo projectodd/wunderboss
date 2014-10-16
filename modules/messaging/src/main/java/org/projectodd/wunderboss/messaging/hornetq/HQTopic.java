@@ -18,11 +18,10 @@ package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
-import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
-import org.projectodd.wunderboss.messaging.Session;
 import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.Destination;
@@ -30,9 +29,9 @@ import javax.jms.JMSConsumer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HornetQTopic extends HornetQDestination implements Topic {
+public class HQTopic extends HQDestination implements Topic {
 
-    public HornetQTopic(String name, Destination destination, HornetQMessaging broker) {
+    public HQTopic(String name, Destination destination, HQMessaging broker) {
         super(name, destination, broker);
     }
 
@@ -41,27 +40,32 @@ public class HornetQTopic extends HornetQDestination implements Topic {
                               final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
-        final Connection connection = connection(id, opts.get(SubscribeOption.CONNECTION));
-        final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONNECTION);
-        final HornetQSession session = session(opts, connection);
-        final JMSConsumer consumer = session.context().createDurableConsumer((javax.jms.Topic)jmsDestination(),
-                                                                             id,
-                                                                             opts.getString(SubscribeOption.SELECTOR), false);
+        final HQContext context = context(id, opts.get(SubscribeOption.CONTEXT));
+        final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONTEXT);
+        final JMSConsumer consumer = context
+                .jmsContext()
+                .createDurableConsumer((javax.jms.Topic) jmsDestination(),
+                                       id,
+                                       opts.getString(SubscribeOption.SELECTOR), false);
 
         final Listener listener = new JMSListener(handler,
                                                   codecs,
                                                   this,
-                                                  session,
+                                                  context,
                                                   consumer).start();
 
-        connection.addCloseable(listener);
+        Context parent = (Context)opts.get(SubscribeOption.CONTEXT);
+        if (parent != null) {
+            parent.addCloseable(listener);
+        }
+
         broker().addCloseableForDestination(this, listener);
 
         return new Listener() {
             @Override
             public void close() throws Exception {
                 if (shouldCloseConnection) {
-                    connection.close();
+                    context.close();
                 } else {
                     listener.close();
                 }
@@ -72,18 +76,12 @@ public class HornetQTopic extends HornetQDestination implements Topic {
     @Override
     public void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception {
         final Options<UnsubscribeOption> opts = new Options<>(options);
-        Connection connection = connection(id, opts.get(UnsubscribeOption.CONNECTION));
-        HornetQSession session = null;
+        HQContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
         try {
-            session = session(null, connection);
-            session.context().unsubscribe(id);
+            context.jmsContext().unsubscribe(id);
         } finally {
-            if (!opts.has(UnsubscribeOption.CONNECTION)) {
-                 connection.close();
-            } else {
-                if (session != null) {
-                    session.close();
-                }
+            if (!opts.has(UnsubscribeOption.CONTEXT)) {
+                 context.close();
             }
         }
     }
@@ -115,23 +113,15 @@ public class HornetQTopic extends HornetQDestination implements Topic {
         return broker().lookupTopic(name());
     }
 
-    protected Connection connection(final String id, Object connection) throws Exception {
-        if (connection == null) {
-            connection = broker().createConnection(new HashMap<Messaging.CreateConnectionOption, Object>() {{
-                put(Messaging.CreateConnectionOption.CLIENT_ID, id);
-            }});
-        }
+    protected HQContext context(final String id, final Object context) throws Exception {
 
-        return (Connection)connection;
+        return (HQContext)broker()
+                .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
+                    put(Messaging.CreateContextOption.CLIENT_ID, id);
+                    if (context != null) {
+                        put(Messaging.CreateContextOption.CONTEXT, context);
+                    }
+                }});
     }
-
-    protected HornetQSession session(final Options<SubscribeOption> options, Connection connection) throws Exception {
-        final Options<SubscribeOption> opts = new Options<>(options);
-        return (HornetQSession)connection.createSession(new HashMap<Connection.CreateSessionOption, Object>() {{
-            put(Connection.CreateSessionOption.MODE, opts.getBoolean(SubscribeOption.TRANSACTED) ?
-                    Session.Mode.TRANSACTED : Session.Mode.AUTO_ACK);
-        }});
-    }
-
 
 }

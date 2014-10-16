@@ -18,11 +18,11 @@ package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
+import org.projectodd.wunderboss.messaging.hornetq.HQMessaging;
 
 public class MessagingProvider implements ComponentProvider<Messaging> {
     @Override
     public Messaging create(String name, Options opts) {
-        return new HornetQMessaging(name, opts);
+        return new HQMessaging(name, opts);
     }
 }

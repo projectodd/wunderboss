@@ -17,15 +17,13 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.Pair;
 import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
-import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Session;
-import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
@@ -35,12 +33,12 @@ import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
-public abstract class HornetQDestination implements org.projectodd.wunderboss.messaging.Destination {
+public abstract class HQDestination implements org.projectodd.wunderboss.messaging.Destination {
 
-    public HornetQDestination(String name, Destination destination, HornetQMessaging broker) {
+    public HQDestination(String name, Destination destination, HQMessaging broker) {
         this.name = name;
         this.jmsDestination = destination;
         this.broker = broker;
@@ -62,11 +60,17 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        Connection connection = connection(opts.get(ListenOption.CONNECTION));
-        Listener listener = new MessageHandlerGroup(connection, handler,
-                                                    codecs, this,
+        Context context = context(opts.get(ListenOption.CONTEXT));
+        Listener listener = new MessageHandlerGroup(context,
+                                                    this.broker,
+                                                    handler,
+                                                    codecs,
+                                                    this,
                                                     opts).start();
-        connection.addCloseable(listener);
+        Context parent = (Context)opts.get(MessageOpOption.CONTEXT);
+        if (parent != null) {
+            parent.addCloseable(listener);
+        }
         this.broker.addCloseableForDestination(this, listener);
 
         return listener;
@@ -84,18 +88,19 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         }
     }
 
+    /*
     protected Pair<Session, Boolean> getSession(Options<MessageOpOption> options) throws Exception {
         Session session = (Session)options.get(MessageOpOption.SESSION);
         boolean shouldClose = false;
 
         if (session == null) {
-            Connection connection = connection(options.get(MessageOpOption.CONNECTION));
+            Context context = context(options.get(MessageOpOption.CONTEXT));
             Session threadSession = HornetQSession.currentSession.get();
 
-            if (threadSession != null && threadSession.connection() == connection) {
+            if (threadSession != null && threadSession.connection() == context) {
                 session = threadSession;
             } else {
-                session = connection.createSession(null);
+                session = context.createSession(null);
                 shouldClose = true;
             }
         }
@@ -104,20 +109,36 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
 
         return new Pair(session, shouldClose);
     }
+*/
 
-    // TODO: we may need to pass options here since we may need to
-    // pass through HOST and CLIENT_ID to createConnection
-    protected Connection connection(Object connection) throws Exception {
-        if (connection == null) {
-            return this.broker.defaultConnection();
-        }
-        if (connection == Connection.XA) {
-            return this.broker.createConnection(new HashMap() {{
-                put(Messaging.CreateConnectionOption.XA, true);
+    protected HQContext context(final Object context) throws Exception {
+        Context newContext;
+        if (context == Context.XA) {
+            newContext = this.broker.createContext(new HashMap() {{
+                put(Messaging.CreateContextOption.XA, true);
             }});
+            newContext = ((HQContext)newContext).asNonCloseable();
+        } else {
+            HQContext threadContext = ConcreteHQContext.currentContext.get();
+            if (threadContext != null) {
+                newContext = threadContext;
+            } else if (context != null) {
+                if (((HQContext)context).isChild() ||
+                        context instanceof HQXAContext) {
+                    newContext = ((HQContext) context).asNonCloseable();
+                } else {
+                    newContext = this.broker.createContext(new HashMap() {{
+                        put(Messaging.CreateContextOption.CONTEXT, context);
+                    }});
+                }
+            } else {
+                newContext = this.broker.createContext(null);
+            }
         }
-        HornetQConnection c = (HornetQConnection) connection;
-        return c.new NonClosing();
+
+        newContext.enlist();
+        
+        return (HQContext)newContext;
     }
 
     protected void _send(Object message, Codec codec,
@@ -126,18 +147,16 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             throw new IllegalArgumentException("codec can't be null");
         }
         Options<MessageOpOption> opts = new Options<>(options);
-        Pair<Session, Boolean> sessionInfo = getSession(opts);
-        Session session = sessionInfo.first;
-        boolean closeSession = sessionInfo.second;
-        JMSContext context = ((HornetQSession)session).context();
+        HQContext context = context(opts.get(MessageOpOption.CONTEXT));
+        JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
 
         try {
-            JMSProducer producer = context.createProducer();
+            JMSProducer producer = jmsContext.createProducer();
             fillInProperties(producer, (Map<String, Object>) opts.get(SendOption.PROPERTIES, Collections.emptyMap()));
             fillInProperties(producer, additionalProperties);
             producer
-                    .setProperty(HornetQMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
+                    .setProperty(HQMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
                     .setDeliveryMode((opts.getBoolean(SendOption.PERSISTENT) ?
                             DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
                     .setPriority(opts.getInt(SendOption.PRIORITY))
@@ -152,11 +171,8 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             } else {
                 producer.send(destination, (Serializable)encoded);
             }
-
         } finally {
-            if (closeSession) {
-                session.close();
-            }
+            context.close();
         }
     }
 
@@ -164,14 +180,12 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     public Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
-        Pair<Session, Boolean> sessionInfo = getSession(opts);
-        Session session = sessionInfo.first;
-        boolean closeSession = sessionInfo.second;
-        JMSContext context = ((HornetQSession)session).context();
+        HQContext context = context(opts.get(MessageOpOption.CONTEXT));
+        JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
         String selector = opts.getString(ReceiveOption.SELECTOR);
 
-        try (JMSConsumer consumer = context.createConsumer(destination, selector)) {
+        try (JMSConsumer consumer = jmsContext.createConsumer(destination, selector)) {
             javax.jms.Message message;
             if (timeout == -1) {
                 message = consumer.receiveNoWait();
@@ -180,16 +194,14 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
             }
 
             if (message != null) {
-                String contentType = HornetQMessage.contentType(message);
+                String contentType = HQMessage.contentType(message);
                 Codec codec = codecs.forContentType(contentType);
-                return new HornetQMessage(message, codec, this);
+                return new HQMessage(message, codec, this);
             } else {
                 return null;
             }
         } finally {
-            if (closeSession) {
-                session.close();
-            }
+            context.close();
         }
     }
 
@@ -201,7 +213,7 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
         }
     }
 
-    protected HornetQMessaging broker() {
+    protected HQMessaging broker() {
         return this.broker;
     }
 
@@ -218,5 +230,5 @@ public abstract class HornetQDestination implements org.projectodd.wunderboss.me
     private final String name;
     private final Destination jmsDestination;
     private boolean stopped = false;
-    private final HornetQMessaging broker;
+    private final HQMessaging broker;
 }

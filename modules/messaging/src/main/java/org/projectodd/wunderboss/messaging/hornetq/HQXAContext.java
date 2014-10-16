@@ -16,8 +16,9 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
+import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.Connection;
+import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.JMSContext;
 import javax.jms.XAJMSContext;
@@ -26,9 +27,11 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.lang.reflect.Method;
 
-public class HornetQXASession extends HornetQSession implements Synchronization {
-    public HornetQXASession(Connection connection, JMSContext context, Mode mode) {
-        super(connection, context, mode);
+public class HQXAContext extends ConcreteHQContext implements Synchronization {
+    public HQXAContext(JMSContext jmsContext,
+                       Messaging broker,
+                       Options<Messaging.CreateContextOption> options) {
+        super(jmsContext, broker, options, null);
     }
 
     @Override
@@ -50,8 +53,8 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
         if (tm.getTransaction() == null) {
             return false;
         } else if (!WunderBoss.inContainer() ||
-                    this.connection().isRemote()) {
-            XAResource resource = ((XAJMSContext) context()).getXAResource();
+                    isRemote()) {
+            XAResource resource = ((XAJMSContext)jmsContext()).getXAResource();
             return tm.getTransaction().enlistResource(resource);
         } else {
             return true;
@@ -62,9 +65,8 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
     public void close() throws Exception {
         if (!closed) {
             closed = true;
-            if (tm.getTransaction() == null) {
-                connection().close();
-            } else {
+            super.close();
+            if (tm.getTransaction() != null) {
                 tm.getTransaction().registerSynchronization(this);
             }
         }
@@ -73,7 +75,7 @@ public class HornetQXASession extends HornetQSession implements Synchronization 
     @Override
     public void afterCompletion(int status) {
         try {
-            connection().close();
+
         } catch (Exception e) {
             throw new RuntimeException("Error after tx complete", e);
         }

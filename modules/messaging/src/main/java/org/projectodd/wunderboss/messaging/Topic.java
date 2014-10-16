@@ -24,7 +24,7 @@ import java.util.Map;
 public interface Topic extends Destination {
 
     class SubscribeOption extends Option {
-        public static final SubscribeOption CONNECTION = opt("connection", SubscribeOption.class);
+        public static final SubscribeOption CONTEXT = opt("context", SubscribeOption.class);
         public static final SubscribeOption SELECTOR = opt("selector", SubscribeOption.class);
         public static final SubscribeOption TRANSACTED = opt("transacted", true, SubscribeOption.class);
     }
@@ -34,7 +34,7 @@ public interface Topic extends Destination {
                        Map<SubscribeOption, Object> options) throws Exception;
 
     class UnsubscribeOption extends Option {
-        public static final UnsubscribeOption CONNECTION = opt("connection", UnsubscribeOption.class);
+        public static final UnsubscribeOption CONTEXT = opt("context", UnsubscribeOption.class);
     }
 
     void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception;

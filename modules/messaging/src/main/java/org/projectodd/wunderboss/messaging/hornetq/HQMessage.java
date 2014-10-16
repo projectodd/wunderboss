@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQMessage implements ReplyableMessage {
+public class HQMessage implements ReplyableMessage {
 
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
     protected static final String SYNC_PROPERTY = "synchronous";
@@ -37,8 +37,8 @@ public class HornetQMessage implements ReplyableMessage {
     protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
     protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
-    HornetQMessage(javax.jms.Message message, Codec codec,
-                          Destination destination) {
+    HQMessage(javax.jms.Message message, Codec codec,
+              Destination destination) {
         this.baseMessage = message;
         this.codec = (codec == null ? None.INSTANCE : codec);
         this.destination = destination;

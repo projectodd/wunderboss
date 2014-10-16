@@ -25,8 +25,8 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQDestination;
-import org.projectodd.wunderboss.messaging.hornetq.HornetQMessaging;
+import org.projectodd.wunderboss.messaging.hornetq.HQDestination;
+import org.projectodd.wunderboss.messaging.hornetq.HQMessaging;
 import org.slf4j.Logger;
 
 import javax.jms.Queue;
@@ -34,7 +34,7 @@ import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
-public class WildFlyMessaging extends HornetQMessaging {
+public class WildFlyMessaging extends HQMessaging {
 
     public WildFlyMessaging(String name, WildFlyService service, Options<CreateOption> options) {
         super(name, options);
@@ -60,7 +60,7 @@ public class WildFlyMessaging extends HornetQMessaging {
         Queue queue = (Queue)waitForValueAvailabilityChange(
                 JMSQueueService.installService(null, null, name, this.wildFlyService.serviceTarget(),
                                                hqServiceName(),
-                                               selector, durable, new String[]{HornetQDestination.jndiName(name, "queue")}),
+                                               selector, durable, new String[]{HQDestination.jndiName(name, "queue")}),
                 false);
 
         if (queue == null) {
@@ -76,7 +76,7 @@ public class WildFlyMessaging extends HornetQMessaging {
                 (Topic)waitForValueAvailabilityChange(
                         JMSTopicService.installService(null, null, name, hqServiceName(),
                                                        this.wildFlyService.serviceTarget(),
-                                                       new String[]{HornetQDestination.jndiName(name, "topic")}),
+                                                       new String[]{HQDestination.jndiName(name, "topic")}),
                         false);
 
         if (topic == null) {

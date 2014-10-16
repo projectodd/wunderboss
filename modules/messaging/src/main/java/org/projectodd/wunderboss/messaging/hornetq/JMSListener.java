@@ -23,46 +23,26 @@ import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 
 import javax.jms.JMSConsumer;
-import javax.jms.JMSContext;
 import javax.jms.Message;
 import javax.jms.MessageListener;
-import javax.transaction.xa.XAResource;
 
-public class JMSListener implements Listener, MessageListener { //, org.hornetq.api.core.client.MessageHandler {
+public class JMSListener implements Listener, MessageListener {
     public JMSListener(MessageHandler handler,
                        Codecs codecs,
                        Destination endpoint,
-                       HornetQSession session,
+                       HQContext context,
                        JMSConsumer consumer) {
         this.handler = handler;
         this.codecs = codecs;
         this.endpoint = endpoint;
-        this.session = session;
+        this.context = context;
         this.consumer = consumer;
     }
 
     public JMSListener start() {
         if (!this.started) {
             try {
-                // Use HornetQ's Core API for message consumers where possible so we
-                // get proper XA support. Otherwise, fall back to standard JMS.
-                /*if (consumer instanceof HornetQMessageConsumer) {
-                    log.trace("Using HornetQ Core API for handler");
-                    Field sessionField = consumer.getClass().getDeclaredField("session");
-                    sessionField.setAccessible(true);
-                    this.hornetQSession = (HornetQSession) sessionField.get( consumer );
-
-                    Field consumerField = consumer.getClass().getDeclaredField( "consumer" );
-                    consumerField.setAccessible( true );
-                    this.clientConsumer = (ClientConsumer) consumerField.get( consumer );
-
-                    int ackMode = hornetQSession.getAcknowledgeMode();
-                    this.transactedOrClientAck = (ackMode == Session.SESSION_TRANSACTED || ackMode == Session.CLIENT_ACKNOWLEDGE) || hornetQSession.isXA();
-
-                    this.clientConsumer.setMessageHandler( this );
-                } else {*/
                 consumer.setMessageListener(this);
-                //}
             } catch (Exception e) {
                 log.error("Failed to start handler: ", e);
             }
@@ -76,7 +56,7 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
     public void stop() {
         if (this.started) {
             try {
-                this.session.close();
+                this.context.close();
                 this.consumer.close();
             } catch (Exception e) {
                 log.error("Failed to stop handler: ", e);
@@ -91,124 +71,30 @@ public class JMSListener implements Listener, MessageListener { //, org.hornetq.
         stop();
     }
 
-    /**
-     * This entire method is essentially a copy of HornetQ's
-     * JMSMessageListenerWrapper onMessage but with hooks for preparing
-     * transactions before calling MessageListener's onMessage
-     *
-     */
-    /*
-    @Override
-    public void onMessage(final ClientMessage message) {
-        ClientSession coreSession = this.hornetQSession.getCoreSession();
-        HornetQMessage msg = HornetQMessage.createMessage(message, coreSession);
-        log.trace("MessageHandler.onMessage called with messageId " + message.getMessageID());
-
-        try {
-            msg.doBeforeReceive();
-        } catch (Exception e) {
-            log.error("Failed to prepare message for receipt", e);
-            return;
-        }
-
-        if (this.xa) {
-            log.trace("Preparing transaction for messageId " + msg.getJMSMessageID());
-            prepareTransaction();
-        }
-
-        if (transactedOrClientAck) {
-            try {
-                message.acknowledge();
-                log.trace("Acknowledging messageId " + msg.getJMSMessageID() + " before calling onMessage");
-            } catch (HornetQException e) {
-                log.error("Failed to process message", e);
-            }
-        }
-
-        try {
-            onMessage(message);
-        } catch (RuntimeException e) {
-            log.warn("Unhandled exception thrown from onMessage", e);
-            if (!transactedOrClientAck) {
-                try {
-                    log.trace("Rolling back messageId " + msg.getJMSMessageID());
-                    coreSession.rollback(true);
-                    this.hornetQSession.setRecoverCalled(true);
-                } catch (Exception e2) {
-                    log.error("Failed to recover context", e2);
-                }
-            }
-        }
-
-        if (!this.hornetQSession.isRecoverCalled()) {
-            try {
-                // We don't want to call this if the consumer was closed from inside onMessage
-                if (!clientConsumer.isClosed() && !transactedOrClientAck) {
-                    log.trace("Acknowledging messageId " + msg.getJMSMessageID() + " after calling onMessage");
-                    message.acknowledge();
-                }
-            } catch (Exception e) {
-                log.error("Failed to process message", e);
-            }
-        }
-
-       this.hornetQSession.setRecoverCalled(false);
-    }
-       */
-
     @Override
     public void onMessage(Message message) {
         try {
-            HornetQSession.currentSession.set(this.session);
-            this.handler.onMessage(new HornetQMessage(message,
-                                                      this.codecs.forContentType(HornetQMessage.contentType(message)),
+            ConcreteHQContext.currentContext.set(this.context.asNonCloseable());
+            this.handler.onMessage(new HQMessage(message,
+                                                      this.codecs.forContentType(HQMessage.contentType(message)),
                                                       this.endpoint),
-                                   this.session);
+                                   this.context);
 
-            this.session.commit();
+            this.context.commit();
         } catch (Throwable e) {
-            this.session.rollback();
+            this.context.rollback();
             throw new RuntimeException("Unexpected error handling message", e);
         } finally {
-            HornetQSession.currentSession.remove();
+            ConcreteHQContext.currentContext.remove();
         }
 
-         /*       if (this.xa) {
-                    this.tm.commit();
-                }
-            } catch (javax.transaction.RollbackException ignored) {
-            } catch (Throwable e) {
-                e.printStackTrace();
-                if (this.xa) {
-                    this.tm.rollback();
-                }
-                throw(e);
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw new RuntimeException("Unexpected error processing message", e);
-        }*/
     }
-
-   /* private void prepareTransaction() {
-        try {
-            this.tm.begin();
-            this.tm.getTransaction().enlistResource(((XASession)this.context).getXAResource());
-        } catch (Throwable e) {
-            log.error("Failed to prepare transaction for message", e);
-        }
-    }*/
 
     private final MessageHandler handler;
     private final Codecs codecs;
     private final Destination endpoint;
-    private final HornetQSession session;
+    private final HQContext context;
     private final JMSConsumer consumer;
-    //private final boolean xa;
-    //private final TransactionManager tm;
-   /* private HornetQSession hornetQSession;
-    private ClientConsumer clientConsumer;
-    private boolean transactedOrClientAck;*/
     private boolean started = false;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");

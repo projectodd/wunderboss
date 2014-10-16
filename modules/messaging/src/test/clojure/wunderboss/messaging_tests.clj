@@ -17,16 +17,15 @@
   (:import [org.projectodd.wunderboss Option WunderBoss]
            [org.projectodd.wunderboss.codecs Codecs None StringCodec]
            [org.projectodd.wunderboss.messaging Messaging
-            Connection ConcreteReply
+            Context Context$Mode
+            ConcreteReply
             Destination Destination$ListenOption Destination$ReceiveOption
             Destination$SendOption
             Queue
             Queue$RespondOption
             Topic$SubscribeOption Topic$UnsubscribeOption
-            Messaging$CreateConnectionOption Messaging$CreateQueueOption
-            MessageHandler
-            Session$Mode
-            Connection$CreateSessionOption]
+            Messaging$CreateContextOption Messaging$CreateQueueOption
+            MessageHandler]
            java.util.concurrent.TimeUnit))
 
 (def default (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
@@ -47,14 +46,13 @@
         opts))))
 
 (def coerce-queue-options (create-opts-fn Messaging$CreateQueueOption))
-(def coerce-connection-options (create-opts-fn Messaging$CreateConnectionOption))
+(def coerce-context-options (create-opts-fn Messaging$CreateContextOption))
 (def coerce-listen-options (create-opts-fn Destination$ListenOption))
 (def coerce-respond-options (create-opts-fn Queue$RespondOption))
 (def coerce-receive-options (create-opts-fn Destination$ReceiveOption))
 (def coerce-send-options (create-opts-fn Destination$SendOption))
 (def coerce-subscribe-options (create-opts-fn Topic$SubscribeOption))
 (def coerce-unsubscribe-options (create-opts-fn Topic$UnsubscribeOption))
-(def coerce-session-options (create-opts-fn Connection$CreateSessionOption))
 
 (def frob-codec
   (proxy [StringCodec] ["frob" "application/frob"]
@@ -97,123 +95,63 @@
     (is (thrown? javax.jms.InvalidDestinationRuntimeException
           (.receive queue codecs (coerce-receive-options {:timeout 1}))))))
 
-(deftest send-should-use-the-passed-connection
-  (let [c (.createConnection default nil)
+(deftest send-should-use-the-passed-context
+  (let [c (.createContext default nil)
         q (create-queue "send-c")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
           (.send q "boom" None/INSTANCE
-            (coerce-send-options {:connection c}))))))
+            (coerce-send-options {:context c}))))))
 
 (deftest send-should-encode-with-the-given-codec-and-receive-should-find-the-right-one
   (let [q (create-queue)]
     (.send q "hi" frob-codec nil)
     (is (= "DEFROBBED FROBBED hi" (.body (.receive q codecs nil))))))
 
-
-(deftest send-should-use-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "send-c")]
-    (.close s)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.send q "boom" None/INSTANCE
-            (coerce-send-options {:session s}))))))
-
-(deftest send-should-not-close-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "send-close-session")
-        check-fn (fn []
-                   (.send q "success" None/INSTANCE
-                     (coerce-send-options {:session s}))
-                   (is (= "success" (.body (.receive q codecs nil)))))]
-    (check-fn)
-    (check-fn)
-    (.close s)))
-
-(deftest request-should-use-the-passed-connection
-  (let [c (.createConnection default nil)
+(deftest request-should-use-the-passed-context
+  (let [c (.createContext default nil)
         q (create-queue "send-c")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.request q "boom" None/INSTANCE codecs
-            (coerce-send-options {:connection c}))))))
+    (try
+      (.request q "boom" None/INSTANCE codecs
+        (coerce-send-options {:context c}))
+      (catch Exception e
+        (is (instance? javax.jms.IllegalStateRuntimeException (.getCause e)))))))
 
-(deftest request-should-use-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "send-c")]
-    (.close s)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.request q "boom" None/INSTANCE codecs
-            (coerce-send-options {:session s}))))))
-
-(deftest request-should-not-close-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "send-close-session")
-        r (.respond q
-            (handler identity)
-            codecs
-            nil)
-        check-fn (fn []
-                   (let [response (.request q "success" None/INSTANCE codecs
-                                    (coerce-send-options {:session s}))]
-                     (is (= "success" (.body (deref response 1000 :failure))))))]
-    (check-fn)
-    (check-fn)
-    (.close r)
-    (.close s)))
-
-(deftest receive-should-use-the-passed-connection
-  (let [c (.createConnection default nil)
-        q (create-queue "receive-connection")]
+(deftest receive-should-use-the-passed-context
+  (let [c (.createContext default nil)
+        q (create-queue "receive-context")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.receive q codecs (coerce-receive-options {:connection c}))))))
+          (.receive q codecs (coerce-receive-options {:context c}))))))
 
-(deftest receive-should-use-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "receive-session")]
-    (.close s)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.receive q codecs (coerce-receive-options {:session s}))))))
-
-(deftest receive-should-not-close-the-passed-session
-  (let [s (.createSession (.defaultConnection default) nil)
-        q (create-queue "receive-close-session")
-        check-fn (fn []
-                   (.send q "success" None/INSTANCE nil)
-                   (is (= "success"
-                         (.body (.receive q codecs (coerce-receive-options {:session s}))))))]
-    (check-fn)
-    (check-fn)
-    (.close s)))
-
-(deftest listen-should-use-the-passed-connection
-  (let [c (.createConnection default nil)
-        q (create-queue "listen-connection")]
+(deftest listen-should-use-the-passed-context
+  (let [c (.createContext default (coerce-context-options {:host "localhost"}))
+        q (create-queue "listen-context")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.listen q (handler identity) codecs (coerce-listen-options {:connection c}))))))
+          (.listen q (handler identity) codecs (coerce-listen-options {:context c}))))))
 
-(deftest respond-should-use-the-passed-connection
-  (let [c (.createConnection default nil)
-        q (create-queue "listen-connection")]
+(deftest respond-should-use-the-passed-context
+  (let [c (.createContext default (coerce-context-options {:host "localhost"}))
+        q (create-queue "listen-context")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.respond q (handler identity) codecs (coerce-listen-options {:connection c}))))))
+          (.respond q (handler identity) codecs (coerce-listen-options {:context c}))))))
 
-(deftest subscribe-should-use-the-passed-connection
-  (let [c (.createConnection default (coerce-connection-options {:client_id "ham"}))
-        t (create-topic "subscribe-connection")]
+(deftest subscribe-should-use-the-passed-context
+  (let [c (.createContext default (coerce-context-options {:client_id "ham"}))
+        t (create-topic "subscribe-context")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.subscribe t "ham" (handler identity) codecs (coerce-subscribe-options {:connection c}))))))
+          (.subscribe t "ham" (handler identity) codecs (coerce-subscribe-options {:context c}))))))
 
-(deftest unsubscribe-should-use-the-passed-connection
-  (let [c (.createConnection default (coerce-connection-options {:client_id "ham"}))
-        t (create-topic "subscribe-connection")]
+(deftest unsubscribe-should-use-the-passed-context
+  (let [c (.createContext default (coerce-context-options {:client_id "ham"}))
+        t (create-topic "subscribe-context")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.unsubscribe t "ham" (coerce-unsubscribe-options {:connection c}))))))
+          (.unsubscribe t "ham" (coerce-unsubscribe-options {:context c}))))))
 
 (deftest closing-a-listener-should-work
   (let [queue (create-queue "listen-queue")]
@@ -342,35 +280,36 @@
         (is (thrown? java.util.concurrent.TimeoutException
               (.get response 1 TimeUnit/MILLISECONDS)))))))
 
-(deftest session-rollback
-  (let [s (.createSession (.defaultConnection default)
-            (coerce-session-options {:mode Session$Mode/TRANSACTED}))
+(deftest context-rollback
+  (let [c (.createContext default
+            (coerce-context-options {:mode Context$Mode/TRANSACTED
+                                     :context (.defaultContext default)}))
         q (create-queue "rollback")]
     (.send q "failure" None/INSTANCE
-      (coerce-send-options {:session s}))
-    (.rollback s)
+      (coerce-send-options {:context c}))
+    (.rollback c)
     (is (not (.receive q codecs (coerce-receive-options {:timeout 1000}))))
-    (.close s)))
+    (.close c)))
 
-(deftest remote-connections
+(deftest remote-contexts
   ;; this creates the queue in the 'remote' broker
   (create-queue "remote-queue")
-  (with-open [c (.createConnection default
-                  (coerce-connection-options {:host "localhost"}))]
-    (let [q (create-queue "remote-queue" {:connection c})]
+  (with-open [c (.createContext default
+                  (coerce-context-options {:host "localhost"}))]
+    (let [q (create-queue "remote-queue" {:context c})]
       (.send q "success" None/INSTANCE
-        (coerce-send-options {:connection c}))
-      (let [msg (.receive q codecs (coerce-receive-options {:connection c
+        (coerce-send-options {:context c}))
+      (let [msg (.receive q codecs (coerce-receive-options {:context c
                                                             :timeout 1000}))]
         (is msg)
         (is (= "success" (.body msg)))))))
 
-(deftest send-receive-with-the-same-session-should-work
-  (with-open [s (.createSession (.defaultConnection default) nil)]
+(deftest send-receive-with-the-same-context-should-work
+  (with-open [ctx (.createContext default nil)]
     (let [q (create-queue)]
-      (.send q "success" None/INSTANCE (coerce-send-options {:session s}))
+      (.send q "success" None/INSTANCE (coerce-send-options {:context ctx}))
       (is (= "success"
-            (.body (.receive q codecs (coerce-receive-options {:session s}))))))))
+            (.body (.receive q codecs (coerce-receive-options {:context ctx}))))))))
 
 (deftest send-and-receive-inside-a-non-transactional-listener-should-work
   (let [q1 (create-queue)
@@ -391,5 +330,4 @@
 (deftest toss-when-xa-unavailable
   (is (thrown-with-msg? NullPointerException
         #"TransactionManager not found"
-        (with-open [conn (.createConnection default (coerce-connection-options {:xa true}))]
-          (.createSession conn nil)))))
+        (.createContext default (coerce-context-options {:xa true})))))
