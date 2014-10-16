@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class HornetQResponse implements Response {
+public class HQResponse implements Response {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {

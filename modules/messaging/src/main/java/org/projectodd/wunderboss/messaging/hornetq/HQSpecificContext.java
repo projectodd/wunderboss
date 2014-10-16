@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss;
+package org.projectodd.wunderboss.messaging.hornetq;
 
-public class Pair<X, Y> {
-    public final X first;
-    public final Y second;
+import org.projectodd.wunderboss.messaging.Context;
+import org.projectodd.wunderboss.messaging.Messaging;
 
-    public Pair(X first, Y second) {
-        this.first = first;
-        this.second = second;
-    }
+import javax.jms.JMSContext;
+
+public interface HQSpecificContext extends Context {
+    JMSContext jmsContext();
+
+    Messaging broker();
+
+    boolean isXAEnabled();
+
+    boolean isChild();
+
+    HQSpecificContext asNonCloseable();
+
+    HQSpecificContext createChildContext(Mode mode);
 }

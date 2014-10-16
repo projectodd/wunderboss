@@ -137,8 +137,8 @@
 
 (deftest mandatory-rollback
   (is (thrown? Exception
-               (.put cache :a 1)
-               (.mandatory tx #(.put cache :b 2))))
+        (.put cache :a 1)
+        (.mandatory tx #(.put cache :b 2))))
   (is (= 1 (:a cache)))
   (is (nil? (:b cache))))
 

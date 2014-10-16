@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HornetQMessage implements ReplyableMessage {
+public class HQMessage implements ReplyableMessage {
 
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
     protected static final String SYNC_PROPERTY = "synchronous";
@@ -37,8 +37,8 @@ public class HornetQMessage implements ReplyableMessage {
     protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
     protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
-    HornetQMessage(javax.jms.Message message, Codec codec,
-                          Destination destination) {
+    HQMessage(javax.jms.Message message, Codec codec,
+              Destination destination) {
         this.baseMessage = message;
         this.codec = (codec == null ? None.INSTANCE : codec);
         this.destination = destination;
@@ -106,7 +106,7 @@ public class HornetQMessage implements ReplyableMessage {
     @Override
     public void reply(Object content, Codec codec,
                       Map<MessageOpOption, Object> options) throws Exception {
-        this.destination.send(content, codec, replyOptions(options));
+        this.destination.publish(content, codec, replyOptions(options));
     }
 
     protected String requestID() {
@@ -133,7 +133,7 @@ public class HornetQMessage implements ReplyableMessage {
 
     protected Options<MessageOpOption> replyOptions(Map<Destination.MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
-        Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.SendOption.PROPERTIES);
+        Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.PublishOption.PROPERTIES);
         Map<String, Object> newProperties = new HashMap<>();
         if (properties != null) {
             newProperties.putAll(properties);
@@ -142,7 +142,7 @@ public class HornetQMessage implements ReplyableMessage {
         newProperties.put(REQUEST_ID_PROPERTY, requestID());
         newProperties.put(REQUEST_NODE_ID_PROPERTY, nodeID());
 
-        opts.put(Destination.SendOption.PROPERTIES, newProperties);
+        opts.put(Destination.PublishOption.PROPERTIES, newProperties);
 
         return opts;
     }

@@ -26,7 +26,7 @@ public interface Destination {
     String name();
 
     class ListenOption extends Option {
-        public static final ListenOption CONNECTION = opt("connection", ListenOption.class);
+        public static final ListenOption CONTEXT = opt("context", ListenOption.class);
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         public static final ListenOption TRANSACTED = opt("transacted", true, ListenOption.class);
@@ -37,18 +37,17 @@ public interface Destination {
                     Map<ListenOption, Object> options) throws Exception;
 
     class MessageOpOption extends Option {
-        public static final MessageOpOption CONNECTION = opt("connection", MessageOpOption.class);
-        public static final MessageOpOption SESSION = opt("session", MessageOpOption.class);
+        public static final MessageOpOption CONTEXT = opt("context", MessageOpOption.class);
     }
 
-    class SendOption extends MessageOpOption {
-        public static final SendOption PRIORITY   = opt("priority", 4, SendOption.class); //TODO: 4 is JMS specific?
-        public static final SendOption TTL        = opt("ttl", 0, SendOption.class);
-        public static final SendOption PERSISTENT = opt("persistent", true, SendOption.class);
-        public static final SendOption PROPERTIES = opt("properties", SendOption.class);
+    class PublishOption extends MessageOpOption {
+        public static final PublishOption PRIORITY   = opt("priority", 4, PublishOption.class); //TODO: 4 is JMS specific?
+        public static final PublishOption TTL        = opt("ttl", 0, PublishOption.class);
+        public static final PublishOption PERSISTENT = opt("persistent", true, PublishOption.class);
+        public static final PublishOption PROPERTIES = opt("properties", PublishOption.class);
     }
 
-    void send(Object content, Codec codec, Map<MessageOpOption, Object> options) throws Exception;
+    void publish(Object content, Codec codec, Map<MessageOpOption, Object> options) throws Exception;
 
     class ReceiveOption extends MessageOpOption {
         public static final ReceiveOption TIMEOUT  = opt("timeout", 10000, ReceiveOption.class);

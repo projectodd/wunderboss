@@ -19,6 +19,7 @@ package org.projectodd.wunderboss.messaging.hornetq;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
+import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
@@ -26,17 +27,15 @@ import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Reply;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
-import org.projectodd.wunderboss.messaging.Session;
 
 import javax.jms.Destination;
-import javax.jms.JMSContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class HornetQQueue extends HornetQDestination implements Queue {
+public class HQQueue extends HQDestination implements Queue {
 
-    public HornetQQueue(String name, Destination destination, HornetQMessaging broker) {
+    public HQQueue(String name, Destination destination, HQMessaging broker) {
         super(name, destination, broker);
     }
 
@@ -45,7 +44,7 @@ public class HornetQQueue extends HornetQDestination implements Queue {
                             final Codecs codecs,
                             Map<ListenOption, Object> options) throws Exception {
         final Options<ListenOption> opts = new Options<>(options);
-        String selector = HornetQMessage.SYNC_PROPERTY + " = TRUE";
+        String selector = HQMessage.SYNC_PROPERTY + " = TRUE";
         if (opts.has(ListenOption.SELECTOR)) {
             selector += " AND " + opts.getString(ListenOption.SELECTOR);
         }
@@ -53,12 +52,12 @@ public class HornetQQueue extends HornetQDestination implements Queue {
 
         MessageHandler wrappedHandler = new MessageHandler() {
             @Override
-            public Reply onMessage(Message msg, Session session) throws Exception {
-                Reply result = handler.onMessage(msg, session);
+            public Reply onMessage(Message msg, Context context) throws Exception {
+                Reply result = handler.onMessage(msg, context);
                 Options<MessageOpOption> replyOptions = new Options<>();
-                replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL));
-                replyOptions.put(SendOption.SESSION, session);
-                replyOptions.put(SendOption.PROPERTIES, result.properties());
+                replyOptions.put(PublishOption.TTL, opts.getInt(RespondOption.TTL));
+                replyOptions.put(PublishOption.CONTEXT, context);
+                replyOptions.put(PublishOption.PROPERTIES, result.properties());
                 ((ReplyableMessage)msg).reply(result.content(), codecs.forContentType(msg.contentType()), replyOptions);
 
                 return null;
@@ -76,23 +75,23 @@ public class HornetQQueue extends HornetQDestination implements Queue {
         final String id = UUID.randomUUID().toString();
         //TODO: there's probably a better way to get this
         final String nodeId = System.getProperty("jboss.node.name", "node1");
-        final HornetQResponse response = new HornetQResponse();
+        final HQResponse response = new HQResponse();
         Options<ListenOption> routerOpts = new Options<>();
         routerOpts.put(ListenOption.SELECTOR,
-                       HornetQMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
-                               HornetQMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
-        if (opts.has(MessageOpOption.CONNECTION)) {
-            routerOpts.put(ListenOption.CONNECTION, opts.get(MessageOpOption.CONNECTION));
+                       HQMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
+                               HQMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
+        if (opts.has(MessageOpOption.CONTEXT)) {
+            routerOpts.put(ListenOption.CONTEXT, opts.get(MessageOpOption.CONTEXT));
         }
 
         ResponseRouter.routerFor(this, codecs, routerOpts).registerResponse(id, response);
 
-        _send(content, codec, options,
-              new HashMap<String, Object>() {{
-                  put(HornetQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
-                  put(HornetQMessage.SYNC_PROPERTY, true);
-                  put(HornetQMessage.REQUEST_ID_PROPERTY, id);
-              }});
+        publish(content, codec, options,
+                new HashMap<String, Object>() {{
+                    put(HQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
+                    put(HQMessage.SYNC_PROPERTY, true);
+                    put(HQMessage.REQUEST_ID_PROPERTY, id);
+                }});
 
         return response;
     }

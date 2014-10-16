@@ -18,9 +18,9 @@
            [org.projectodd.wunderboss.caching Caching Caching$CreateOption]
            [org.projectodd.wunderboss.transactions Transaction]
            [org.projectodd.wunderboss.codecs Codecs None]
-           [org.projectodd.wunderboss.messaging Messaging Connection
+           [org.projectodd.wunderboss.messaging Messaging Context
             Destination$ReceiveOption Destination$MessageOpOption
-            Messaging$CreateConnectionOption Messaging$CreateQueueOption]))
+            Messaging$CreateContextOption Messaging$CreateQueueOption]))
 
 (def tx (doto (WunderBoss/findOrCreateComponent Transaction) (.start)))
 (def msg (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
@@ -39,10 +39,10 @@
 
 (defn attempt-transaction-external [& [f]]
   (try
-    (with-open [conn (.createConnection msg (Options. {Messaging$CreateConnectionOption/XA true}))]
+    (with-open [context (.createContext msg (Options. {Messaging$CreateContextOption/XA true}))]
       (.required tx
         (fn []
-          (.send queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONNECTION conn}))
+          (.publish queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONTEXT context}))
           (.put cache :a 1)
           (if f (f)))))
     (catch Exception e
@@ -52,7 +52,11 @@
   (try
     (.required tx
       (fn []
+<<<<<<< HEAD
         (.send queue "kiwi" None/INSTANCE nil)
+=======
+        (.publish queue "kiwi" None/INSTANCE nil)
+>>>>>>> Collapse connection and session to context.
         (.put cache :a 1)
         (if f (f))))
     (catch Exception e

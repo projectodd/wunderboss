@@ -29,7 +29,7 @@ public interface Messaging extends Component {
     }
 
     class CreateQueueOption extends Option {
-        public static final CreateQueueOption CONNECTION = opt("connection", CreateQueueOption.class);
+        public static final CreateQueueOption CONTEXT = opt("context", CreateQueueOption.class);
         public static final CreateQueueOption DURABLE   = opt("durable", true, CreateQueueOption.class);
         public static final CreateQueueOption SELECTOR  = opt("selector", CreateQueueOption.class);
     }
@@ -38,36 +38,35 @@ public interface Messaging extends Component {
                             Map<CreateQueueOption, Object> options) throws Exception;
 
     class CreateTopicOption extends Option {
-        public static final CreateTopicOption CONNECTION = opt("connection", CreateTopicOption.class);
+        public static final CreateTopicOption CONTEXT = opt("context", CreateTopicOption.class);
     }
 
     Topic findOrCreateTopic(String name,
                             Map<CreateTopicOption, Object> options) throws Exception;
 
-    class CreateConnectionOption extends Option {
-        public static final CreateConnectionOption HOST = opt("host", CreateConnectionOption.class);
-        public static final CreateConnectionOption PORT = opt("port", 5445, CreateConnectionOption.class);
-        public static final CreateConnectionOption CLIENT_ID = opt("client_id", CreateConnectionOption.class);
-        public static final CreateConnectionOption USERNAME = opt("username", CreateConnectionOption.class);
-        public static final CreateConnectionOption PASSWORD = opt("password", CreateConnectionOption.class);
-        public static final CreateConnectionOption REMOTE_TYPE = opt("remote_type", CreateConnectionOption.class);
+    class CreateContextOption extends Option {
+        public static final CreateContextOption HOST = opt("host", CreateContextOption.class);
+        public static final CreateContextOption PORT = opt("port", 5445, CreateContextOption.class);
+        public static final CreateContextOption CLIENT_ID = opt("client_id", CreateContextOption.class);
+        public static final CreateContextOption USERNAME = opt("username", CreateContextOption.class);
+        public static final CreateContextOption PASSWORD = opt("password", CreateContextOption.class);
+        public static final CreateContextOption REMOTE_TYPE = opt("remote_type", CreateContextOption.class);
+        public static final CreateContextOption MODE = opt("mode", Context.Mode.AUTO_ACK, CreateContextOption.class);
 
         /**
-         * If true, an xa connection is returned.
+         * If true, an xa Context is returned.
          */
-        public static final CreateConnectionOption XA = opt("xa", false, CreateConnectionOption.class);
+        public static final CreateContextOption XA = opt("xa", false, CreateContextOption.class);
 
-        public static final CreateConnectionOption RECONNECT_RETRY_INTERVAL =
-                opt("reconnect_retry_interval", 2000, CreateConnectionOption.class);
-        public static final CreateConnectionOption RECONNECT_RETRY_INTERVAL_MULTIPLIER =
-                opt("reconnect_retry_interval_multiplier", 1.0, CreateConnectionOption.class);
-        public static final CreateConnectionOption RECONNECT_MAX_RETRY_INTERVAL =
-                opt("reconnect_max_retry_interval", 2000, CreateConnectionOption.class);
-        public static final CreateConnectionOption RECONNECT_ATTEMPTS =
-                opt("reconnect_attempts", 0, CreateConnectionOption.class);
+        public static final CreateContextOption RECONNECT_RETRY_INTERVAL =
+                opt("reconnect_retry_interval", 2000, CreateContextOption.class);
+        public static final CreateContextOption RECONNECT_RETRY_INTERVAL_MULTIPLIER =
+                opt("reconnect_retry_interval_multiplier", 1.0, CreateContextOption.class);
+        public static final CreateContextOption RECONNECT_MAX_RETRY_INTERVAL =
+                opt("reconnect_max_retry_interval", 2000, CreateContextOption.class);
+        public static final CreateContextOption RECONNECT_ATTEMPTS =
+                opt("reconnect_attempts", 0, CreateContextOption.class);
     }
 
-    Connection createConnection(Map<CreateConnectionOption, Object> options) throws Exception;
-
-    Connection defaultConnection() throws Exception;
+    Context createContext(Map<CreateContextOption, Object> options) throws Exception;
 }

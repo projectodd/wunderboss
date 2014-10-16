@@ -16,17 +16,19 @@
 
 package org.projectodd.wunderboss.messaging;
 
-import org.projectodd.wunderboss.Option;
+public interface Context extends AutoCloseable {
 
-import java.util.Map;
+    public enum Mode { AUTO_ACK, CLIENT_ACK, TRANSACTED }
 
-public interface Connection extends AutoCloseable {
+    Mode mode();
 
-    class CreateSessionOption extends Option {
-        public static final CreateSessionOption MODE = opt("mode", Session.Mode.AUTO_ACK, CreateSessionOption.class);
-    }
+    void commit();
 
-    Session createSession(Map<CreateSessionOption, Object> options) throws Exception;
+    void rollback();
+
+    void acknowledge();
+
+    boolean enlist() throws Exception;
 
     void addCloseable(AutoCloseable closeable);
 
