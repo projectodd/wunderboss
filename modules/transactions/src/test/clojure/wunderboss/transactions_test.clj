@@ -52,7 +52,7 @@
   (try
     (.required tx
       (fn []
-        (.send queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONTEXT Context/XA}))
+        (.send queue "kiwi" None/INSTANCE nil)
         (.put cache :a 1)
         (if f (f))))
     (catch Exception e

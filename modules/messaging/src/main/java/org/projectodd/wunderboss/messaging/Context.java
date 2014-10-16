@@ -18,8 +18,6 @@ package org.projectodd.wunderboss.messaging;
 
 public interface Context extends AutoCloseable {
 
-    public static final Object XA = new Object();
-
     public enum Mode { AUTO_ACK, CLIENT_ACK, TRANSACTED }
 
     Mode mode();

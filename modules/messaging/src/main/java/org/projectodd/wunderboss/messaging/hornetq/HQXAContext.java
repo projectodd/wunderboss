@@ -95,6 +95,14 @@ public class HQXAContext extends HQContext implements Synchronization {
         return true;
     }
 
+    public static boolean isTransactionActive() {
+        try {
+            return tm != null && tm.getTransaction() != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean closed = false;
 
     public static final TransactionManager tm;

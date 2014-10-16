@@ -89,7 +89,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
     protected HQSpecificContext context(final Object context) throws Exception {
         Context newContext;
-        if (context == Context.XA) {
+        if (HQXAContext.isTransactionActive()) {
             newContext = this.broker.createContext(new HashMap() {{
                 put(Messaging.CreateContextOption.XA, true);
             }});
