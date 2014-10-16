@@ -40,7 +40,7 @@ public class HQTopic extends HQDestination implements Topic {
                               final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
-        final HQContext context = context(id, opts.get(SubscribeOption.CONTEXT));
+        final HQSpecificContext context = context(id, opts.get(SubscribeOption.CONTEXT));
         final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONTEXT);
         final JMSConsumer consumer = context
                 .jmsContext()
@@ -76,7 +76,7 @@ public class HQTopic extends HQDestination implements Topic {
     @Override
     public void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception {
         final Options<UnsubscribeOption> opts = new Options<>(options);
-        HQContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
+        HQSpecificContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
         try {
             context.jmsContext().unsubscribe(id);
         } finally {
@@ -113,11 +113,11 @@ public class HQTopic extends HQDestination implements Topic {
         return broker().lookupTopic(name());
     }
 
-    protected HQContext context(final String id, final Object context) throws Exception {
+    protected HQSpecificContext context(final String id, final Object context) throws Exception {
         if (context != null) {
-            return (HQContext)context;
+            return (HQSpecificContext)context;
         } else {
-            return (HQContext)broker()
+            return (HQSpecificContext)broker()
                     .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
                         put(Messaging.CreateContextOption.CLIENT_ID, id);
                     }});

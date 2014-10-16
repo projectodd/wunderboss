@@ -23,17 +23,15 @@ import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Destination.ListenOption;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.JMSConsumer;
 import javax.jms.JMSException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(HQContext context,
+    public MessageHandlerGroup(HQSpecificContext context,
                                MessageHandler handler,
                                Codecs codecs,
                                HQDestination destination,
@@ -49,7 +47,7 @@ public class MessageHandlerGroup implements Listener {
         if (!this.started) {
             int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
             while(concurrency-- > 0) {
-                HQContext subContext =
+                HQSpecificContext subContext =
                         this.context.createChildContext(isTransacted() ?
                                                                 Context.Mode.TRANSACTED :
                                                                 Context.Mode.AUTO_ACK);
@@ -79,7 +77,7 @@ public class MessageHandlerGroup implements Listener {
         }
     }
 
-    protected JMSConsumer createConsumer(HQContext context) throws JMSException {
+    protected JMSConsumer createConsumer(HQSpecificContext context) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
         javax.jms.Destination destination = this.destination.jmsDestination();
 
@@ -94,7 +92,7 @@ public class MessageHandlerGroup implements Listener {
     private final Codecs codecs;
     private final HQDestination destination;
     private final Options<ListenOption> options;
-    private final HQContext context;
+    private final HQSpecificContext context;
     private final List<JMSListener> listeners = new ArrayList<>();
     private boolean started = false;
 

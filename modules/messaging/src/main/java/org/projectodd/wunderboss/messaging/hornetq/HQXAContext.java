@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Messaging;
 
@@ -27,7 +26,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.lang.reflect.Method;
 
-public class HQXAContext extends ConcreteHQContext implements Synchronization {
+public class HQXAContext extends HQContext implements Synchronization {
     public HQXAContext(JMSContext jmsContext,
                        Messaging broker,
                        Mode mode,
@@ -87,7 +86,7 @@ public class HQXAContext extends ConcreteHQContext implements Synchronization {
     }
 
     @Override
-    public HQContext createChildContext(Mode mode) {
+    public HQSpecificContext createChildContext(Mode mode) {
         throw new IllegalStateException("You can't create a child context from an XA context.");
     }
 

@@ -99,8 +99,8 @@ public class HQMessaging implements Messaging {
         return this.name;
     }
 
-    private HQContext createContext(ConnectionFactory cf, Options<CreateContextOption> options) {
-        int mode = ConcreteHQContext.modeToJMSMode((Context.Mode)options.get(Messaging.CreateContextOption.MODE));
+    private HQSpecificContext createContext(ConnectionFactory cf, Options<CreateContextOption> options) {
+        int mode = HQContext.modeToJMSMode((Context.Mode) options.get(Messaging.CreateContextOption.MODE));
         JMSContext jmsContext;
 
         if (options.has(CreateContextOption.USERNAME)) {
@@ -111,16 +111,16 @@ public class HQMessaging implements Messaging {
             jmsContext = cf.createContext(mode);
         }
 
-        return new ConcreteHQContext(jmsContext, this,
+        return new HQContext(jmsContext, this,
                                      (Context.Mode)options.get(CreateContextOption.MODE),
                                      options.has(CreateContextOption.HOST));
     }
 
-    private HQContext createContext(String factoryName, Options<CreateContextOption> options) {
+    private HQSpecificContext createContext(String factoryName, Options<CreateContextOption> options) {
         return createContext((ConnectionFactory) lookupJNDI(factoryName), options);
     }
 
-    private HQContext createXAContext(XAConnectionFactory cf, Options<CreateContextOption> options) {
+    private HQSpecificContext createXAContext(XAConnectionFactory cf, Options<CreateContextOption> options) {
         XAJMSContext context;
 
         if (HQXAContext.tm == null) {
@@ -139,7 +139,7 @@ public class HQMessaging implements Messaging {
                                options.has(CreateContextOption.HOST));
     }
 
-    private HQContext createXAContext(String factoryName, Options<CreateContextOption> options) {
+    private HQSpecificContext createXAContext(String factoryName, Options<CreateContextOption> options) {
         return createXAContext((XAConnectionFactory) lookupJNDI(factoryName), options);
     }
 
@@ -170,7 +170,7 @@ public class HQMessaging implements Messaging {
     @Override
     public Context createContext(Map<CreateContextOption, Object> options) throws Exception {
         final Options<CreateContextOption> opts = new Options<>(options);
-        HQContext context;
+        HQSpecificContext context;
 
         boolean xa = opts.getBoolean(CreateContextOption.XA);
         if (opts.has(CreateContextOption.HOST)) {
@@ -204,7 +204,7 @@ public class HQMessaging implements Messaging {
         javax.jms.Queue queue;
         if (opts.has(CreateQueueOption.CONTEXT)) {
             // assume it's remote, so we just need a ref to it
-            queue = ((HQContext)opts.get(CreateQueueOption.CONTEXT)).jmsContext().createQueue(name);
+            queue = ((HQSpecificContext)opts.get(CreateQueueOption.CONTEXT)).jmsContext().createQueue(name);
         } else {
             start();
 
@@ -231,7 +231,7 @@ public class HQMessaging implements Messaging {
         javax.jms.Topic topic;
         if (opts.has(CreateTopicOption.CONTEXT)) {
             // assume it's remote, so we just need a ref to it
-            topic = ((HQContext)opts.get(CreateTopicOption.CONTEXT)).jmsContext().createTopic(name);
+            topic = ((HQSpecificContext)opts.get(CreateTopicOption.CONTEXT)).jmsContext().createTopic(name);
         } else {
             start();
 

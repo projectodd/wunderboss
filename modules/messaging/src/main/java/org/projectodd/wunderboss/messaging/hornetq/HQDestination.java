@@ -60,7 +60,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        HQContext context = context(opts.get(ListenOption.CONTEXT));
+        HQSpecificContext context = context(opts.get(ListenOption.CONTEXT));
         Listener listener = new MessageHandlerGroup(context,
                                                     handler,
                                                     codecs,
@@ -87,18 +87,18 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         }
     }
 
-    protected HQContext context(final Object context) throws Exception {
+    protected HQSpecificContext context(final Object context) throws Exception {
         Context newContext;
         if (context == Context.XA) {
             newContext = this.broker.createContext(new HashMap() {{
                 put(Messaging.CreateContextOption.XA, true);
             }});
         } else {
-            HQContext threadContext = ConcreteHQContext.currentContext.get();
+            HQSpecificContext threadContext = HQContext.currentContext.get();
             if (threadContext != null && threadContext != context) {
                 newContext = threadContext;
             } else if (context != null) {
-                    newContext = ((HQContext) context).asNonCloseable();
+                    newContext = ((HQSpecificContext) context).asNonCloseable();
             } else {
                 newContext = this.broker.createContext(null);
             }
@@ -106,7 +106,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
         newContext.enlist();
         
-        return (HQContext)newContext;
+        return (HQSpecificContext)newContext;
     }
 
     protected void _send(Object message, Codec codec,
@@ -115,7 +115,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
             throw new IllegalArgumentException("codec can't be null");
         }
         Options<MessageOpOption> opts = new Options<>(options);
-        HQContext context = context(opts.get(MessageOpOption.CONTEXT));
+        HQSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
         JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
 
@@ -148,7 +148,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     public Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
-        HQContext context = context(opts.get(MessageOpOption.CONTEXT));
+        HQSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
         JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
         String selector = opts.getString(ReceiveOption.SELECTOR);

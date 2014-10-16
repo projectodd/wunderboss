@@ -30,7 +30,7 @@ public class JMSListener implements Listener, MessageListener {
     public JMSListener(MessageHandler handler,
                        Codecs codecs,
                        Destination endpoint,
-                       HQContext context,
+                       HQSpecificContext context,
                        JMSConsumer consumer) {
         this.handler = handler;
         this.codecs = codecs;
@@ -74,7 +74,7 @@ public class JMSListener implements Listener, MessageListener {
     @Override
     public void onMessage(Message message) {
         try {
-            ConcreteHQContext.currentContext.set(this.context.asNonCloseable());
+            HQContext.currentContext.set(this.context.asNonCloseable());
             this.handler.onMessage(new HQMessage(message,
                                                       this.codecs.forContentType(HQMessage.contentType(message)),
                                                       this.endpoint),
@@ -85,7 +85,7 @@ public class JMSListener implements Listener, MessageListener {
             this.context.rollback();
             throw new RuntimeException("Unexpected error handling message", e);
         } finally {
-            ConcreteHQContext.currentContext.remove();
+            HQContext.currentContext.remove();
         }
 
     }
@@ -93,7 +93,7 @@ public class JMSListener implements Listener, MessageListener {
     private final MessageHandler handler;
     private final Codecs codecs;
     private final Destination endpoint;
-    private final HQContext context;
+    private final HQSpecificContext context;
     private final JMSConsumer consumer;
     private boolean started = false;
 
