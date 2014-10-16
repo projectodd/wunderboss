@@ -106,7 +106,7 @@ public class HQMessage implements ReplyableMessage {
     @Override
     public void reply(Object content, Codec codec,
                       Map<MessageOpOption, Object> options) throws Exception {
-        this.destination.send(content, codec, replyOptions(options));
+        this.destination.publish(content, codec, replyOptions(options));
     }
 
     protected String requestID() {
@@ -133,7 +133,7 @@ public class HQMessage implements ReplyableMessage {
 
     protected Options<MessageOpOption> replyOptions(Map<Destination.MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
-        Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.SendOption.PROPERTIES);
+        Map<String, Object> properties = (Map<String, Object>)opts.get(Destination.PublishOption.PROPERTIES);
         Map<String, Object> newProperties = new HashMap<>();
         if (properties != null) {
             newProperties.putAll(properties);
@@ -142,7 +142,7 @@ public class HQMessage implements ReplyableMessage {
         newProperties.put(REQUEST_ID_PROPERTY, requestID());
         newProperties.put(REQUEST_NODE_ID_PROPERTY, nodeID());
 
-        opts.put(Destination.SendOption.PROPERTIES, newProperties);
+        opts.put(Destination.PublishOption.PROPERTIES, newProperties);
 
         return opts;
     }

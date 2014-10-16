@@ -55,9 +55,9 @@ public class HQQueue extends HQDestination implements Queue {
             public Reply onMessage(Message msg, Context context) throws Exception {
                 Reply result = handler.onMessage(msg, context);
                 Options<MessageOpOption> replyOptions = new Options<>();
-                replyOptions.put(SendOption.TTL, opts.getInt(RespondOption.TTL));
-                replyOptions.put(SendOption.CONTEXT, context);
-                replyOptions.put(SendOption.PROPERTIES, result.properties());
+                replyOptions.put(PublishOption.TTL, opts.getInt(RespondOption.TTL));
+                replyOptions.put(PublishOption.CONTEXT, context);
+                replyOptions.put(PublishOption.PROPERTIES, result.properties());
                 ((ReplyableMessage)msg).reply(result.content(), codecs.forContentType(msg.contentType()), replyOptions);
 
                 return null;
@@ -86,12 +86,12 @@ public class HQQueue extends HQDestination implements Queue {
 
         ResponseRouter.routerFor(this, codecs, routerOpts).registerResponse(id, response);
 
-        _send(content, codec, options,
-              new HashMap<String, Object>() {{
-                  put(HQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
-                  put(HQMessage.SYNC_PROPERTY, true);
-                  put(HQMessage.REQUEST_ID_PROPERTY, id);
-              }});
+        publish(content, codec, options,
+                new HashMap<String, Object>() {{
+                    put(HQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
+                    put(HQMessage.SYNC_PROPERTY, true);
+                    put(HQMessage.REQUEST_ID_PROPERTY, id);
+                }});
 
         return response;
     }

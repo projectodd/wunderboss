@@ -20,7 +20,7 @@
             Context Context$Mode
             ConcreteReply
             Destination Destination$ListenOption Destination$ReceiveOption
-            Destination$SendOption
+            Destination$PublishOption
             Queue
             Queue$RespondOption
             Topic$SubscribeOption Topic$UnsubscribeOption
@@ -50,7 +50,7 @@
 (def coerce-listen-options (create-opts-fn Destination$ListenOption))
 (def coerce-respond-options (create-opts-fn Queue$RespondOption))
 (def coerce-receive-options (create-opts-fn Destination$ReceiveOption))
-(def coerce-send-options (create-opts-fn Destination$SendOption))
+(def coerce-publish-options (create-opts-fn Destination$PublishOption))
 (def coerce-subscribe-options (create-opts-fn Topic$SubscribeOption))
 (def coerce-unsubscribe-options (create-opts-fn Topic$UnsubscribeOption))
 
@@ -77,15 +77,15 @@
 (defn create-topic [name]
   (.findOrCreateTopic default name nil))
 
-(deftest queue-creation-send-receive-close
+(deftest queue-creation-publish-receive-close
   (let [queue (create-queue "a-queue")]
 
     ;; findOrCreateQueue should return the same queue for the same name
     (is (= (.jmsDestination queue)
           (.jmsDestination (create-queue "a-queue"))))
 
-    ;; we should be able to send and rcv
-    (.send queue "hi" None/INSTANCE nil)
+    ;; we should be able to publish and rcv
+    (.publish queue "hi" None/INSTANCE nil)
     (let [msg (.receive queue codecs (coerce-receive-options {:timeout 1000}))]
       (is msg)
       (is (= "hi" (.body msg))))
@@ -95,26 +95,26 @@
     (is (thrown? javax.jms.InvalidDestinationRuntimeException
           (.receive queue codecs (coerce-receive-options {:timeout 1}))))))
 
-(deftest send-should-use-the-passed-context
+(deftest publish-should-use-the-passed-context
   (let [c (.createContext default nil)
-        q (create-queue "send-c")]
+        q (create-queue "publish-c")]
     (.close c)
     (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.send q "boom" None/INSTANCE
-            (coerce-send-options {:context c}))))))
+          (.publish q "boom" None/INSTANCE
+            (coerce-publish-options {:context c}))))))
 
-(deftest send-should-encode-with-the-given-codec-and-receive-should-find-the-right-one
+(deftest publish-should-encode-with-the-given-codec-and-receive-should-find-the-right-one
   (let [q (create-queue)]
-    (.send q "hi" frob-codec nil)
+    (.publish q "hi" frob-codec nil)
     (is (= "DEFROBBED FROBBED hi" (.body (.receive q codecs nil))))))
 
 (deftest request-should-use-the-passed-context
   (let [c (.createContext default nil)
-        q (create-queue "send-c")]
+        q (create-queue "publish-c")]
     (.close c)
     (try
       (.request q "boom" None/INSTANCE codecs
-        (coerce-send-options {:context c}))
+        (coerce-publish-options {:context c}))
       (catch Exception e
         (is (instance? javax.jms.IllegalStateRuntimeException (.getCause e)))))))
 
@@ -162,11 +162,11 @@
                          (deliver @called msg)))
                      codecs
                      nil)]
-      (.send queue "hi" None/INSTANCE nil)
+      (.publish queue "hi" None/INSTANCE nil)
       (is (= "hi" (deref @called 1000 :failure)))
       (reset! called (promise))
       (.close listener)
-      (.send queue "hi" None/INSTANCE nil)
+      (.publish queue "hi" None/INSTANCE nil)
       (is (= :success (deref @called 1000 :success))))))
 
 (deftest subscribe-to-topic
@@ -179,11 +179,11 @@
                        (deliver @called msg)))
                    codecs
                    nil)]
-    (.send topic "hi" None/INSTANCE nil)
+    (.publish topic "hi" None/INSTANCE nil)
     (is (= "hi" (deref @called 1000 :failure)))
     (reset! called (promise))
     (.close listener)
-    (.send topic "hi-again" None/INSTANCE nil)
+    (.publish topic "hi-again" None/INSTANCE nil)
     (is (= :failure (deref @called 100 :failure)))
     (with-open [listener (.subscribe topic
                            "my-sub"
@@ -205,12 +205,12 @@
                        (deliver @called msg)))
                    codecs
                    nil)]
-    (.send topic "hi" None/INSTANCE nil)
+    (.publish topic "hi" None/INSTANCE nil)
     (is (= "hi" (deref @called 1000 :failure)))
     (reset! called (promise))
     (.close listener)
     (.unsubscribe topic "another-sub" nil)
-    (.send topic "failure" None/INSTANCE nil)
+    (.publish topic "failure" None/INSTANCE nil)
     (is (= :success (deref @called 100 :success)))
     (with-open [listener (.subscribe topic
                            "another-sub"
@@ -233,7 +233,7 @@
                    codecs
                    (coerce-listen-options {:concurrency 5}))]
     (dotimes [n 5]
-      (.send queue (str n) None/INSTANCE nil))
+      (.publish queue (str n) None/INSTANCE nil))
     (is (.await latch 10 TimeUnit/SECONDS))
     (.close listener)))
 
@@ -284,8 +284,8 @@
   (let [c (.createContext default
             (coerce-context-options {:mode Context$Mode/TRANSACTED}))
         q (create-queue "rollback")]
-    (.send q "failure" None/INSTANCE
-      (coerce-send-options {:context c}))
+    (.publish q "failure" None/INSTANCE
+      (coerce-publish-options {:context c}))
     (.rollback c)
     (is (not (.receive q codecs (coerce-receive-options {:timeout 1000}))))
     (.close c)))
@@ -296,34 +296,34 @@
   (with-open [c (.createContext default
                   (coerce-context-options {:host "localhost"}))]
     (let [q (create-queue "remote-queue" {:context c})]
-      (.send q "success" None/INSTANCE
-        (coerce-send-options {:context c}))
+      (.publish q "success" None/INSTANCE
+        (coerce-publish-options {:context c}))
       (let [msg (.receive q codecs (coerce-receive-options {:context c
                                                             :timeout 1000}))]
         (is msg)
         (is (= "success" (.body msg)))))))
 
-(deftest send-receive-with-the-same-context-should-work
+(deftest publish-receive-with-the-same-context-should-work
   (with-open [ctx (.createContext default nil)]
     (let [q (create-queue)]
-      (.send q "success" None/INSTANCE (coerce-send-options {:context ctx}))
+      (.publish q "success" None/INSTANCE (coerce-publish-options {:context ctx}))
       (is (= "success"
             (.body (.receive q codecs (coerce-receive-options {:context ctx}))))))))
 
-(deftest send-and-receive-inside-a-non-transactional-listener-should-work
+(deftest publish-and-receive-inside-a-non-transactional-listener-should-work
   (let [q1 (create-queue)
         q2 (create-queue)
         p  (promise)
         l  (.listen q1
              (handler
                (fn [msg]
-                 (.send q2 msg None/INSTANCE nil)
+                 (.publish q2 msg None/INSTANCE nil)
                  (when-let [result (.receive q2 codecs (coerce-receive-options {:timeout 1000}))]
                    (is (= msg (.body result)))
                    (deliver p (.body result)))))
              codecs
              (coerce-listen-options {:transacted false}))]
-    (.send q1 "whatevs" None/INSTANCE nil)
+    (.publish q1 "whatevs" None/INSTANCE nil)
     (is (= "whatevs" (deref p 1000 :failure)))))
 
 (deftest toss-when-xa-unavailable

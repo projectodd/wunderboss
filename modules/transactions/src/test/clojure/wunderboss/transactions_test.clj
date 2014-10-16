@@ -42,7 +42,7 @@
     (with-open [context (.createContext msg (Options. {Messaging$CreateContextOption/XA true}))]
       (.required tx
         (fn []
-          (.send queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONTEXT context}))
+          (.publish queue "kiwi" None/INSTANCE (Options. {Destination$MessageOpOption/CONTEXT context}))
           (.put cache :a 1)
           (if f (f)))))
     (catch Exception e
@@ -52,7 +52,7 @@
   (try
     (.required tx
       (fn []
-        (.send queue "kiwi" None/INSTANCE nil)
+        (.publish queue "kiwi" None/INSTANCE nil)
         (.put cache :a 1)
         (if f (f))))
     (catch Exception e

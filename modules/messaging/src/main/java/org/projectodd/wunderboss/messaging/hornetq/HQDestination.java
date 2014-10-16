@@ -76,9 +76,9 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     }
 
     @Override
-    public void send(Object content, Codec codec,
-                     Map<MessageOpOption, Object> options) throws Exception {
-        _send(content, codec, options, Collections.EMPTY_MAP);
+    public void publish(Object content, Codec codec,
+                        Map<MessageOpOption, Object> options) throws Exception {
+        publish(content, codec, options, Collections.EMPTY_MAP);
     }
 
     protected static void fillInProperties(JMSProducer producer, Map<String, Object> properties) throws JMSException {
@@ -109,8 +109,8 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         return (HQSpecificContext)newContext;
     }
 
-    protected void _send(Object message, Codec codec,
-                Map<MessageOpOption, Object> options, Map<String, Object> additionalProperties) throws Exception {
+    protected void publish(Object message, Codec codec,
+                           Map<MessageOpOption, Object> options, Map<String, Object> additionalProperties) throws Exception {
         if (codec == null) {
             throw new IllegalArgumentException("codec can't be null");
         }
@@ -121,14 +121,14 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
         try {
             JMSProducer producer = jmsContext.createProducer();
-            fillInProperties(producer, (Map<String, Object>) opts.get(SendOption.PROPERTIES, Collections.emptyMap()));
+            fillInProperties(producer, (Map<String, Object>) opts.get(PublishOption.PROPERTIES, Collections.emptyMap()));
             fillInProperties(producer, additionalProperties);
             producer
                     .setProperty(HQMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
-                    .setDeliveryMode((opts.getBoolean(SendOption.PERSISTENT) ?
+                    .setDeliveryMode((opts.getBoolean(PublishOption.PERSISTENT) ?
                             DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
-                    .setPriority(opts.getInt(SendOption.PRIORITY))
-                    .setTimeToLive(opts.getLong(SendOption.TTL, producer.getTimeToLive()));
+                    .setPriority(opts.getInt(PublishOption.PRIORITY))
+                    .setTimeToLive(opts.getLong(PublishOption.TTL, producer.getTimeToLive()));
             Object encoded = codec.encode(message);
             Class encodesTo = codec.encodesTo();
 

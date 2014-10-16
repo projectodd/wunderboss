@@ -31,7 +31,7 @@ public interface Queue extends Destination {
                      Map<ListenOption, Object> options) throws Exception;
 
 
-    class RequestOption extends SendOption {}
+    class RequestOption extends PublishOption {}
 
     Response request(Object content, Codec codec, Codecs codecs,
                      Map<MessageOpOption, Object> options) throws Exception;
