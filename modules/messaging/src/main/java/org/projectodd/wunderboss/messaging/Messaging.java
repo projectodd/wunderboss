@@ -52,10 +52,9 @@ public interface Messaging extends Component {
         public static final CreateContextOption PASSWORD = opt("password", CreateContextOption.class);
         public static final CreateContextOption REMOTE_TYPE = opt("remote_type", CreateContextOption.class);
         public static final CreateContextOption MODE = opt("mode", Context.Mode.AUTO_ACK, CreateContextOption.class);
-        public static final CreateContextOption CONTEXT = opt("context", CreateContextOption.class);
 
         /**
-         * If true, an xa parentContext is returned.
+         * If true, an xa Context is returned.
          */
         public static final CreateContextOption XA = opt("xa", false, CreateContextOption.class);
 
@@ -70,6 +69,4 @@ public interface Messaging extends Component {
     }
 
     Context createContext(Map<CreateContextOption, Object> options) throws Exception;
-
-    Context defaultContext() throws Exception;
 }

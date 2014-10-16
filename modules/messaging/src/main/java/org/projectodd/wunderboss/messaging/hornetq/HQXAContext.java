@@ -30,8 +30,9 @@ import java.lang.reflect.Method;
 public class HQXAContext extends ConcreteHQContext implements Synchronization {
     public HQXAContext(JMSContext jmsContext,
                        Messaging broker,
-                       Options<Messaging.CreateContextOption> options) {
-        super(jmsContext, broker, options, null);
+                       Mode mode,
+                       boolean remote) {
+        super(jmsContext, broker, mode, remote);
     }
 
     @Override
@@ -65,7 +66,6 @@ public class HQXAContext extends ConcreteHQContext implements Synchronization {
     public void close() throws Exception {
         if (!closed) {
             closed = true;
-            super.close();
             if (tm.getTransaction() != null) {
                 tm.getTransaction().registerSynchronization(this);
             }
@@ -75,14 +75,25 @@ public class HQXAContext extends ConcreteHQContext implements Synchronization {
     @Override
     public void afterCompletion(int status) {
         try {
-
+            super.close();
         } catch (Exception e) {
             throw new RuntimeException("Error after tx complete", e);
         }
     }
+
     @Override
     public void beforeCompletion() {
         // nothing
+    }
+
+    @Override
+    public HQContext createChildContext(Mode mode) {
+        throw new IllegalStateException("You can't create a child context from an XA context.");
+    }
+
+    @Override
+    public boolean isXAEnabled() {
+        return true;
     }
 
     private boolean closed = false;

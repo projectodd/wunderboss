@@ -31,4 +31,6 @@ public interface HQContext extends Context {
     boolean isChild();
 
     HQContext asNonCloseable();
+
+    HQContext createChildContext(Mode mode);
 }

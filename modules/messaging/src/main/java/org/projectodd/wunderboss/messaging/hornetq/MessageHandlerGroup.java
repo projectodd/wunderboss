@@ -33,14 +33,12 @@ import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(Context context,
-                               Messaging broker,
+    public MessageHandlerGroup(HQContext context,
                                MessageHandler handler,
                                Codecs codecs,
                                HQDestination destination,
                                Options<ListenOption> options) {
         this.context = context;
-        this.broker = broker;
         this.handler = handler;
         this.codecs = codecs;
         this.destination = destination;
@@ -51,7 +49,10 @@ public class MessageHandlerGroup implements Listener {
         if (!this.started) {
             int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
             while(concurrency-- > 0) {
-                HQContext subContext = createContext();
+                HQContext subContext =
+                        this.context.createChildContext(isTransacted() ?
+                                                                Context.Mode.TRANSACTED :
+                                                                Context.Mode.AUTO_ACK);
                 listeners.add((new JMSListener(this.handler,
                                                this.codecs,
                                                this.destination,
@@ -70,18 +71,12 @@ public class MessageHandlerGroup implements Listener {
     public synchronized void close() throws Exception {
         if (this.started) {
             this.started = false;
+            this.context.close();
             for(JMSListener each : this.listeners) {
                 each.stop();
             }
             this.listeners.clear();
         }
-    }
-
-    protected HQContext createContext() throws Exception {
-        return (HQContext)this.broker.createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
-            put(Messaging.CreateContextOption.CONTEXT, context);
-            put(Messaging.CreateContextOption.MODE, isTransacted() ? Context.Mode.TRANSACTED : Context.Mode.AUTO_ACK);
-        }});
     }
 
     protected JMSConsumer createConsumer(HQContext context) throws JMSException {
@@ -99,8 +94,7 @@ public class MessageHandlerGroup implements Listener {
     private final Codecs codecs;
     private final HQDestination destination;
     private final Options<ListenOption> options;
-    private final Context context;
-    private final Messaging broker;
+    private final HQContext context;
     private final List<JMSListener> listeners = new ArrayList<>();
     private boolean started = false;
 

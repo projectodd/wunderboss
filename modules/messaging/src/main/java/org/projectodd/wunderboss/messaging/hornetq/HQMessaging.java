@@ -75,7 +75,6 @@ public class HQMessaging implements Messaging {
     @Override
     public synchronized void stop() throws Exception {
         if (started) {
-            closeDefaultConnection();
             this.server.stop();
             this.server = null;
             this.started = false;
@@ -85,13 +84,6 @@ public class HQMessaging implements Messaging {
     @Override
     public boolean isRunning() {
         return started;
-    }
-
-    protected void closeDefaultConnection() throws Exception {
-        if (this.defaultContext != null) {
-            this.defaultContext.close();
-            this.defaultContext = null;
-        }
     }
 
     public JMSServerManager jmsServerManager() {
@@ -107,62 +99,21 @@ public class HQMessaging implements Messaging {
         return this.name;
     }
 
-    @Override
-    public Context defaultContext() throws Exception {
-        if (this.defaultContext == null) {
-            this.defaultContext = createContext("java:/ConnectionFactory",
-                                                new Options());
-        }
-
-        return this.defaultContext.asNonCloseable();
-    }
-
     private HQContext createContext(ConnectionFactory cf, Options<CreateContextOption> options) {
-        int mode = 0;
-        switch ((Context.Mode)options.get(Messaging.CreateContextOption.MODE)) {
-            case AUTO_ACK:
-                mode = JMSContext.AUTO_ACKNOWLEDGE;
-                break;
-            case CLIENT_ACK:
-                mode = JMSContext.CLIENT_ACKNOWLEDGE;
-                break;
-            case TRANSACTED:
-                mode = JMSContext.SESSION_TRANSACTED;
-                break;
-        }
+        int mode = ConcreteHQContext.modeToJMSMode((Context.Mode)options.get(Messaging.CreateContextOption.MODE));
         JMSContext jmsContext;
-        HQContext parentContext = null;
 
         if (options.has(CreateContextOption.USERNAME)) {
             jmsContext = cf.createContext(options.getString(CreateContextOption.USERNAME),
                                           options.getString(CreateContextOption.PASSWORD),
                                           mode);
         } else {
-            parentContext = (HQContext)options.get(CreateContextOption.CONTEXT);
-            if (parentContext != null) {
-                jmsContext = parentContext
-                        .jmsContext()
-                        .createContext(mode);
-            } else if (options.has(CreateContextOption.HOST)
-                    || options.has(CreateContextOption.CLIENT_ID)
-                    || this.defaultContext == null) {
-                // always create a new top-level context when it's remote,
-                // requires an id, or we don't yet have a default
-                // (which means we're trying to create the default)
-                jmsContext = cf.createContext(mode);
-            } else {
-                try {
-                    parentContext = (HQContext)this.defaultContext();
-                    jmsContext = parentContext
-                            .jmsContext()
-                            .createContext(mode);
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
-            }
+            jmsContext = cf.createContext(mode);
         }
 
-        return new ConcreteHQContext(jmsContext, this, options, parentContext);
+        return new ConcreteHQContext(jmsContext, this,
+                                     (Context.Mode)options.get(CreateContextOption.MODE),
+                                     options.has(CreateContextOption.HOST));
     }
 
     private HQContext createContext(String factoryName, Options<CreateContextOption> options) {
@@ -183,7 +134,9 @@ public class HQMessaging implements Messaging {
             context = cf.createXAContext();
         }
 
-        return new HQXAContext(context, this, options);
+        return new HQXAContext(context, this,
+                               (Context.Mode)options.get(CreateContextOption.MODE),
+                               options.has(CreateContextOption.HOST));
     }
 
     private HQContext createXAContext(String factoryName, Options<CreateContextOption> options) {
@@ -399,7 +352,6 @@ public class HQMessaging implements Messaging {
     private final Options<CreateOption> options;
     private final Set<String> createdDestinations = new HashSet<>();
     private final Map<String, List<AutoCloseable>> closeablesForDestination = new HashMap<>();
-    private HQContext defaultContext;
     protected boolean started = false;
     protected EmbeddedServer server;
 

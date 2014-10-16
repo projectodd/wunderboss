@@ -114,14 +114,14 @@ public class HQTopic extends HQDestination implements Topic {
     }
 
     protected HQContext context(final String id, final Object context) throws Exception {
-
-        return (HQContext)broker()
-                .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
-                    put(Messaging.CreateContextOption.CLIENT_ID, id);
-                    if (context != null) {
-                        put(Messaging.CreateContextOption.CONTEXT, context);
-                    }
-                }});
+        if (context != null) {
+            return (HQContext)context;
+        } else {
+            return (HQContext)broker()
+                    .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
+                        put(Messaging.CreateContextOption.CLIENT_ID, id);
+                    }});
+        }
     }
 
 }

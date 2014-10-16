@@ -60,14 +60,13 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        Context context = context(opts.get(ListenOption.CONTEXT));
+        HQContext context = context(opts.get(ListenOption.CONTEXT));
         Listener listener = new MessageHandlerGroup(context,
-                                                    this.broker,
                                                     handler,
                                                     codecs,
                                                     this,
                                                     opts).start();
-        Context parent = (Context)opts.get(MessageOpOption.CONTEXT);
+        Context parent = (Context)opts.get(ListenOption.CONTEXT);
         if (parent != null) {
             parent.addCloseable(listener);
         }
@@ -88,49 +87,18 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         }
     }
 
-    /*
-    protected Pair<Session, Boolean> getSession(Options<MessageOpOption> options) throws Exception {
-        Session session = (Session)options.get(MessageOpOption.SESSION);
-        boolean shouldClose = false;
-
-        if (session == null) {
-            Context context = context(options.get(MessageOpOption.CONTEXT));
-            Session threadSession = HornetQSession.currentSession.get();
-
-            if (threadSession != null && threadSession.connection() == context) {
-                session = threadSession;
-            } else {
-                session = context.createSession(null);
-                shouldClose = true;
-            }
-        }
-
-        session.enlist();
-
-        return new Pair(session, shouldClose);
-    }
-*/
-
     protected HQContext context(final Object context) throws Exception {
         Context newContext;
         if (context == Context.XA) {
             newContext = this.broker.createContext(new HashMap() {{
                 put(Messaging.CreateContextOption.XA, true);
             }});
-            newContext = ((HQContext)newContext).asNonCloseable();
         } else {
             HQContext threadContext = ConcreteHQContext.currentContext.get();
-            if (threadContext != null) {
+            if (threadContext != null && threadContext != context) {
                 newContext = threadContext;
             } else if (context != null) {
-                if (((HQContext)context).isChild() ||
-                        context instanceof HQXAContext) {
                     newContext = ((HQContext) context).asNonCloseable();
-                } else {
-                    newContext = this.broker.createContext(new HashMap() {{
-                        put(Messaging.CreateContextOption.CONTEXT, context);
-                    }});
-                }
             } else {
                 newContext = this.broker.createContext(null);
             }

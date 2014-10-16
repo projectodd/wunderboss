@@ -282,8 +282,7 @@
 
 (deftest context-rollback
   (let [c (.createContext default
-            (coerce-context-options {:mode Context$Mode/TRANSACTED
-                                     :context (.defaultContext default)}))
+            (coerce-context-options {:mode Context$Mode/TRANSACTED}))
         q (create-queue "rollback")]
     (.send q "failure" None/INSTANCE
       (coerce-send-options {:context c}))

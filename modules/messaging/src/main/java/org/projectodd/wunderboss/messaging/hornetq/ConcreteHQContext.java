@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Messaging;
 
 import javax.jms.JMSContext;
@@ -29,17 +28,42 @@ public class ConcreteHQContext implements HQContext {
 
     public ConcreteHQContext(JMSContext jmsContext,
                              Messaging broker,
-                             Options<Messaging.CreateContextOption> creationOptions,
+                             Mode mode,
+                             boolean remote) {
+        this(jmsContext, broker, mode, remote, null);
+    }
+
+    public ConcreteHQContext(JMSContext jmsContext,
+                             Messaging broker,
+                             Mode mode,
+                             boolean remote,
                              HQContext parent) {
         this.jmsContext = jmsContext;
         this.broker = broker;
-        this.creationOptions = creationOptions;
-        this.mode = (Mode)creationOptions.get(Messaging.CreateContextOption.MODE);
+        this.mode = mode;
+        this.remote = remote;
         this.parentContext = parent;
 
         if (parentContext != null) {
             parentContext.addCloseable(this);
         }
+    }
+
+    public static int modeToJMSMode(Mode mode) {
+        int jmsMode = 0;
+        switch (mode) {
+            case AUTO_ACK:
+                jmsMode = JMSContext.AUTO_ACKNOWLEDGE;
+                break;
+            case CLIENT_ACK:
+                jmsMode = JMSContext.CLIENT_ACKNOWLEDGE;
+                break;
+            case TRANSACTED:
+                jmsMode = JMSContext.SESSION_TRANSACTED;
+                break;
+        }
+
+        return jmsMode;
     }
 
     @Override
@@ -88,7 +112,7 @@ public class ConcreteHQContext implements HQContext {
 
     @Override
     public boolean isRemote() {
-        return this.creationOptions.has(Messaging.CreateContextOption.HOST)
+        return this.remote
                 || (this.parentContext != null && this.parentContext.isRemote());
     }
 
@@ -104,7 +128,7 @@ public class ConcreteHQContext implements HQContext {
 
     @Override
     public boolean isXAEnabled() {
-        return this.creationOptions.getBoolean(Messaging.CreateContextOption.XA);
+        return false;
     }
 
     @Override
@@ -117,8 +141,11 @@ public class ConcreteHQContext implements HQContext {
         return this.new NonClosing();
     }
 
-    public Options<Messaging.CreateContextOption> creationOptions() {
-        return this.creationOptions;
+    @Override
+    public HQContext createChildContext(Mode mode) {
+        JMSContext subContext = this.jmsContext.createContext(modeToJMSMode(mode));
+
+        return new ConcreteHQContext(subContext, this.broker, this.mode, this.remote, this);
     }
 
     class NonClosing implements HQContext {
@@ -185,12 +212,17 @@ public class ConcreteHQContext implements HQContext {
         public HQContext asNonCloseable() {
             return this;
         }
+
+        @Override
+        public HQContext createChildContext(Mode mode) {
+            return ConcreteHQContext.this.createChildContext(mode);
+        }
     }
 
     private final Mode mode;
+    private final boolean remote;
     private final JMSContext jmsContext;
     private final HQContext parentContext;
     private final Messaging broker;
-    private final Options<Messaging.CreateContextOption> creationOptions;
     private final List<AutoCloseable> closeables = new ArrayList<>();
 }
