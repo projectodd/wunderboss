@@ -65,8 +65,10 @@ public class HQXAContext extends HQContext implements Synchronization {
     public void close() throws Exception {
         if (!closed) {
             closed = true;
-            if (tm.getTransaction() != null) {
+            if (isTransactionActive()) {
                 tm.getTransaction().registerSynchronization(this);
+            } else {
+                super.close();
             }
         }
     }
