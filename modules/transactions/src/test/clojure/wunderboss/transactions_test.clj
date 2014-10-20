@@ -52,11 +52,7 @@
   (try
     (.required tx
       (fn []
-<<<<<<< HEAD
-        (.send queue "kiwi" None/INSTANCE nil)
-=======
         (.publish queue "kiwi" None/INSTANCE nil)
->>>>>>> Collapse connection and session to context.
         (.put cache :a 1)
         (if f (f))))
     (catch Exception e

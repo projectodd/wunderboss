@@ -87,8 +87,6 @@ public class HQXAContext extends HQContext implements Synchronization {
         // nothing
     }
 
-<<<<<<< HEAD:modules/messaging/src/main/java/org/projectodd/wunderboss/messaging/hornetq/HornetQXASession.java
-=======
     @Override
     public HQSpecificContext createChildContext(Mode mode) {
         throw new IllegalStateException("You can't create a child context from an XA context.");
@@ -99,7 +97,6 @@ public class HQXAContext extends HQContext implements Synchronization {
         return true;
     }
 
->>>>>>> Collapse connection and session to context.:modules/messaging/src/main/java/org/projectodd/wunderboss/messaging/hornetq/HQXAContext.java
     public static boolean isTransactionActive() {
         try {
             return tm != null && tm.getTransaction() != null;
