@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.messaging.hornetq;
 
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.jboss.logging.Logger;
 
 import javax.jms.JMSContext;
 import java.util.ArrayList;
@@ -92,6 +93,9 @@ public class HQContext implements HQSpecificContext {
 
     @Override
     public boolean enlist() throws Exception {
+        if (HQXAContext.isTransactionActive()) {
+            log.warn("This non-XA context cannot participate in the active transaction; hijinks may ensue");
+        }
         return false;
     }
 
@@ -225,4 +229,5 @@ public class HQContext implements HQSpecificContext {
     private final HQSpecificContext parentContext;
     private final Messaging broker;
     private final List<AutoCloseable> closeables = new ArrayList<>();
+    private final static Logger log = Logger.getLogger(HQContext.class);
 }
