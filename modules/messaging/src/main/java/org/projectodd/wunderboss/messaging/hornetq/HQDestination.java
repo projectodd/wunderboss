@@ -64,7 +64,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
         if (givenContext != null &&
                 !givenContext.isRemote()) {
-            throw new IllegalArgumentException("listen only accepts a remote context.");
+            throw new IllegalArgumentException("Listening only accepts a remote context.");
         }
 
         HQSpecificContext context = context(givenContext);

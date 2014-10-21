@@ -203,9 +203,12 @@ public class HQMessaging implements Messaging {
                                                 Map<CreateQueueOption, Object> options) throws Exception {
         Options<CreateQueueOption> opts = new Options<>(options);
         javax.jms.Queue queue;
-        if (opts.has(CreateQueueOption.CONTEXT)) {
-            // assume it's remote, so we just need a ref to it
-            queue = ((HQSpecificContext)opts.get(CreateQueueOption.CONTEXT)).jmsContext().createQueue(name);
+        HQSpecificContext givenContext = (HQSpecificContext)opts.get(CreateQueueOption.CONTEXT);
+        if (givenContext != null) {
+            if (!givenContext.isRemote()) {
+                throw new IllegalArgumentException("Queue lookup only accepts a remote context.");
+            }
+            queue = givenContext.jmsContext().createQueue(name);
         } else {
             start();
 
@@ -230,9 +233,12 @@ public class HQMessaging implements Messaging {
                                                 Map<CreateTopicOption, Object> options) throws Exception {
         Options<CreateTopicOption> opts = new Options<>(options);
         javax.jms.Topic topic;
-        if (opts.has(CreateTopicOption.CONTEXT)) {
-            // assume it's remote, so we just need a ref to it
-            topic = ((HQSpecificContext)opts.get(CreateTopicOption.CONTEXT)).jmsContext().createTopic(name);
+        HQSpecificContext givenContext = (HQSpecificContext)opts.get(CreateQueueOption.CONTEXT);
+        if (givenContext != null) {
+            if (!givenContext.isRemote()) {
+                throw new IllegalArgumentException("Topic lookup only accepts a remote context.");
+            }
+            topic = givenContext.jmsContext().createTopic(name);
         } else {
             start();
 
