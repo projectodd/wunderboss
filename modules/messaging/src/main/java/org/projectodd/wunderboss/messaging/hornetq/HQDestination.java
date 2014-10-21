@@ -60,15 +60,22 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
-        HQSpecificContext context = context(opts.get(ListenOption.CONTEXT));
+        Context givenContext = (Context)opts.get(ListenOption.CONTEXT);
+
+        if (givenContext != null &&
+                !givenContext.isRemote()) {
+            throw new IllegalArgumentException("listen only accepts a remote context.");
+        }
+
+        HQSpecificContext context = context(givenContext);
         Listener listener = new MessageHandlerGroup(context,
                                                     handler,
                                                     codecs,
                                                     this,
                                                     opts).start();
-        Context parent = (Context)opts.get(ListenOption.CONTEXT);
-        if (parent != null) {
-            parent.addCloseable(listener);
+
+        if (givenContext != null) {
+            givenContext.addCloseable(listener);
         }
         this.broker.addCloseableForDestination(this, listener);
         this.broker.addCloseable(listener);

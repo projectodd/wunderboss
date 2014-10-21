@@ -109,7 +109,7 @@
     (is (= "DEFROBBED FROBBED hi" (.body (.receive q codecs nil))))))
 
 (deftest request-should-use-the-passed-context
-  (let [c (.createContext default nil)
+  (let [c (.createContext default (coerce-context-options {:host "localhost"}))
         q (create-queue "publish-c")]
     (.close c)
     (try
