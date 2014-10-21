@@ -41,7 +41,6 @@ public class HQTopic extends HQDestination implements Topic {
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
         final HQSpecificContext context = context(id, opts.get(SubscribeOption.CONTEXT));
-        final boolean shouldCloseConnection = !opts.has(SubscribeOption.CONTEXT);
         final JMSConsumer consumer = context
                 .jmsContext()
                 .createDurableConsumer((javax.jms.Topic) jmsDestination(),
@@ -64,11 +63,8 @@ public class HQTopic extends HQDestination implements Topic {
         return new Listener() {
             @Override
             public void close() throws Exception {
-                if (shouldCloseConnection) {
-                    context.close();
-                } else {
-                    listener.close();
-                }
+                listener.close();
+                context.close();
             }
         };
     }
@@ -80,9 +76,7 @@ public class HQTopic extends HQDestination implements Topic {
         try {
             context.jmsContext().unsubscribe(id);
         } finally {
-            if (!opts.has(UnsubscribeOption.CONTEXT)) {
-                 context.close();
-            }
+            context.close();
         }
     }
 
@@ -115,7 +109,7 @@ public class HQTopic extends HQDestination implements Topic {
 
     protected HQSpecificContext context(final String id, final Object context) throws Exception {
         if (context != null) {
-            return (HQSpecificContext)context;
+            return ((HQSpecificContext)context).asNonCloseable();
         } else {
             return (HQSpecificContext)broker()
                     .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
