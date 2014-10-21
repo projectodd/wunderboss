@@ -26,10 +26,10 @@ public interface Destination {
     String name();
 
     class ListenOption extends Option {
-        public static final ListenOption CONTEXT = opt("context", ListenOption.class);
+        public static final ListenOption CONTEXT     = opt("context", ListenOption.class);
         public static final ListenOption CONCURRENCY = opt("concurrency", 1, ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
-        public static final ListenOption TRANSACTED = opt("transacted", true, ListenOption.class);
+        public static final ListenOption MODE        = opt("mode", Context.Mode.TRANSACTED, ListenOption.class);
     }
 
     Listener listen(MessageHandler handler,

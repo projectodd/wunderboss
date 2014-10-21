@@ -48,9 +48,7 @@ public class MessageHandlerGroup implements Listener {
             int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
             while(concurrency-- > 0) {
                 HQSpecificContext subContext =
-                        this.context.createChildContext(isTransacted() ?
-                                                                Context.Mode.TRANSACTED :
-                                                                Context.Mode.AUTO_ACK);
+                        this.context.createChildContext((Context.Mode)this.options.get(ListenOption.MODE));
                 listeners.add((new JMSListener(this.handler,
                                                this.codecs,
                                                this.destination,
@@ -82,10 +80,6 @@ public class MessageHandlerGroup implements Listener {
         javax.jms.Destination destination = this.destination.jmsDestination();
 
         return context.jmsContext().createConsumer(destination, selector);
-    }
-
-    protected boolean isTransacted() {
-        return this.options.getBoolean(ListenOption.TRANSACTED);
     }
 
     private final MessageHandler handler;

@@ -322,7 +322,7 @@
                    (is (= msg (.body result)))
                    (deliver p (.body result)))))
              codecs
-             (coerce-listen-options {:transacted false}))]
+             (coerce-listen-options {:mode Context$Mode/AUTO_ACK}))]
     (.publish q1 "whatevs" None/INSTANCE nil)
     (is (= "whatevs" (deref p 1000 :failure)))))
 
