@@ -159,7 +159,7 @@ public class UndertowWeb implements Web<HttpHandler> {
 
         final DeploymentInfo servletBuilder = Servlets.deployment()
                 .setClassLoader(WunderBoss.class.getClassLoader())
-                .setContextPath(context)
+                .setContextPath("/".equals(context) ? "" : context)
                 // actually flush the response when we ask for it
                 .setIgnoreFlush(false)
                 .setDeploymentName(UUID.randomUUID().toString())
