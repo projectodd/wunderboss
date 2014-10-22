@@ -54,13 +54,6 @@ public interface Destination {
         public static final ReceiveOption SELECTOR = opt("selector", ReceiveOption.class);
     }
 
-    /**
-     *
-     * @param endpoint
-     * @param options
-     * @return the Message, or null on timeout
-     * @throws Exception
-     */
     Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception;
 
     void stop() throws Exception;
