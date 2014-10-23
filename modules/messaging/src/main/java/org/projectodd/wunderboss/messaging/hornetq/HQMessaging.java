@@ -233,7 +233,7 @@ public class HQMessaging implements Messaging {
                                                 Map<CreateTopicOption, Object> options) throws Exception {
         Options<CreateTopicOption> opts = new Options<>(options);
         javax.jms.Topic topic;
-        HQSpecificContext givenContext = (HQSpecificContext)opts.get(CreateQueueOption.CONTEXT);
+        HQSpecificContext givenContext = (HQSpecificContext)opts.get(CreateTopicOption.CONTEXT);
         if (givenContext != null) {
             if (!givenContext.isRemote()) {
                 throw new IllegalArgumentException("Topic lookup only accepts a remote context.");
