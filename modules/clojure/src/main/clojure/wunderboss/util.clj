@@ -56,4 +56,4 @@
   (catch Exception _))
 
 (when-not (WunderBoss/inContainer)
-  (.addShutdownHook (Runtime/getRuntime) (Thread. exit!)))
+  (.addShutdownHook (Runtime/getRuntime) (Thread. ^Runnable exit!)))
