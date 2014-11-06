@@ -130,6 +130,9 @@ public class UndertowWeb implements Web<HttpHandler> {
         if (options.has(STATIC_DIR)) {
             httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
         }
+        if (options.getBoolean(DISPATCH)) {
+            httpHandler = wrapWithDispatcher(httpHandler);
+        }
         final boolean replacement = pathology.add(context, options.getList(VHOSTS), httpHandler);
         if (cleanup != null) {
             pathology.epilogue(httpHandler, cleanup);
@@ -260,6 +263,22 @@ public class UndertowWeb implements Web<HttpHandler> {
                     }
                 }
         }, resourceHandler, baseHandler);
+    }
+
+    /**
+     * Ensure that handler isn't invoked on IO thread but rather
+     * dispatched to the worker thread pool
+     */
+    protected HttpHandler wrapWithDispatcher(final HttpHandler handler) {
+        return new HttpHandler() {
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+                if (exchange.isInIoThread()) {
+                    exchange.dispatch(handler);
+                } else {
+                    handler.handleRequest(exchange);
+                }
+            }
+        };
     }
 
     protected Resource getIndexFiles(ResourceManager resourceManager, final String base, List<String> possible) throws IOException {
