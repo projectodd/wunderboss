@@ -262,7 +262,7 @@ public class HQMessaging implements Messaging {
                 }
             } else {
                 if (opts.size() > 0) {
-                    log.warn("Ignoring the topic creation options provided for " + name + ", the topic balready exists.");
+                    log.warn("Ignoring the topic creation options provided for " + name + ", the topic already exists.");
                 }
             }
         }
