@@ -208,6 +208,9 @@ public class HQMessaging implements Messaging {
             if (!givenContext.isRemote()) {
                 throw new IllegalArgumentException("Queue lookup only accepts a remote context.");
             }
+            if (opts.size() > 1) {
+                throw new IllegalArgumentException("Creation options provided for a remote queue.");
+            }
             queue = givenContext.jmsContext().createQueue(name);
         } else {
             start();
@@ -222,6 +225,8 @@ public class HQMessaging implements Messaging {
                                         opts.getBoolean(CreateQueueOption.DURABLE));
                     this.createdDestinations.add(HQQueue.fullName(name));
                 }
+            } else {
+                log.warn("Ignoring the queue creation options provided for " + name + ", the queue already exists.");
             }
         }
 
@@ -238,6 +243,9 @@ public class HQMessaging implements Messaging {
             if (!givenContext.isRemote()) {
                 throw new IllegalArgumentException("Topic lookup only accepts a remote context.");
             }
+            if (opts.size() > 1) {
+                throw new IllegalArgumentException("Creation options provided for a remote topic.");
+            }
             topic = givenContext.jmsContext().createTopic(name);
         } else {
             start();
@@ -250,6 +258,8 @@ public class HQMessaging implements Messaging {
                     topic = createTopic(name);
                     this.createdDestinations.add(HQTopic.fullName(name));
                 }
+            } else {
+                log.warn("Ignoring the topic creation options provided for " + name + ", the topic balready exists.");
             }
         }
 

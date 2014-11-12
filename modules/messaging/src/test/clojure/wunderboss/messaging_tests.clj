@@ -72,7 +72,9 @@
   (let [[name opts] opts
         name (or name (str (java.util.UUID/randomUUID)))]
     (.findOrCreateQueue default name
-      (coerce-queue-options (merge opts {:durable false})))))
+      (coerce-queue-options (if (:context opts)
+                              opts
+                              (merge opts {:durable false}))))))
 
 (defn create-topic [name]
   (.findOrCreateTopic default name nil))

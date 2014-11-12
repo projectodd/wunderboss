@@ -197,8 +197,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         return ("java:/jms/" + type + '/' + name).replace("//", "/_/");
     }
 
-    public
-    static boolean isJndiName(String name) {
+    public static boolean isJndiName(String name) {
         return name.startsWith("java:");
     }
 
