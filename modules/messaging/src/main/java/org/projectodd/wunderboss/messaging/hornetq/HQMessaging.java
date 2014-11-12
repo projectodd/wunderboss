@@ -226,7 +226,9 @@ public class HQMessaging implements Messaging {
                     this.createdDestinations.add(HQQueue.fullName(name));
                 }
             } else {
-                log.warn("Ignoring the queue creation options provided for " + name + ", the queue already exists.");
+                if (opts.size() > 0) {
+                    log.warn("Ignoring the queue creation options provided for " + name + ", the queue already exists.");
+                }
             }
         }
 
@@ -259,7 +261,9 @@ public class HQMessaging implements Messaging {
                     this.createdDestinations.add(HQTopic.fullName(name));
                 }
             } else {
-                log.warn("Ignoring the topic creation options provided for " + name + ", the topic balready exists.");
+                if (opts.size() > 0) {
+                    log.warn("Ignoring the topic creation options provided for " + name + ", the topic balready exists.");
+                }
             }
         }
 
