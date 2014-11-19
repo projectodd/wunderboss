@@ -16,7 +16,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <version.jruby>1.7.10</version.jruby>
+    <version.jruby>1.7.16.1</version.jruby>
   </properties>
 
   <dependencies>
@@ -40,7 +40,7 @@
       </resource>
       <resource>
         <directory>src/main/resources</directory>
-      </resource>  
+      </resource>
     </resources>
     <plugins>
       <plugin>
