@@ -13,7 +13,8 @@
 ;; limitations under the License.
 
 (ns wunderboss.util
-  (:import org.projectodd.wunderboss.WunderBoss))
+  (:import [org.projectodd.wunderboss
+            DynamicClassLoader WunderBoss]))
 
 (defonce ^:private exit-tasks (atom []))
 
@@ -34,8 +35,9 @@
   (require '[dynapath.dynamic-classpath :as dp])
   (eval '(let [base-url-classloader
                (assoc dp/base-readable-addable-classpath
-                 :classpath-urls #(seq (.getURLs %))
-                 :add-classpath-url (fn [cl url]
+                 :classpath-urls (fn [^DynamicClassLoader cl]
+                                   (seq (.getURLs cl)))
+                 :add-classpath-url (fn [^DynamicClassLoader cl url]
                                       (.addURL cl url)))]
 
            ;; if dynapath is available, make our classloader join the party
