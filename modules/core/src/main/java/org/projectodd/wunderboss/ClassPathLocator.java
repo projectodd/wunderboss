@@ -54,7 +54,7 @@ public class ClassPathLocator implements Locator {
         try {
             return loadClassFromResourceFile("META-INF/wunderboss-languages/" + lang);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load langiage implementation for " + lang, e);
+            throw new RuntimeException("Failed to load language implementation for " + lang, e);
         }
     }
 
