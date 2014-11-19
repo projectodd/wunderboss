@@ -20,6 +20,8 @@ import org.projectodd.wunderboss.Language;
 import org.projectodd.wunderboss.WunderBoss;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.net.MalformedURLException;
 
 /**
  * A wrapper around RubyLanguage to make sure we get JRuby on the
@@ -51,6 +53,10 @@ public class RubyLanguageShim implements Language {
         return ruby().coerceToClass(object, toClass);
     }
 
+    protected String extractedRoot() {
+        return WunderBoss.options().getString("extract-root", ".");
+    }
+
     protected Language ruby() {
         if (rubyLanguage == null) {
             try {
@@ -58,37 +64,58 @@ public class RubyLanguageShim implements Language {
                 File jrubyLib = new File(jrubyHome + "/lib");
                 if (jrubyLib.isDirectory()) {
                     WunderBoss.putOption("jruby-home", jrubyHome);
-                    for (File each : jrubyLib.listFiles()) {
-                        if (each.getName().endsWith(".jar")) {
-                            WunderBoss.updateClassPath(each.toURI().toURL());
-                        }
+                    for (File each : jrubyLib.listFiles(JAR_FILTER)) {
+                        WunderBoss.updateClassPath(each.toURI().toURL());
                     }
                 }
+
+                checkForJRuby();
+
                 Class<?> rubyLanguageClass = Class.forName("org.projectodd.wunderboss.ruby.RubyLanguage",
                         true, WunderBoss.classLoader());
                 rubyLanguage = (Language) rubyLanguageClass.newInstance();
                 rubyLanguage.initialize();
-            } catch (Exception e) {
+            } catch (ClassNotFoundException |
+                    InstantiationException |
+                    IllegalAccessException |
+                    MalformedURLException e) {
                 throw new RuntimeException(e);
             }
         }
         return rubyLanguage;
     }
 
+    protected void checkForJRuby() {
+        try {
+            Class.forName("org.jruby.Ruby", false, WunderBoss.classLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("No JRuby found - either include JRuby in the artifact, " +
+                    "set the JRUBY_HOME envvar, or set the jruby.home sysprop.");
+        }
+    }
+
     protected String locateJRubyHome() {
-        String root = WunderBoss.options().get("extract-root", ".").toString();
-        File jrubyLib = new File(root + "/jruby/lib");
-        if (jrubyLib.isDirectory()) {
-            return root + "/jruby";
+        String home = System.getProperty("jruby.home");
+
+        if (home == null) {
+            home = System.getenv("JRUBY_HOME");
         }
-        if (System.getProperty("jruby.home") != null) {
-            return System.getProperty("jruby.home");
+
+        if (home == null) {
+            String root = extractedRoot();
+            if ((new File(root + "/jruby/lib")).isDirectory()) {
+                home = root + "/jruby";
+            }
         }
-        if (System.getenv("JRUBY_HOME") != null) {
-            return System.getenv("JRUBY_HOME");
-        }
-        return null;
+
+        return home;
     }
 
     private Language rubyLanguage;
+    static final FileFilter JAR_FILTER = new FileFilter() {
+        @Override
+        public boolean accept(File file) {
+            return file.getName().endsWith(".jar");
+        }
+    };
 }

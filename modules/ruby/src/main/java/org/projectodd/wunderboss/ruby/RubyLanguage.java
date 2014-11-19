@@ -76,6 +76,7 @@ public class RubyLanguage implements Language {
             }
             String[] argv = (String[]) WunderBoss.options().get("argv", new String[]{});
             instanceConfig.setArgv(argv);
+            instanceConfig.setLoader(this.getClass().getClassLoader());
             runtime = Ruby.newInstance(instanceConfig);
         }
         runtime.getLoadService().addPaths(root);
