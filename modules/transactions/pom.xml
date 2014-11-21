@@ -16,7 +16,9 @@
   <packaging>jar</packaging>
 
   <properties>
-    <version.infinispan>6.0.2.Final</version.infinispan>
+    <version.narayana>5.0.3.Final</version.narayana>
+    <version.jta>1.1</version.jta>
+    <version.jboss-transaction-spi>7.1.0.Final</version.jboss-transaction-spi>
   </properties>
 
   <dependencies>
@@ -30,19 +32,19 @@
     <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>jta</artifactId>
-      <version>1.1</version>
+      <version>${version.jta}</version>
     </dependency>
 
     <dependency>
       <groupId>org.jboss.narayana.jta</groupId>
       <artifactId>narayana-jta</artifactId>
-      <version>5.0.3.Final</version>
+      <version>${version.narayana}</version>
     </dependency>
 
     <dependency>
       <groupId>org.jboss</groupId>
       <artifactId>jboss-transaction-spi</artifactId>
-      <version>7.1.0.Final</version>
+      <version>${version.jboss-transaction-spi}</version>
     </dependency>
 
     <dependency>
