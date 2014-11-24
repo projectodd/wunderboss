@@ -149,9 +149,10 @@ public class UndertowWeb implements Web<HttpHandler> {
     public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
+        final String servletName = options.getString(SERVLET_NAME);
 
         Class servletClass = servlet.getClass();
-        final ServletInfo servletInfo = Servlets.servlet(servletClass.getSimpleName(),
+        final ServletInfo servletInfo = Servlets.servlet(servletName != null ? servletName : servletClass.getSimpleName(),
                                                          servletClass,
                                                          new ImmediateInstanceFactory(servlet));
         servletInfo.addMapping("/*");

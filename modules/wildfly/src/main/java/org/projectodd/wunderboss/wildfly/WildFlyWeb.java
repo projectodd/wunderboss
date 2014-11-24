@@ -30,6 +30,7 @@ import javax.servlet.ServletRegistration;
 import java.util.Map;
 
 import static org.projectodd.wunderboss.web.Web.RegisterOption.PATH;
+import static org.projectodd.wunderboss.web.Web.RegisterOption.SERVLET_NAME;
 
 public class WildFlyWeb extends UndertowWeb {
 
@@ -45,10 +46,13 @@ public class WildFlyWeb extends UndertowWeb {
     public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
+        final String servletName = options.getString(SERVLET_NAME);
         // TODO: Take mapping instead of path for servlets?
         final String mapping = context.endsWith("/") ? context + "*" : context + "/*";
 
-        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(context, servlet);
+        Class servletClass = servlet.getClass();
+
+        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(servletName != null ? servletName : servletClass.getSimpleName(), servlet);
         servletRegistration.addMapping(mapping);
         servletRegistration.setLoadOnStartup(1);
         servletRegistration.setAsyncSupported(true);

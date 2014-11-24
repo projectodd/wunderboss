@@ -36,6 +36,7 @@ public interface Web<S> extends Component {
         public static final RegisterOption STATIC_DIR = opt("static_dir", RegisterOption.class);
         public static final RegisterOption VHOSTS     = opt("virtual_host", RegisterOption.class);
         public static final RegisterOption DISPATCH   = opt("dispatch", true, RegisterOption.class);
+        public static final RegisterOption SERVLET_NAME   = opt("servlet_name", RegisterOption.class);
     }
 
     /**
