@@ -31,7 +31,7 @@ public interface Caching extends Component {
         public static final CreateOption PERSIST       = opt("persist",       false,        CreateOption.class);
         public static final CreateOption MODE          = opt("mode",                        CreateOption.class);
         public static final CreateOption EVICTION      = opt("eviction",      "NONE",       CreateOption.class);
-        public static final CreateOption MAX_ENTRIES   = opt("max-entries",   -1,           CreateOption.class);
+        public static final CreateOption MAX_ENTRIES   = opt("max_entries",   -1,           CreateOption.class);
         public static final CreateOption IDLE          = opt("idle",          -1,           CreateOption.class);
         public static final CreateOption TTL           = opt("ttl",           -1,           CreateOption.class);
     }
