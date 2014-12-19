@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.websocket;
+package org.projectodd.wunderboss.web.async.websocket;
 
 import javax.websocket.MessageHandler;
 
@@ -35,5 +35,10 @@ public class Util {
             public void onMessage(byte[] msg) {
                 proxy.onMessage(msg);
             }};
+    }
+
+    static public RuntimeException wrongMessageType(Class clazz) {
+        return new IllegalArgumentException("message is neither a String or byte[], but is " +
+                                                   clazz.getName());
     }
 }

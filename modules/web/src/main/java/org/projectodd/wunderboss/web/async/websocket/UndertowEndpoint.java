@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.websocket;
+package org.projectodd.wunderboss.web.async.websocket;
 
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.CloseMessage;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 
-public interface Endpoint {
+public interface UndertowEndpoint {
     void onMessage (WebSocketChannel channel, Object message);
     void onOpen    (WebSocketChannel channel, WebSocketHttpExchange exchange);
     void onClose   (WebSocketChannel channel, CloseMessage message);

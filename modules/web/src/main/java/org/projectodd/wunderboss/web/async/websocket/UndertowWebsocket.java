@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.websocket;
+package org.projectodd.wunderboss.web.async.websocket;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
-import io.undertow.websockets.core.WebSockets;
-import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.BufferedTextMessage;
@@ -36,43 +35,44 @@ import org.xnio.Pooled;
 
 public class UndertowWebsocket {
 
-    public static HttpHandler create (final Endpoint endpoint, final HttpHandler next) {
+    public static HttpHandler createHandler(final WebsocketInitHandler checker, final HttpHandler next) {
         WebSocketConnectionCallback callback = new WebSocketConnectionCallback() {
-                public void onConnect (WebSocketHttpExchange exchange, WebSocketChannel channel) {
+            public void onConnect (WebSocketHttpExchange exchange, WebSocketChannel channel) {
+                final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
+                if (checker.shouldConnect(exchange, endpoint)) {
                     endpoint.onOpen(channel, exchange);
                     channel.getReceiveSetter().set(new AbstractReceiveListener() {
-                            protected void onError (WebSocketChannel channel, Throwable error) {
-                                endpoint.onError(channel, error);
+                        protected void onError (WebSocketChannel channel, Throwable error) {
+                            endpoint.onError(channel, error);
+                        }
+                        protected void onCloseMessage (CloseMessage message, WebSocketChannel channel) {
+                            endpoint.onClose(channel, message);
+                        }
+                        protected void onFullTextMessage (WebSocketChannel channel, BufferedTextMessage message) {
+                            endpoint.onMessage(channel, message.getData());
+                        }
+                        protected void onFullBinaryMessage (WebSocketChannel channel, BufferedBinaryMessage message) {
+                            Pooled<ByteBuffer[]> pooled = message.getData();
+                            try {
+                                ByteBuffer[] payload = pooled.getResource();
+                                endpoint.onMessage(channel, toArray(payload));
+                            } finally {
+                                pooled.free();
                             }
-                            protected void onCloseMessage (CloseMessage message, WebSocketChannel channel) {
-                                endpoint.onClose(channel, message);
-                            }
-                            protected void onFullTextMessage (WebSocketChannel channel, BufferedTextMessage message) {
-                                endpoint.onMessage(channel, message.getData());
-                            }
-                            protected void onFullBinaryMessage (WebSocketChannel channel, BufferedBinaryMessage message) {
-                                Pooled<ByteBuffer[]> pooled = message.getData();
-                                try {
-                                    ByteBuffer[] payload = pooled.getResource();
-                                    endpoint.onMessage(channel, toArray(payload));
-                                } finally {
-                                    pooled.free();
-                                }
-                            }
-                        });
+                        }
+                    });
                     channel.resumeReceives();
+                } else {
+                    try {
+                        channel.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error closing websocket", e);
+                    }
                 }
-            };
+            }
+        };
         HttpHandler fallback = next==null ? ResponseCodeHandler.HANDLE_404 : next;
         return new WebSocketProtocolHandshakeHandler(callback, fallback);
-    }
-
-    public static void send(final WebSocketChannel channel, final Object message, final WebSocketCallback<Void> callback) {
-        if (message instanceof String) {
-            WebSockets.sendText((String) message, channel, callback);
-        } else {
-            WebSockets.sendBinary(ByteBuffer.wrap((byte[]) message), channel, callback);
-        }
     }
 
     // Lifted from Undertow's FrameHandler.java
