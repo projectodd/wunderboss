@@ -15,6 +15,17 @@
       <module name="org.jboss.as.clustering.infinispan"/>
       <module name="org.jboss.xnio"/>
       <module name="org.jboss.as.messaging"/>
+
+      <system export="true">
+        <paths>
+          <!-- Recent versions of the nokogiri Ruby gem depends on some JVM
+               internal classes that it really shouldn't, but we allow
+               access here to get it working inside WildFly -->
+          <path name="com/sun/org/apache/xpath/internal"/>
+          <path name="com/sun/org/apache/xpath/internal/jaxp"/>
+          <path name="com/sun/org/apache/xml/internal/utils"/>
+        </paths>
+      </system>
     </dependencies>
 
   </deployment>
