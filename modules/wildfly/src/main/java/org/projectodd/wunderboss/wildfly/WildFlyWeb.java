@@ -52,7 +52,7 @@ public class WildFlyWeb extends UndertowWeb {
 
         Class servletClass = servlet.getClass();
 
-        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(servletName != null ? servletName : servletClass.getSimpleName(), servlet);
+        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(servletName != null ? servletName : context, servlet);
         servletRegistration.addMapping(mapping);
         servletRegistration.setLoadOnStartup(1);
         servletRegistration.setAsyncSupported(true);
