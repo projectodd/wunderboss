@@ -36,7 +36,7 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
     }
 
     @Override
-    public Endpoint getEndpoint() {
+    public Endpoint endpoint() {
         final JavaxWebsocketChannel channel = this;
         return new Endpoint() {
             @Override

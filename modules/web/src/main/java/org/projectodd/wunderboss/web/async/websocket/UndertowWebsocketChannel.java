@@ -36,7 +36,7 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
     }
 
     @Override
-    public UndertowEndpoint getEndpoint() {
+    public UndertowEndpoint endpoint() {
         final UndertowWebsocketChannel channel = this;
         return new UndertowEndpoint() {
             @Override

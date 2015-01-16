@@ -27,6 +27,16 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     @Override
+    public Object handshake() {
+        return this.handshake;
+    }
+
+    @Override
+    public void setHandshake(Object handshake) {
+        this.handshake = handshake;
+    }
+
+    @Override
     public void notifyOpen(final Object context) {
         if (!this.openNotified &&
                 this.onOpen != null) {
@@ -64,6 +74,7 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     private final OnClose onClose;
     private final OnMessage onMessage;
     private final OnError onError;
+    private Object handshake;
     private boolean closeNotified = false;
     private boolean openNotified = false;
 }
