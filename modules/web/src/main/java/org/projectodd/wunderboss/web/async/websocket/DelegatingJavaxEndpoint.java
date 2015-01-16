@@ -22,9 +22,6 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 import java.io.IOException;
 
-/**
- * Created by tcrawley on 1/13/15.
- */
 public class DelegatingJavaxEndpoint extends Endpoint {
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
