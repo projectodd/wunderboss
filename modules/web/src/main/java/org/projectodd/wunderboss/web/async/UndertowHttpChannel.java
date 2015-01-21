@@ -24,8 +24,9 @@ import java.io.OutputStream;
 public class UndertowHttpChannel extends OutputStreamHttpChannel {
     public UndertowHttpChannel(final HttpServerExchange exchange,
                                final OnOpen onOpen,
+                               final OnError onError,
                                final OnClose onClose) {
-        super(onOpen, onClose);
+        super(onOpen, onError, onClose);
         this.exchange = exchange.setPersistent(true).dispatch();
     }
 

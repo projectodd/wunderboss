@@ -16,6 +16,8 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
+import org.projectodd.wunderboss.web.async.Util;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -29,10 +31,10 @@ import java.nio.ByteBuffer;
 public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
 
     public JavaxWebsocketChannel(final OnOpen onOpen,
+                                 final OnError onError,
                                  final OnClose onClose,
-                                 final OnMessage onMessage,
-                                 final OnError onError) {
-        super(onOpen, onClose, onMessage, onError);
+                                 final OnMessage onMessage) {
+        super(onOpen, onError, onClose, onMessage);
     }
 
     @Override
@@ -82,7 +84,9 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
     }
 
     @Override
-    public boolean send(Object message, final boolean shouldClose) throws Exception {
+    public boolean send(Object message,
+                        final boolean shouldClose,
+                        final OnComplete onComplete) throws Exception {
         if (!isOpen()) {
             return false;
         }
@@ -90,17 +94,17 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
         SendHandler handler = new SendHandler() {
             @Override
             public void onResult(SendResult sendResult) {
+                Throwable ex = sendResult.getException();
                 if (sendResult.isOK()) {
                     if (shouldClose) {
                         try {
                             close();
                         } catch (IOException e) {
-                            notifyError(e);
+                            ex = e;
                         }
                     }
-                } else {
-                    notifyError(sendResult.getException());
                 }
+                notifyComplete(onComplete, ex);
             }
         };
 

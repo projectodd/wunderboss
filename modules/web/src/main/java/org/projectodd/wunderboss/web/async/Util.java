@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web.async.websocket;
+package org.projectodd.wunderboss.web.async;
 
 import javax.websocket.MessageHandler;
 
@@ -40,5 +40,17 @@ public class Util {
     static public RuntimeException wrongMessageType(Class clazz) {
         return new IllegalArgumentException("message is neither a String or byte[], but is " +
                                                    clazz.getName());
+    }
+
+    static public void notifyComplete(Channel channel, Channel.OnComplete callback, Throwable error) {
+        if (callback != null) {
+            try {
+                callback.handle(error);
+            } catch (Exception e) {
+                channel.notifyError(e);
+            }
+        } else if (error != null) {
+            channel.notifyError(error);
+        }
     }
 }

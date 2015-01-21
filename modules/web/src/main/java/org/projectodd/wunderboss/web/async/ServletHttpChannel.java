@@ -27,8 +27,9 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     public ServletHttpChannel(final HttpServletRequest request,
                               final HttpServletResponse response,
                               final OnOpen onOpen,
+                              final OnError onError,
                               final OnClose onClose){
-        super(onOpen, onClose);
+        super(onOpen, onError, onClose);
         this.response = response;
         request.startAsync();
     }

@@ -28,8 +28,4 @@ public interface WebsocketChannel extends Channel {
     interface OnMessage {
         void handle(WebsocketChannel channel, Object message);
     }
-
-    interface OnError {
-        void handle(WebsocketChannel channel, Throwable error);
-    }
 }

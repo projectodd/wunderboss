@@ -16,15 +16,14 @@
 
 package org.projectodd.wunderboss.web.async;
 
-import org.projectodd.wunderboss.web.async.websocket.Util;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
 public abstract class OutputStreamHttpChannel implements HttpChannel {
 
-    public OutputStreamHttpChannel(final OnOpen onOpen, final OnClose onClose) {
+    public OutputStreamHttpChannel(final OnOpen onOpen, final OnError onError, final OnClose onClose) {
         this.onOpen = onOpen;
+        this.onError = onError;
         this.onClose = onClose;
     }
 
@@ -45,18 +44,22 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     }
 
     @Override
+    public void notifyError(Throwable error) {
+        if (this.onError != null) {
+            this.onError.handle(this, error);
+        }
+    }
+
+    @Override
     public boolean isOpen() {
         return this.open;
     }
 
-    @Override
-    public boolean send(final Object message) throws Exception {
-        return send(message, true);
-    }
-
     // message must be String or byte[]. Allowing Object makes life easier from clojure
     @Override
-    public boolean send(final Object message, final boolean shouldClose) throws Exception {
+    public boolean send(final Object message,
+                        final boolean shouldClose,
+                        final OnComplete onComplete) throws Exception {
         if (!isOpen()) {
             return false;
         }
@@ -70,32 +73,36 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
             throw Util.wrongMessageType(message.getClass());
         }
 
-        if (!sendStarted) {
-            if (shouldClose) {
-                setContentLength(data.length);
-            }
-            this.stream = getOutputStream();
-            sendStarted = true;
-        }
+        Throwable ex = null;
 
         try {
-            this.stream.write(data);
-            if (!shouldClose) {
-                this.stream.flush();
+            if (!sendStarted) {
+                if (shouldClose) {
+                    setContentLength(data.length);
+                }
+                this.stream = getOutputStream();
+                sendStarted = true;
             }
-        } catch (IOException e) {
-            // TODO: should we only deal with "Broken pipe" IOE's here? rethrow others?
+
             try {
-                this.close();
-            } catch (IOException ignored) {
-                // undertow throws when you close with unwritten data,
-                // but the data can never be written - see UNDERTOW-368
+                this.stream.write(data);
+                if (!shouldClose) {
+                    this.stream.flush();
+                }
+            } catch (IOException e) {
+                // TODO: should we only deal with "Broken pipe" IOE's here? rethrow others?
+                this.closer.run();
             }
+
+            if (shouldClose) {
+                this.closer.run();
+            }
+        } catch (Throwable e) {
+            this.closer.run();
+            ex = e;
         }
 
-        if (shouldClose) {
-            this.close();
-        }
+        Util.notifyComplete(this, onComplete, ex);
 
         return true;
     }
@@ -108,13 +115,26 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         this.open = false;
 
         if (this.onClose != null) {
-            this.onClose.handle(this, NORMAL_CLOSURE, null);
+            this.onClose.handle(this, null, null);
         }
     }
+
+    protected Runnable closer = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                close();
+            } catch (IOException ignored) {
+                // undertow throws when you close with unwritten data,
+                // but the data can never be written - see UNDERTOW-368
+            }
+        }
+    };
 
     private boolean open = false;
     private boolean sendStarted = false;
     private OutputStream stream;
     private final OnOpen onOpen;
+    private final OnError onError;
     private final OnClose onClose;
 }

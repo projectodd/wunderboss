@@ -16,10 +16,15 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
+import org.projectodd.wunderboss.web.async.Util;
+
 public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
 
 
-    public WebsocketChannelSkeleton(final OnOpen onOpen, final OnClose onClose, final OnMessage onMessage, final OnError onError) {
+    public WebsocketChannelSkeleton(final OnOpen onOpen,
+                                    final OnError onError,
+                                    final OnClose onClose,
+                                    final OnMessage onMessage) {
         this.onOpen = onOpen;
         this.onClose = onClose;
         this.onMessage = onMessage;
@@ -46,8 +51,10 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     @Override
-    public boolean send(Object message) throws Exception {
-        return send(message, false);
+    public void notifyError(Throwable error) {
+        if (this.onError != null) {
+            this.onError.handle(this, error);
+        }
     }
 
     protected void notifyClose(int code, String reason) {
@@ -64,10 +71,8 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
         }
     }
 
-    protected void notifyError(Throwable error) {
-        if (this.onError != null) {
-            this.onError.handle(this, error);
-        }
+    protected void notifyComplete(OnComplete callback, Throwable error) {
+        Util.notifyComplete(this, callback, error);
     }
 
     private final OnOpen onOpen;

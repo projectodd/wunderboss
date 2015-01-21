@@ -22,6 +22,7 @@ import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
+import org.projectodd.wunderboss.web.async.Util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,10 +30,10 @@ import java.nio.ByteBuffer;
 public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
 
     public UndertowWebsocketChannel(final OnOpen onOpen,
+                                    final OnError onError,
                                     final OnClose onClose,
-                                    final OnMessage onMessage,
-                                    final OnError onError) {
-        super(onOpen, onClose, onMessage, onError);
+                                    final OnMessage onMessage) {
+        super(onOpen, onError, onClose, onMessage);
     }
 
     @Override
@@ -75,7 +76,9 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
     }
 
     @Override
-    public boolean send(final Object message, final boolean shouldClose) throws Exception {
+    public boolean send(final Object message,
+                        final boolean shouldClose,
+                        final OnComplete onComplete) throws Exception {
         if (!isOpen()) {
             return false;
         }
@@ -83,18 +86,20 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
         final WebSocketCallback<Void> callback = new WebSocketCallback<Void>() {
             @Override
             public void complete(WebSocketChannel channel, Void context) {
+                Exception ex = null;
                 if (shouldClose) {
                     try {
                         close();
                     } catch (IOException e) {
-                        notifyError(e);
+                        ex = e;
                     }
                 }
+                notifyComplete(onComplete, ex);
             }
 
             @Override
             public void onError(WebSocketChannel channel, Void context, Throwable throwable) {
-                notifyError(throwable);
+                notifyComplete(onComplete, throwable);
             }
         };
         if (message instanceof String) {

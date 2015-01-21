@@ -21,11 +21,11 @@ import java.io.IOException;
 public interface Channel {
     void notifyOpen(Object context);
 
+    void notifyError(Throwable error);
+
     boolean isOpen();
 
-    boolean send(Object message) throws Exception;
-
-    boolean send(Object message, boolean shouldClose) throws Exception;
+    boolean send(Object message, boolean shouldClose, OnComplete callback) throws Exception;
     
     void close() throws IOException;
 
@@ -34,6 +34,14 @@ public interface Channel {
     }
 
     interface OnClose {
-        void handle(Channel channel, int code, String reason);
+        void handle(Channel channel, Object code, String reason);
+    }
+
+    interface OnError {
+        void handle(Channel channel, Throwable error);
+    }
+
+    interface OnComplete {
+        void handle(Throwable error);
     }
 }
