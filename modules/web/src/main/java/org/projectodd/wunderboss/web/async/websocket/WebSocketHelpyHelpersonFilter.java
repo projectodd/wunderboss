@@ -19,8 +19,13 @@ import java.io.IOException;
  *
  * So, this filter sends a request down the chain that doesn't have a pathInfo
  * if the request is a websocket upgrade request.
+ *
+ * It also grabs the original ServletRequest in a ThreadLocal for the
+ * downstream handshake to use.
  */
-public class PathInfoRemovingFilter implements Filter {
+public class WebSocketHelpyHelpersonFilter implements Filter {
+
+    public static final ThreadLocal<HttpServletRequest> requestTL = new ThreadLocal<>();
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -30,8 +35,14 @@ public class PathInfoRemovingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest &&
+                !(request instanceof PathInfoRemovingRequestJacket) && // this filter has already been applied
                 "websocket".equalsIgnoreCase(((HttpServletRequest) request).getHeader("Upgrade"))) {
-            chain.doFilter(new PathInfoRemovingRequestFacade((HttpServletRequest)request), response);
+            requestTL.set((HttpServletRequest)request);
+            try {
+                chain.doFilter(new PathInfoRemovingRequestJacket((HttpServletRequest) request), response);
+            } finally {
+                requestTL.remove();
+            }
         } else {
             chain.doFilter(request, response);
         }
@@ -42,8 +53,8 @@ public class PathInfoRemovingFilter implements Filter {
 
     }
 
-    class PathInfoRemovingRequestFacade extends HttpServletRequestWrapper {
-        public PathInfoRemovingRequestFacade(HttpServletRequest request) {
+    class PathInfoRemovingRequestJacket extends HttpServletRequestWrapper {
+        public PathInfoRemovingRequestJacket(HttpServletRequest request) {
             super(request);
         }
 
