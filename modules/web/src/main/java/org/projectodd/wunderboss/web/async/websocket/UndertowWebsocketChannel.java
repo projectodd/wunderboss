@@ -121,6 +121,7 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
     public void close() throws IOException {
         if (isOpen()) {
             this.underlyingChannel.sendClose();
+            notifyClose(CloseMessage.NORMAL_CLOSURE, "");
         }
     }
 
