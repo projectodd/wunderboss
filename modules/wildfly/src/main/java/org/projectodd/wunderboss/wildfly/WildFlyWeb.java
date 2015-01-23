@@ -24,6 +24,8 @@ import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.UndertowWeb;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration;
@@ -46,17 +48,26 @@ public class WildFlyWeb extends UndertowWeb {
     public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
         final String context = options.getString(PATH);
-        final String servletName = options.getString(SERVLET_NAME);
+        final String servletName = options.getString(SERVLET_NAME, context);
         // TODO: Take mapping instead of path for servlets?
         final String mapping = context.endsWith("/") ? context + "*" : context + "/*";
 
         Class servletClass = servlet.getClass();
 
-        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(servletName != null ? servletName : context, servlet);
+        ServletRegistration.Dynamic servletRegistration = servletContext.addServlet(servletName, servlet);
         servletRegistration.addMapping(mapping);
         servletRegistration.setLoadOnStartup(1);
         servletRegistration.setAsyncSupported(true);
 
+        // TODO: add this to UndertowWeb as well?
+        Map<String, Filter> filterMap = (Map<String, Filter>)options.get(RegisterOption.FILTER_MAP);
+        if (filterMap != null) {
+            for(Map.Entry<String, Filter> entry : filterMap.entrySet()) {
+                FilterRegistration.Dynamic filter = servletContext.addFilter(entry.getKey() + servletName, entry.getValue());
+                filter.setAsyncSupported(true);
+                filter.addMappingForUrlPatterns(null, false, mapping);
+            }
+        }
         HttpHandler handler = new HttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
