@@ -30,7 +30,7 @@ public class PathInfoRemovingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest &&
-                "websocket".equals(((HttpServletRequest) request).getHeader("Upgrade"))) {
+                "websocket".equalsIgnoreCase(((HttpServletRequest) request).getHeader("Upgrade"))) {
             chain.doFilter(new PathInfoRemovingRequestFacade((HttpServletRequest)request), response);
         } else {
             chain.doFilter(request, response);

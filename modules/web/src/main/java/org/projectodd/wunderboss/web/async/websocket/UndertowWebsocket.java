@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
 import io.undertow.websockets.core.WebSocketChannel;
@@ -35,7 +38,9 @@ import org.xnio.Pooled;
 
 public class UndertowWebsocket {
 
-    public static HttpHandler createHandler(final WebsocketInitHandler checker, final HttpHandler next) {
+    public static HttpHandler createHandler(final ThreadLocal<HttpServerExchange> requestTL,
+                                            final WebsocketInitHandler checker,
+                                            final HttpHandler next) {
         WebSocketConnectionCallback callback = new WebSocketConnectionCallback() {
             public void onConnect (WebSocketHttpExchange exchange, WebSocketChannel channel) {
                 final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
@@ -71,8 +76,29 @@ public class UndertowWebsocket {
                 }
             }
         };
-        HttpHandler fallback = next==null ? ResponseCodeHandler.HANDLE_404 : next;
-        return new WebSocketProtocolHandshakeHandler(callback, fallback);
+
+        final HttpHandler downstream = next==null ? ResponseCodeHandler.HANDLE_404 : next;
+        final HttpHandler wsHandler = new WebSocketProtocolHandshakeHandler(callback, downstream);
+
+
+        return new HttpHandler() {
+            @Override
+            public void handleRequest(HttpServerExchange exchange) throws Exception {
+                HeaderValues upgrade = exchange.getRequestHeaders().get(Headers.UPGRADE);
+                if (upgrade != null && "websocket".equalsIgnoreCase(upgrade.peek())) {
+                    requestTL.set(exchange);
+                    try {
+                        wsHandler.handleRequest(exchange);
+                    } finally {
+                        requestTL.remove();
+                    }
+                } else {
+                    downstream.handleRequest(exchange);
+                }
+            }
+        };
+
+
     }
 
     // Lifted from Undertow's FrameHandler.java
