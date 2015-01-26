@@ -18,8 +18,10 @@ package org.projectodd.wunderboss.web.async;
 
 import io.undertow.util.Headers;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.OutputStream;
 
 public class ServletHttpChannel extends OutputStreamHttpChannel {
@@ -31,7 +33,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
                               final OnClose onClose){
         super(onOpen, onError, onClose);
         this.response = response;
-        request.startAsync();
+        this.asyncContext = request.startAsync();
     }
 
     @Override
@@ -46,9 +48,16 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
-    protected OutputStream getOutputStream() throws Exception {
+    protected OutputStream getOutputStream() throws IOException {
         return this.response.getOutputStream();
     }
 
+    @Override
+    public void close() throws IOException {
+        this.asyncContext.complete();
+        super.close();
+    }
+
     private final HttpServletResponse response;
+    private final AsyncContext asyncContext;
 }
