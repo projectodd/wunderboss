@@ -31,7 +31,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
 
     protected abstract void setContentLength(int length);
 
-    protected abstract OutputStream getOutputStream() throws Exception;
+    protected abstract OutputStream getOutputStream() throws IOException;
 
     @Override
     public void notifyOpen(final Object context) {
@@ -59,7 +59,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     @Override
     public boolean send(final Object message,
                         final boolean shouldClose,
-                        final OnComplete onComplete) throws Exception {
+                        final OnComplete onComplete) throws IOException {
         if (!isOpen()) {
             return false;
         }
@@ -109,9 +109,15 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
 
     @Override
     public void close() throws IOException {
-        if (this.stream != null) {
-            this.stream.close();
+        if (!this.open) {
+            return;
         }
+
+        if (this.stream == null) {
+            this.stream = getOutputStream();
+        }
+
+        this.stream.close();
         this.open = false;
 
         if (this.onClose != null) {
