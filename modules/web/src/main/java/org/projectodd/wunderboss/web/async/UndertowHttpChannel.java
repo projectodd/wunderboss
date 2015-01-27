@@ -17,9 +17,9 @@
 package org.projectodd.wunderboss.web.async;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 
 import java.io.OutputStream;
+import java.util.concurrent.Executor;
 
 public class UndertowHttpChannel extends OutputStreamHttpChannel {
     public UndertowHttpChannel(final HttpServerExchange exchange,
@@ -44,8 +44,7 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
 
     @Override
     protected void setContentLength(int length) {
-        this.exchange.getResponseHeaders().add(Headers.CONTENT_LENGTH,
-                                               length);
+        this.exchange.setResponseContentLength(length);
     }
 
     @Override
@@ -53,5 +52,11 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
         return this.exchange.getOutputStream();
     }
 
+    @Override
+    protected Executor getExecutor() {
+        return this.exchange.getConnection().getWorker();
+    }
+
     private final HttpServerExchange exchange;
+
 }

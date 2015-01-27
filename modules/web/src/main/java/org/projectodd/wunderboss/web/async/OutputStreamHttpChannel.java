@@ -18,6 +18,10 @@ package org.projectodd.wunderboss.web.async;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class OutputStreamHttpChannel implements HttpChannel {
 
@@ -32,6 +36,8 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     protected abstract void setContentLength(int length);
 
     protected abstract OutputStream getOutputStream() throws IOException;
+
+    protected abstract Executor getExecutor();
 
     @Override
     public void notifyOpen(final Object context) {
@@ -73,8 +79,56 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
             throw Util.wrongMessageType(message.getClass());
         }
 
-        Throwable ex = null;
+        enqueue(new PendingSend(data, shouldClose, onComplete));
 
+        return true;
+    }
+
+    protected void send(PendingSend pending) {
+        doSend(pending.message, pending.shouldClose, pending.onComplete);
+    }
+
+    void enqueue(PendingSend data) {
+        //TODO: convert to do/while?
+        final Runnable worker = new Runnable() {
+            @Override
+            public void run() {
+                PendingSend pending;
+                synchronized (workerRunning) {
+                    pending = queue.poll();
+                    if (pending == null) {
+                        workerRunning.set(false);
+                    }
+                }
+                while (pending != null) {
+                    try {
+                        send(pending);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (workerRunning) {
+                        pending = queue.poll();
+                        if (pending == null) {
+                            workerRunning.set(false);
+                        }
+                    }
+                }
+
+            }
+        };
+
+        synchronized (workerRunning) {
+            queue.add(data);
+            if (workerRunning.compareAndSet(false, true)) {
+                getExecutor().execute(worker);
+            }
+        }
+    }
+
+    protected void doSend(final byte[] data,
+                          final boolean shouldClose,
+                          final OnComplete onComplete) {
+        Throwable ex = null;
         try {
             if (!sendStarted) {
                 if (shouldClose) {
@@ -103,8 +157,6 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         }
 
         Util.notifyComplete(this, onComplete, ex);
-
-        return true;
     }
 
     @Override
@@ -143,4 +195,20 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private final OnOpen onOpen;
     private final OnError onError;
     private final OnClose onClose;
+    private final Queue<PendingSend> queue = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean workerRunning = new AtomicBoolean(false);
+
+    class PendingSend {
+        PendingSend(final byte[] message,
+                    final boolean shouldClose,
+                    final OnComplete onComplete) {
+            this.message = message;
+            this.shouldClose = shouldClose;
+            this.onComplete = onComplete;
+        }
+
+        public final byte[] message;
+        public final boolean shouldClose;
+        public final OnComplete onComplete;
+    }
 }

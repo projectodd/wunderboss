@@ -17,12 +17,15 @@
 package org.projectodd.wunderboss.web.async;
 
 import io.undertow.util.Headers;
+import org.projectodd.wunderboss.ThreadPool;
+import org.projectodd.wunderboss.WunderBoss;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.Executor;
 
 public class ServletHttpChannel extends OutputStreamHttpChannel {
 
@@ -53,6 +56,24 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
+    protected Executor getExecutor() {
+        if (this.executor == null){
+            this.executor = WunderBoss.findOrCreateComponent(ThreadPool.class,
+                                                             "http-stream-worker",
+                                                             null);
+        }
+
+        return this.executor;
+    }
+
+
+    protected void enqueue(PendingSend pending) {
+        //TODO: be async in 9.x, sync in 8.x (due to https://issues.jboss.org/browse/WFLY-3715)
+        //super.enqueue(pending); // async
+        send(pending); // sync
+    }
+
+    @Override
     public void close() throws IOException {
         this.asyncContext.complete();
         super.close();
@@ -60,4 +81,5 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
 
     private final HttpServletResponse response;
     private final AsyncContext asyncContext;
+    private Executor executor;
 }
