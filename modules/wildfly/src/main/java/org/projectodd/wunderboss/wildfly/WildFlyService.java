@@ -27,11 +27,16 @@ import org.jboss.msc.service.StopContext;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.caching.Caching;
 import org.projectodd.wunderboss.messaging.Messaging;
-import org.projectodd.wunderboss.transactions.Transaction;
 import org.projectodd.wunderboss.singleton.SingletonContext;
+import org.projectodd.wunderboss.transactions.Transaction;
 
+import javax.management.MBeanException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.OperationsException;
+import javax.management.ReflectionException;
 import javax.naming.Context;
-import javax.naming.InitialContext;
+import java.lang.management.ManagementFactory;
 
 public class WildFlyService implements Service<WildFlyService> {
     public static final String KEY = "wildfly-service";
@@ -53,6 +58,7 @@ public class WildFlyService implements Service<WildFlyService> {
         // TODO: Get rid of these options and just make them statics here
         WunderBoss.putOption("deployment-name", this.deploymentName);
         WunderBoss.putOption("service-registry", this.serviceRegistry);
+        WunderBoss.putOption("wildfly-version", getWildFlyVersion());
         WunderBoss.putOption(KEY, this);
     }
 
@@ -84,6 +90,27 @@ public class WildFlyService implements Service<WildFlyService> {
     @Override
     public WildFlyService getValue() throws IllegalStateException, IllegalArgumentException {
         return this;
+    }
+
+    String getWildFlyVersion() {
+        //TODO: what about EAP?
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        String version = null;
+        try {
+            ObjectName name = new ObjectName("jboss.as:management-root=server");
+            // 9.x stores it under "productVersion"
+            version = (String)mbs.getAttribute(name, "productVersion");
+            if (version == null) {
+                // 8.x stores it under "releaseVersion"
+                version = (String)mbs.getAttribute(name, "releaseVersion");
+            }
+        } catch (OperationsException |
+                MBeanException |
+                ReflectionException ffs) {
+            ffs.printStackTrace();
+        }
+
+        return version;
     }
 
     public ServiceTarget serviceTarget() {

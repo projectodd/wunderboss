@@ -19,7 +19,6 @@ package org.projectodd.wunderboss.web.async;
 import io.undertow.server.HttpServerExchange;
 
 import java.io.OutputStream;
-import java.util.concurrent.Executor;
 
 public class UndertowHttpChannel extends OutputStreamHttpChannel {
     public UndertowHttpChannel(final HttpServerExchange exchange,
@@ -53,8 +52,11 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
-    protected Executor getExecutor() {
-        return this.exchange.getConnection().getWorker();
+    protected void execute(Runnable runnable) {
+        this.exchange
+                .getConnection()
+                .getWorker()
+                .execute(runnable);
     }
 
     private final HttpServerExchange exchange;

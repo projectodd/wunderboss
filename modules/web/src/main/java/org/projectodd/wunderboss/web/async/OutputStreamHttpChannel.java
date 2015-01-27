@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class OutputStreamHttpChannel implements HttpChannel {
@@ -37,7 +36,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
 
     protected abstract OutputStream getOutputStream() throws IOException;
 
-    protected abstract Executor getExecutor();
+    protected abstract void execute(Runnable runnable);
 
     @Override
     public void notifyOpen(final Object context) {
@@ -88,39 +87,39 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         doSend(pending.message, pending.shouldClose, pending.onComplete);
     }
 
-    void enqueue(PendingSend data) {
-        //TODO: convert to do/while?
-        final Runnable worker = new Runnable() {
-            @Override
-            public void run() {
-                PendingSend pending;
+    //TODO: convert to do/while?
+    private final Runnable pumpWorker = new Runnable() {
+        @Override
+        public void run() {
+            PendingSend pending;
+            synchronized (workerRunning) {
+                pending = queue.poll();
+                if (pending == null) {
+                    workerRunning.set(false);
+                }
+            }
+            while (pending != null) {
+                try {
+                    send(pending);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 synchronized (workerRunning) {
                     pending = queue.poll();
                     if (pending == null) {
                         workerRunning.set(false);
                     }
                 }
-                while (pending != null) {
-                    try {
-                        send(pending);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    synchronized (workerRunning) {
-                        pending = queue.poll();
-                        if (pending == null) {
-                            workerRunning.set(false);
-                        }
-                    }
-                }
-
             }
-        };
 
+        }
+    };
+
+    void enqueue(PendingSend data) {
         synchronized (workerRunning) {
             queue.add(data);
             if (workerRunning.compareAndSet(false, true)) {
-                getExecutor().execute(worker);
+                execute(pumpWorker);
             }
         }
     }
