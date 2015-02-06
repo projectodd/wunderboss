@@ -137,18 +137,11 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
                 sendStarted = true;
             }
 
-            try {
-                this.stream.write(data);
-                if (!shouldClose) {
-                    this.stream.flush();
-                }
-            } catch (IOException e) {
-                // TODO: should we only deal with "Broken pipe" IOE's here? rethrow others?
-                this.closer.run();
-            }
-
+            this.stream.write(data);
             if (shouldClose) {
                 this.closer.run();
+            } else {
+                this.stream.flush();
             }
         } catch (Throwable e) {
             this.closer.run();
