@@ -20,9 +20,7 @@ import org.projectodd.wunderboss.web.async.Channel;
 
 public interface WebsocketChannel extends Channel {
     Object endpoint();
-    Object handshake();
 
-    void setHandshake(Object handshake);
     void setUnderlyingChannel(Object channel);
 
     interface OnMessage {

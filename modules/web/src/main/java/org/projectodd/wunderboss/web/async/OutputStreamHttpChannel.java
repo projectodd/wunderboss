@@ -39,6 +39,16 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     protected abstract void execute(Runnable runnable);
 
     @Override
+    public Object originatingRequest() {
+        return this.originatingRequest;
+    }
+
+    @Override
+    public void setOriginatingRequest(Object request) {
+        this.originatingRequest = request;
+    }
+
+    @Override
     public void notifyOpen(final Object context) {
         if (!isOpen()) {
             this.open = true;
@@ -184,6 +194,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean open = false;
     private boolean sendStarted = false;
     private OutputStream stream;
+    private Object originatingRequest;
     private final OnOpen onOpen;
     private final OnError onError;
     private final OnClose onClose;

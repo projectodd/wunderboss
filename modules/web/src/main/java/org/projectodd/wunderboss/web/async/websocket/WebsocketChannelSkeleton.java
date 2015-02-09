@@ -32,13 +32,13 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     @Override
-    public Object handshake() {
-        return this.handshake;
+    public Object originatingRequest() {
+        return this.originatingRequest;
     }
 
     @Override
-    public void setHandshake(Object handshake) {
-        this.handshake = handshake;
+    public void setOriginatingRequest(Object request) {
+        this.originatingRequest = request;
     }
 
     @Override
@@ -79,7 +79,7 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     private final OnClose onClose;
     private final OnMessage onMessage;
     private final OnError onError;
-    private Object handshake;
+    private Object originatingRequest;
     private boolean closeNotified = false;
     private boolean openNotified = false;
 }

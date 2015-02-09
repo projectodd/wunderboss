@@ -29,6 +29,10 @@ public interface Channel {
     
     void close() throws IOException;
 
+    Object originatingRequest();
+
+    void setOriginatingRequest(Object request);
+
     interface OnOpen {
         void handle(Channel channel, Object context);
     }
