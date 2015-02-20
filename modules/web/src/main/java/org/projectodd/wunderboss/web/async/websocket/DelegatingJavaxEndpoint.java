@@ -23,11 +23,13 @@ import javax.websocket.Session;
 import java.io.IOException;
 
 public class DelegatingJavaxEndpoint extends Endpoint {
+    public static final String ENDPOINT_KEY = "session-endpoint";
+
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
-        this.endpoint = (Endpoint)endpointConfig.getUserProperties().get("Endpoint");
-        if (this.endpoint != null) {
-            this.endpoint.onOpen(session, endpointConfig);
+        Endpoint endpoint = sessionEndpoint(session);
+        if (endpoint != null) {
+            endpoint.onOpen(session, endpointConfig);
         } else {
             close(session);
         }
@@ -35,15 +37,17 @@ public class DelegatingJavaxEndpoint extends Endpoint {
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        if (this.endpoint != null) {
-            this.endpoint.onClose(session, closeReason);
+        Endpoint endpoint = sessionEndpoint(session);
+        if (endpoint != null) {
+            endpoint.onClose(session, closeReason);
         }
     }
 
     @Override
     public void onError(Session session, Throwable err) {
-        if (this.endpoint != null) {
-            this.endpoint.onError(session, err);
+        Endpoint endpoint = sessionEndpoint(session);
+        if (endpoint != null) {
+            endpoint.onError(session, err);
         } else {
             close(session);
         }
@@ -57,7 +61,10 @@ public class DelegatingJavaxEndpoint extends Endpoint {
         }
     }
 
-    private Endpoint endpoint;
+    private Endpoint sessionEndpoint(final Session session) {
+        return (Endpoint)session.getUserProperties().get(ENDPOINT_KEY);
+    }
+
     private final static CloseReason POLICY_CLOSE = new CloseReason(new CloseReason.CloseCode() {
         @Override
         public int getCode() {
