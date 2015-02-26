@@ -35,3 +35,17 @@
         c (.findOrCreate default "repl" options)]
     (is (= CacheMode/REPL_SYNC (.. config clustering cacheMode)))
     (is (= CacheMode/LOCAL (.. c getCacheConfiguration clustering cacheMode)))))
+
+(deftest remove-persistent-cache
+  (let [options (Options. {Caching$CreateOption/PERSIST "target/test-caches"})
+        config (Config/uration options)
+        c (.findOrCreate default "persisty" options)]
+
+    ;; The next line throws an NPE on 6.0.2.Final [See ISPN-4446]
+    ;; (.stop default (.getName c))
+
+    ;; ISPN-4446 is fixed in 6.0.3.Final, but that isn't expected to
+    ;; be released. 7.1.1.Final is stable and expected in WF9, but
+    ;; there are incompatible changes in the Cache interface that
+    ;; would complicate the CacheWithCodec impl.
+    ))
