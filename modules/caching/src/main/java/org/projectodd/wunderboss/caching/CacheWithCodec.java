@@ -18,7 +18,10 @@ package org.projectodd.wunderboss.caching;
 
 import org.infinispan.Cache;
 import org.infinispan.AbstractDelegatingCache;
-import org.infinispan.util.concurrent.NotifyingFuture;
+import org.infinispan.commons.util.CloseableIterator;
+import org.infinispan.commons.util.CloseableIteratorSet;
+import org.infinispan.commons.util.CloseableIteratorCollection;
+import org.infinispan.commons.util.IteratorAsCloseableIterator;
 import org.projectodd.wunderboss.codecs.Codec;
 import java.util.concurrent.TimeUnit;
 import java.util.Collection;
@@ -164,20 +167,18 @@ public class CacheWithCodec extends AbstractDelegatingCache {
     }
 
     @Override
-    public Set keySet() {
-        Set keys = super.keySet();
-        Set result = new HashSet(keys.size());
-        for (Object k: keys) {
+    public CloseableIteratorSet keySet() {
+        CloseableIteratorSet result = new NonCloseableIteratorSet(size());
+        for (Object k: super.keySet()) {
             result.add(decode(k));
         }
         return result;
     }
 
     @Override
-    public Set entrySet() {
-        Set entries = super.entrySet();
-        Set result = new HashSet(entries.size());
-        for (Object o: entries) {
+    public CloseableIteratorSet entrySet() {
+        CloseableIteratorSet result = new NonCloseableIteratorSet(size());
+        for (Object o: super.entrySet()) {
             Entry entry = (Entry) o;
             result.add(new SimpleImmutableEntry(decode(entry.getKey()), decode(entry.getValue())));
         }
@@ -185,14 +186,30 @@ public class CacheWithCodec extends AbstractDelegatingCache {
     }
 
     @Override
-    public Collection values() {
-        Collection values = super.values();
-        Collection result = new ArrayList(values.size());
-        for (Object v: values) {
+    public CloseableIteratorCollection values() {
+        CloseableIteratorCollection result = new NonCloseableIteratorCollection(size());
+        for (Object v: super.values()) {
             result.add(decode(v));
         }
         return result;
     }
 
     private Codec codec;
+
+    static class NonCloseableIteratorSet extends HashSet implements CloseableIteratorSet {
+        NonCloseableIteratorSet(int capacity) {
+            super(capacity);
+        }
+        public CloseableIterator iterator() {
+            return new IteratorAsCloseableIterator(super.iterator());
+        }
+    }
+    static class NonCloseableIteratorCollection extends ArrayList implements CloseableIteratorCollection {
+        NonCloseableIteratorCollection(int capacity) {
+            super(capacity);
+        }
+        public CloseableIterator iterator() {
+            return new IteratorAsCloseableIterator(super.iterator());
+        }
+    }
 }
