@@ -37,6 +37,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
         super(onOpen, onError, onClose);
         this.response = response;
         this.asyncContext = request.startAsync();
+        this.asyncContext.setTimeout(0);
     }
 
     @Override
