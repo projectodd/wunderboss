@@ -16,6 +16,7 @@
   (:require [clojure.test :refer :all])
   (:import [org.projectodd.wunderboss Option WunderBoss]
            [org.projectodd.wunderboss.scheduling Scheduling Scheduling$ScheduleOption]
+           org.quartz.listeners.TriggerListenerSupport
            org.quartz.TriggerUtils
            java.util.Date))
 
@@ -221,7 +222,16 @@
   (is (empty? (.scheduledJobs default)))
   (let [p (promise)
         id "auto-unschedule"]
-    (.schedule default id #(deliver p :success) {})
+    (-> (.scheduler default)
+      .getListenerManager
+      (.addTriggerListener (proxy [TriggerListenerSupport] []
+                             (getName [] id)
+                             (triggerComplete [_ _ _]
+                               (deliver p :success)))))
+    (.schedule default id #() {})
     (is (= :success (deref p 1000 :failure)))
-    (is (false? (.unschedule default id))))
-  (is (empty? (.scheduledJobs default))))
+    (is (false? (.unschedule default id)))
+    (is (empty? (.scheduledJobs default)))
+    (-> (.scheduler default)
+      .getListenerManager
+      (.removeTriggerListener id))))
