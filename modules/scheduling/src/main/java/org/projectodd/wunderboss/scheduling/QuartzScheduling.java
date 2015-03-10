@@ -145,7 +145,7 @@ public class QuartzScheduling implements Scheduling {
 
     @Override
     public Set<String> scheduledJobs() {
-        return Collections.unmodifiableSet(this.currentJobs.getNames());
+        return Collections.unmodifiableSet(new HashSet<String>(this.currentJobs.getNames()));
     }
 
     public synchronized JobKey lookupJob(String name) {
