@@ -76,7 +76,7 @@
       (reset! should-run? false))))
 
 (deftest scheduledJobs
-  (with-job #() {}
+  (with-job #() {:every 100}
     (let [jobs (.scheduledJobs default)]
       (is (= #{"a-job"} jobs))
       ;; it should be unmodifiable
@@ -216,3 +216,12 @@
     (is (thrown?
           IllegalArgumentException
           (with-job* (fn []) {:until 5} (fn []))))))
+
+(deftest completed-jobs-should-auto-unschedule
+  (is (empty? (.scheduledJobs default)))
+  (let [p (promise)
+        id "auto-unschedule"]
+    (.schedule default id #(deliver p :success) {})
+    (is (= :success (deref p 1000 :failure)))
+    (is (false? (.unschedule default id))))
+  (is (empty? (.scheduledJobs default))))

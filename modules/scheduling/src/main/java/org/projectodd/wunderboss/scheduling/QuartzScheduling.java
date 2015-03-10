@@ -23,6 +23,7 @@ import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
@@ -30,6 +31,8 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
+import org.quartz.listeners.SchedulerListenerSupport;
+import org.quartz.listeners.TriggerListenerSupport;
 import org.quartz.simpl.RAMJobStore;
 import org.quartz.simpl.SimpleThreadPool;
 import org.quartz.spi.JobStore;
@@ -66,6 +69,7 @@ public class QuartzScheduling implements Scheduling {
             factory.createScheduler(threadPool, new RAMJobStore());
 
             this.scheduler = factory.getScheduler();
+            this.scheduler.getListenerManager().addTriggerListener(new TriggerListener());
             this.scheduler.start();
             started = true;
             log.info("Quartz started");
@@ -125,7 +129,7 @@ public class QuartzScheduling implements Scheduling {
 
     @Override
     public synchronized boolean unschedule(String name) throws SchedulerException {
-        if (currentJobs.containsKey(name)) {
+        if (currentJobs.contains(name)) {
             JobKey job = currentJobs.remove(name);
             try {
                 this.scheduler.deleteJob(job);
@@ -141,7 +145,7 @@ public class QuartzScheduling implements Scheduling {
 
     @Override
     public Set<String> scheduledJobs() {
-        return Collections.unmodifiableSet(new HashSet<String>(this.currentJobs.keySet()));
+        return Collections.unmodifiableSet(this.currentJobs.getNames());
     }
 
     public synchronized JobKey lookupJob(String name) {
@@ -207,11 +211,50 @@ public class QuartzScheduling implements Scheduling {
         return builder.build();
     }
 
+    class TriggerListener extends TriggerListenerSupport {
+        public String getName() {
+            return "housekeeping";
+        }
+        public void triggerComplete(Trigger trigger, JobExecutionContext ctx, Trigger.CompletedExecutionInstruction i) {
+            if (!trigger.mayFireAgain()) {
+                QuartzScheduling.this.currentJobs.remove(ctx.getJobDetail().getKey());
+            }
+        }
+    }
+
+    static class Jobs {
+        synchronized void put(String name, JobKey key) {
+            this.names.put(name, key);
+            this.keys.put(key, name);
+        }
+        synchronized JobKey remove(String name) {
+            JobKey key = this.names.remove(name);
+            this.keys.remove(key);
+            return key;
+        }
+        synchronized String remove(JobKey key) {
+            String name = this.keys.remove(key);
+            this.names.remove(name);
+            return name;
+        }
+        JobKey get(String name) {
+            return this.names.get(name);
+        }
+        boolean contains(String name) {
+            return this.names.containsKey(name);
+        }
+        Set<String> getNames() {
+            return this.names.keySet();
+        }
+        private final Map<String, JobKey> names = new HashMap<>();
+        private final Map<JobKey, String> keys = new HashMap<>();
+    }
+        
     private final String name;
     private int numThreads;
     private boolean started;
     private Scheduler scheduler;
-    private final Map<String, JobKey> currentJobs = new HashMap<>();
+    private final Jobs currentJobs = new Jobs();
 
     private static final Logger log = WunderBoss.logger(Scheduling.class);
 }
