@@ -88,7 +88,10 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
     }
 
     public boolean isMasterWithoutInterrogatingCluster() {
-        return id().equals(this.currentMaster);
+        final Address id = id();
+
+        return id != null &&
+                id.equals(this.currentMaster);
     }
 
     @Override
@@ -124,7 +127,7 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
                     if (this.currentMaster != null) {
                         //I don't think we can become master while someone else holds the lock, but...
                         isMaster = isMasterWithoutInterrogatingCluster();
-                    } else {
+                    } else if (id() != null) { // id() will be null if jgroups is shut/shutting down
                         Map<String, Object> msg = new HashMap();
                         msg.put("dispatch", this.name);
                         msg.put("payload", id());
