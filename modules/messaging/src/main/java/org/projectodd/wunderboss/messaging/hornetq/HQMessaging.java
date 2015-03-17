@@ -41,11 +41,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public class HQMessaging implements Messaging {
 
     public static final String REMOTE_TYPE_WILDFLY = "hornetq_wildfly";
     public static final String REMOTE_TYPE_STANDALONE = "hornetq_standalone";
+    public static final String BROKER_ID = UUID.randomUUID().toString();
 
     public HQMessaging(String name, Options<CreateOption> options) {
         this.name = name;

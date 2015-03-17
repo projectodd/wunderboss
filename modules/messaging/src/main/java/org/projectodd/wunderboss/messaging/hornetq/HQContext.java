@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import javax.jms.JMSContext;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class HQContext implements HQSpecificContext {
 
@@ -44,6 +45,7 @@ public class HQContext implements HQSpecificContext {
         this.mode = mode;
         this.remote = remote;
         this.parentContext = parent;
+        this.id = UUID.randomUUID().toString();
 
         if (parentContext != null) {
             parentContext.addCloseable(this);
@@ -65,6 +67,11 @@ public class HQContext implements HQSpecificContext {
         }
 
         return jmsMode;
+    }
+
+    @Override
+    public String id() {
+        return this.id;
     }
 
     @Override
@@ -154,6 +161,11 @@ public class HQContext implements HQSpecificContext {
 
     class NonClosing implements HQSpecificContext {
         @Override
+        public String id() {
+            return HQContext.this.id();
+        }
+
+        @Override
         public Mode mode() {
             return HQContext.this.mode();
         }
@@ -223,6 +235,7 @@ public class HQContext implements HQSpecificContext {
         }
     }
 
+    private final String id;
     private final Mode mode;
     private final boolean remote;
     private final JMSContext jmsContext;

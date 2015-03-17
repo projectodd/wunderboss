@@ -37,7 +37,7 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     @Override
     public Reply onMessage(Message msg, Context ignored) throws Exception {
         String id = ((HQMessage)msg).requestID();
-        HQResponse response = responses.remove(id);
+        HQResponse response = this.responses.remove(id);
         if (response == null) {
             throw new IllegalStateException("No responder for id " + id);
         }
@@ -54,13 +54,21 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
 
     public synchronized static ResponseRouter routerFor(HQQueue queue, Codecs codecs,
                                                         Options<Destination.ListenOption> options) {
-        ResponseRouter router = routers.get(queue.name());
+        String id = queue.name();
+        HQSpecificContext givenContext = (HQSpecificContext)options.get(Destination.ListenOption.CONTEXT);
+        if (givenContext != null) {
+            id += ":" + givenContext.id();
+        }
+        ResponseRouter router = routers.get(id);
         if (router == null) {
-            router = new ResponseRouter(queue.name());
+            router = new ResponseRouter(id);
             try {
                 router.setEnclosingListener(queue.listen(router, codecs, options));
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }
+            if (givenContext != null) {
+                givenContext.addCloseable(router);
             }
             queue.broker().addCloseableForDestination(queue, router);
             routers.put(router.id(), router);

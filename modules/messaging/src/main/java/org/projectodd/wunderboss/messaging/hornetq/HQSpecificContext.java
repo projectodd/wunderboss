@@ -22,6 +22,8 @@ import org.projectodd.wunderboss.messaging.Messaging;
 import javax.jms.JMSContext;
 
 public interface HQSpecificContext extends Context {
+    String id();
+
     JMSContext jmsContext();
 
     Messaging broker();

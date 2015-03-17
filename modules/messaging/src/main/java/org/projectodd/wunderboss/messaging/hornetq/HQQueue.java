@@ -73,15 +73,15 @@ public class HQQueue extends HQDestination implements Queue {
                             Map<MessageOpOption, Object> options) throws Exception {
         final Options<MessageOpOption> opts = new Options<>(options);
         final String id = UUID.randomUUID().toString();
-        //TODO: there's probably a better way to get this
-        final String nodeId = System.getProperty("jboss.node.name", "node1");
+        final HQSpecificContext context = (HQSpecificContext)opts.get(MessageOpOption.CONTEXT);
+        final String nodeId = context != null ? context.id() : HQMessaging.BROKER_ID;
         final HQResponse response = new HQResponse();
         Options<ListenOption> routerOpts = new Options<>();
         routerOpts.put(ListenOption.SELECTOR,
                        HQMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
                                HQMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
-        if (opts.has(MessageOpOption.CONTEXT)) {
-            routerOpts.put(ListenOption.CONTEXT, opts.get(MessageOpOption.CONTEXT));
+        if (context != null) {
+            routerOpts.put(ListenOption.CONTEXT, context);
         }
 
         ResponseRouter.routerFor(this, codecs, routerOpts).registerResponse(id, response);
