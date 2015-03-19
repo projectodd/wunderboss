@@ -182,7 +182,7 @@ public class WildFlyMessaging extends HQMessaging {
         } else {
             List extra = new ArrayList(Collections.nCopies(2, null));
             extra.addAll(Arrays.asList(args));
-            return (Service) installer.invoke(null, extra);
+            return (Service) installer.invoke(null, extra.toArray());
         }
     }
 
