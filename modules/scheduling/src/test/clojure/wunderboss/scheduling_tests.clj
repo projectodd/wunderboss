@@ -63,8 +63,14 @@
   ([scheduler name count]
      (TriggerUtils/computeFireTimes (trigger-for-job scheduler name), nil, count)))
 
+(deftest multiple-schedulers
+  (let [other-scheduler (WunderBoss/findOrCreateComponent Scheduling "other" nil)]
+    (is (not= other-scheduler default))
+    (.start other-scheduler)
+    (is (not= (.scheduler other-scheduler) (.scheduler default)))))
+
 (deftest unschedule
-  (let [started? (promise),
+  (let [started? (promise)
         should-run? (atom true)]
     (with-job
       (fn []

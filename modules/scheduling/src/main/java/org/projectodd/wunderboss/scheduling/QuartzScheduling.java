@@ -17,8 +17,8 @@
 package org.projectodd.wunderboss.scheduling;
 
 import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.singleton.SingletonContext;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.singleton.SingletonContext;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -31,20 +31,20 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.DirectSchedulerFactory;
-import org.quartz.listeners.SchedulerListenerSupport;
 import org.quartz.listeners.TriggerListenerSupport;
 import org.quartz.simpl.RAMJobStore;
 import org.quartz.simpl.SimpleThreadPool;
-import org.quartz.spi.JobStore;
 import org.slf4j.Logger;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 
 import static org.projectodd.wunderboss.scheduling.Scheduling.ScheduleOption.*;
+import static org.quartz.impl.DirectSchedulerFactory.DEFAULT_INSTANCE_ID;
+import static org.quartz.impl.DirectSchedulerFactory.DEFAULT_SCHEDULER_NAME;
 
 public class QuartzScheduling implements Scheduling {
 
@@ -66,9 +66,12 @@ public class QuartzScheduling implements Scheduling {
                                                                Thread.NORM_PRIORITY);
             threadPool.setThreadNamePrefix("scheduling-worker");
             threadPool.initialize();
-            factory.createScheduler(threadPool, new RAMJobStore());
+            final String schedulerName = DEFAULT_SCHEDULER_NAME + ":" + this.name;
+            factory.createScheduler(schedulerName,
+                                    DEFAULT_INSTANCE_ID + ":" + this.name,
+                                    threadPool, new RAMJobStore());
 
-            this.scheduler = factory.getScheduler();
+            this.scheduler = factory.getScheduler(schedulerName);
             this.scheduler.getListenerManager().addTriggerListener(new TriggerListener());
             this.scheduler.start();
             started = true;
