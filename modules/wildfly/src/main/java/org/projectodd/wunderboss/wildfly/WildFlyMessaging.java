@@ -22,6 +22,7 @@ import org.jboss.as.messaging.jms.JMSServices;
 import org.jboss.as.messaging.jms.JMSTopicService;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.Service;
 import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
@@ -33,6 +34,9 @@ import javax.jms.Queue;
 import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.NamingException;
+
+import java.lang.reflect.Method;
+import java.util.*;
 
 public class WildFlyMessaging extends HQMessaging {
 
@@ -57,12 +61,11 @@ public class WildFlyMessaging extends HQMessaging {
 
     @Override
     protected Queue createQueue(final String name, final String selector, final boolean durable) throws Exception {
-        Queue queue = (Queue)waitForValueAvailabilityChange(
-                JMSQueueService.installService(null, null, name, this.wildFlyService.serviceTarget(),
+        Queue queue = (Queue) waitForValueAvailabilityChange(
+                                installService(JMSQueueService.class, name, this.wildFlyService.serviceTarget(),
                                                hqServiceName(),
                                                selector, durable, new String[]{HQDestination.jndiName(name, "queue")}),
-                false);
-
+                                false);
         if (queue == null) {
             throwTimeout("creation of queue " + name);
         }
@@ -72,13 +75,11 @@ public class WildFlyMessaging extends HQMessaging {
 
     @Override
     protected Topic createTopic(final String name) throws Exception {
-        Topic topic =
-                (Topic)waitForValueAvailabilityChange(
-                        JMSTopicService.installService(null, null, name, hqServiceName(),
-                                                       this.wildFlyService.serviceTarget(),
-                                                       new String[]{HQDestination.jndiName(name, "topic")}),
-                        false);
-
+        Topic topic = (Topic) waitForValueAvailabilityChange(
+                                installService(JMSTopicService.class, name, hqServiceName(),
+                                               this.wildFlyService.serviceTarget(),
+                                               new String[]{HQDestination.jndiName(name, "topic")}),
+                                false);
         if (topic == null) {
             throwTimeout("creation of topic " + name);
         }
@@ -165,7 +166,27 @@ public class WildFlyMessaging extends HQMessaging {
         }
     }
 
-        private final WildFlyService wildFlyService;
+    private Service installService(Class clazz, Object... args) throws Exception {
+        Method installer = null;
+        for (Method m: clazz.getMethods()) {
+            if ("installService".equals(m.getName())) {
+                installer = m;
+                break;
+            }
+        }
+        if (installer == null) {
+            throw new NullPointerException("Class has no installService method");
+        }
+        if (installer.getParameterTypes().length == args.length) {
+            return (Service) installer.invoke(null, args);
+        } else {
+            List extra = new ArrayList(Collections.nCopies(2, null));
+            extra.addAll(Arrays.asList(args));
+            return (Service) installer.invoke(null, extra);
+        }
+    }
+
+    private final WildFlyService wildFlyService;
     private final Context context;
 
     private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.wildfly");
