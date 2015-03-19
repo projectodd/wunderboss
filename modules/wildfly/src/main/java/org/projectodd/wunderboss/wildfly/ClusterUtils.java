@@ -17,40 +17,64 @@
 package org.projectodd.wunderboss.wildfly;
 
 import org.jboss.as.clustering.jgroups.ChannelFactory;
-import org.jboss.as.clustering.jgroups.subsystem.ChannelFactoryService;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.CENTRAL_LOCK;
 import org.projectodd.wunderboss.WunderBoss;
-
-
+import java.lang.reflect.Method;
+ 
+ 
 public class ClusterUtils {
-
+ 
     public static boolean inCluster() {
         return channelFactory() != null;
     }
-
+ 
     public static JChannel lockableChannel(String id) throws Exception {
-        JChannel chan = (JChannel)channelFactory().createChannel(id);
-
+        Object factory = channelFactory();
+        Class channelInterface;
+        try {
+            channelInterface = Class.forName("org.jboss.as.clustering.jgroups.ChannelFactory");
+        } catch (ClassNotFoundException e) {
+            try {
+                channelInterface = Class.forName("org.wildfly.clustering.jgroups.ChannelFactory");
+            } catch (ClassNotFoundException e2) {
+                throw new RuntimeException("ffs", e2);
+            }
+        }
+ 
+        if (channelInterface == null) {
+            return null;
+        }
+ 
+        Method createChannel = channelInterface.getDeclaredMethod("createChannel", String.class);
+ 
+        JChannel chan = (JChannel)createChannel.invoke(factory, id);
+ 
         //TODO: check the stack and see if it already contains a lock proto
         // and we should doc that as the preferred way, since you can configure the number of backups?
         CENTRAL_LOCK l = new CENTRAL_LOCK();
         l.setNumberOfBackups(1);
-
+ 
         chan.getProtocolStack().addProtocol(l);
-
+ 
         l.init();
-
+ 
         return chan;
-    }
+    } 
 
-    public static ChannelFactory channelFactory() {
+    public static Object channelFactory() {
         ServiceRegistry registry = (ServiceRegistry)WunderBoss.options().get("service-registry");
         if (registry != null) {
-            ServiceController<?> serviceController = registry.getService(ChannelFactoryService.getServiceName(null));
-            return serviceController == null ? null : (ChannelFactory) serviceController.getValue();
+            // First try WF8 service name
+            ServiceController<?> serviceController = registry.getService(ServiceName.parse("jboss.jgroups.stack" ));
+            if (serviceController == null) {
+                // Then try WF9 service name
+                serviceController = registry.getService(ServiceName.parse("jboss.jgroups.factory.default-stack"));
+            }
+            return serviceController == null ? null : serviceController.getValue();
         }
         return null;
     }
