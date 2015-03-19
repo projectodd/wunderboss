@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.wildfly;
 
-import org.jboss.as.clustering.jgroups.ChannelFactory;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceName;
@@ -31,31 +30,33 @@ public class ClusterUtils {
     public static boolean inCluster() {
         return channelFactory() != null;
     }
- 
-    public static JChannel lockableChannel(String id) throws Exception {
-        Object factory = channelFactory();
+
+    private static final String WF8_CHANNEL_FACTORY_CLASS_NAME = "org.jboss.as.clustering.jgroups.ChannelFactory";
+    private static final String WF9_CHANNEL_FACTORY_CLASS_NAME = "org.wildfly.clustering.jgroups.ChannelFactory";
+
+    public static JChannel lockableChannel(final String id) throws Exception {
         Class channelInterface;
         try {
-            channelInterface = Class.forName("org.jboss.as.clustering.jgroups.ChannelFactory");
+            channelInterface = Class.forName(WF8_CHANNEL_FACTORY_CLASS_NAME);
         } catch (ClassNotFoundException e) {
             try {
-                channelInterface = Class.forName("org.wildfly.clustering.jgroups.ChannelFactory");
+                channelInterface = Class.forName(WF9_CHANNEL_FACTORY_CLASS_NAME);
             } catch (ClassNotFoundException e2) {
-                throw new RuntimeException("ffs", e2);
+                throw new RuntimeException("Failed to find the ChannelFactory interface", e2);
             }
         }
  
         if (channelInterface == null) {
             return null;
         }
- 
-        Method createChannel = channelInterface.getDeclaredMethod("createChannel", String.class);
- 
-        JChannel chan = (JChannel)createChannel.invoke(factory, id);
+
+        final Method createChannel = channelInterface.getDeclaredMethod("createChannel", String.class);
+
+        final JChannel chan = (JChannel)createChannel.invoke(channelFactory(), id);
  
         //TODO: check the stack and see if it already contains a lock proto
         // and we should doc that as the preferred way, since you can configure the number of backups?
-        CENTRAL_LOCK l = new CENTRAL_LOCK();
+        final CENTRAL_LOCK l = new CENTRAL_LOCK();
         l.setNumberOfBackups(1);
  
         chan.getProtocolStack().addProtocol(l);
@@ -63,19 +64,21 @@ public class ClusterUtils {
         l.init();
  
         return chan;
-    } 
+    }
+
+    private static final ServiceName WF8_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.stack");
+    private static final ServiceName WF9_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.factory.default-stack");
 
     public static Object channelFactory() {
         ServiceRegistry registry = (ServiceRegistry)WunderBoss.options().get("service-registry");
         if (registry != null) {
-            // First try WF8 service name
-            ServiceController<?> serviceController = registry.getService(ServiceName.parse("jboss.jgroups.stack" ));
+            ServiceController<?> serviceController = registry.getService(WF8_JGROUPS_STACK_NAME);
             if (serviceController == null) {
-                // Then try WF9 service name
-                serviceController = registry.getService(ServiceName.parse("jboss.jgroups.factory.default-stack"));
+                serviceController = registry.getService(WF9_JGROUPS_STACK_NAME);
             }
             return serviceController == null ? null : serviceController.getValue();
         }
+
         return null;
     }
 }
