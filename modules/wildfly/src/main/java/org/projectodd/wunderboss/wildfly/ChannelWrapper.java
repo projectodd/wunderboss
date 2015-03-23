@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
+import java.lang.reflect.Method;
+
 
 public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, Component {
     public ChannelWrapper(String name) {
@@ -44,17 +46,17 @@ public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, C
     }
 
     @Override
-    public void start() throws Exception {
+    public synchronized void start() throws Exception {
         if (this.channel == null) {
             this.channel = ClusterUtils.lockableChannel(this.name);
             this.dispatcher = new MessageDispatcher(this.channel, null, this, this);
-            this.lockService = new LockService(this.channel);
+            setLockService();
             this.channel.connect(WunderBoss.options().getString("deployment-name"));
         }
     }
 
     @Override
-    public void stop() throws Exception {
+    public synchronized void stop() throws Exception {
         if (this.channel != null) {
             this.channel.disconnect();
             this.channel.close();
@@ -120,6 +122,18 @@ public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, C
         }
 
         return null;
+    }
+
+    private void setLockService() throws Exception {
+        Method setter = null;
+        for (Method m: LockService.class.getMethods()) {
+            if ("setChannel".equals(m.getName())) {
+                setter = m;
+                break;
+            }
+        }
+        this.lockService = LockService.class.newInstance();
+        setter.invoke(this.lockService, this.channel);
     }
 
     private final String name;
