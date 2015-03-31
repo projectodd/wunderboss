@@ -224,8 +224,7 @@
           IllegalArgumentException
           (with-job* (fn []) {:until 5} (fn []))))))
 
-;; pending so I can get a build past CI
-#_(deftest completed-jobs-should-auto-unschedule
+(deftest completed-jobs-should-auto-unschedule
   (is (empty? (.scheduledJobs default)))
   (let [p (promise)
         id "auto-unschedule"]
@@ -237,7 +236,7 @@
                                (deliver p :success)))))
     (.schedule default id #() {})
     (is (= :success (deref p 1000 :failure)))
-    (Thread/sleep 100)
+    (Thread/sleep 1000)
     (is (false? (.unschedule default id)))
     (is (empty? (.scheduledJobs default)))
     (-> (.scheduler default)
