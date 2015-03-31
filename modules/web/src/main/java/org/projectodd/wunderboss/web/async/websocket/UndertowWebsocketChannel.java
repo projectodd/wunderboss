@@ -38,7 +38,6 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
 
     @Override
     public UndertowEndpoint endpoint() {
-        final UndertowWebsocketChannel channel = this;
         return new UndertowEndpoint() {
             @Override
             public void onMessage(WebSocketChannel _, Object message) {
@@ -48,8 +47,8 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
             @Override
             public void onOpen(WebSocketChannel baseChannel,
                                WebSocketHttpExchange exchange) {
-                channel.setUnderlyingChannel(baseChannel);
-                channel.notifyOpen(exchange);
+                setUnderlyingChannel(baseChannel);
+                notifyOpen(exchange);
             }
 
             @Override
@@ -60,6 +59,7 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
             @Override
             public void onError(WebSocketChannel _, Throwable error) {
                 notifyError(error);
+                maybeCloseOnError(error);
             }
         };
     }
@@ -86,20 +86,16 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
         final WebSocketCallback<Void> callback = new WebSocketCallback<Void>() {
             @Override
             public void complete(WebSocketChannel channel, Void context) {
-                Exception ex = null;
                 if (shouldClose) {
-                    try {
-                        close();
-                    } catch (IOException e) {
-                        ex = e;
-                    }
+                    close();
                 }
-                notifyComplete(onComplete, ex);
+                notifyComplete(onComplete, null);
             }
 
             @Override
             public void onError(WebSocketChannel channel, Void context, Throwable throwable) {
                 notifyComplete(onComplete, throwable);
+                maybeCloseOnError(throwable);
             }
         };
         if (message instanceof String) {
@@ -118,15 +114,20 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (isOpen()) {
-            this.underlyingChannel.sendClose();
-            notifyClose(CloseMessage.NORMAL_CLOSURE, "");
+            try {
+                this.underlyingChannel.sendClose();
+            } catch (IOException _) {}
+        }
+        notifyClose(CloseMessage.NORMAL_CLOSURE, "");
+    }
+
+    protected void maybeCloseOnError(Throwable error) {
+        if (error instanceof IOException) {
+            close();
         }
     }
 
     private WebSocketChannel underlyingChannel;
 }
-
-
-
