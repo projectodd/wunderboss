@@ -236,7 +236,6 @@
                                (deliver p :success)))))
     (.schedule default id #() {})
     (is (= :success (deref p 1000 :failure)))
-    (Thread/sleep 1000)
     (is (false? (.unschedule default id)))
     (is (empty? (.scheduledJobs default)))
     (-> (.scheduler default)

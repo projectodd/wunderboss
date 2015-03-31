@@ -243,7 +243,7 @@ public class QuartzScheduling implements Scheduling {
         JobKey get(String name) {
             return this.names.get(name);
         }
-        boolean contains(String name) {
+        synchronized boolean contains(String name) {
             return this.names.containsKey(name);
         }
         Set<String> getNames() {
