@@ -59,7 +59,6 @@ public interface Web<S> extends Component {
     /**
      * Unregisters a handler or servlet at the given context path,
      * possibly on a virtual host.
-     * @param context
      * @return true if there was actually something to unregister.
      */
     boolean unregister(Map<RegisterOption, Object> opts);

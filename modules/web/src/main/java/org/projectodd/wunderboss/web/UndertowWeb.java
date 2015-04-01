@@ -265,7 +265,7 @@ public class UndertowWeb implements Web<HttpHandler> {
         }, resourceHandler, baseHandler);
     }
 
-    /**
+    /*
      * Ensure that handler isn't invoked on IO thread but rather
      * dispatched to the worker thread pool
      */

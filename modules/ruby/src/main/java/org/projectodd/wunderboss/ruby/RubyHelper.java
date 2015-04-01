@@ -33,7 +33,7 @@ import java.util.Map.Entry;
 /**
  * Ruby reflection helper utilities.
  *
- * @author Bob McWhirter <bmcwhirt@redhat.com>
+ * @author Bob McWhirter
  */
 public class RubyHelper {
 
@@ -111,7 +111,7 @@ public class RubyHelper {
 
     /**
      * Calls "require 'requirement'" in the Ruby provided.
-     * @returns boolean If successful, returns true, otherwise false.
+     * @return boolean If successful, returns true, otherwise false.
      */
     public static boolean requireIfAvailable(Ruby ruby, String requirement, boolean logErrors) {
         boolean success = false;
