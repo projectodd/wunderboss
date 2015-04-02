@@ -16,9 +16,11 @@
 
 package org.projectodd.wunderboss.web.async;
 
+import org.projectodd.wunderboss.web.Attachments;
+
 import java.io.IOException;
 
-public interface Channel {
+public interface Channel extends Attachments {
     void notifyOpen(Object context);
 
     void notifyError(Throwable error);
@@ -28,10 +30,6 @@ public interface Channel {
     boolean send(Object message, boolean shouldClose, OnComplete callback) throws Exception;
     
     void close() throws IOException;
-
-    Object originatingRequest();
-
-    void setOriginatingRequest(Object request);
 
     interface OnOpen {
         void handle(Channel channel, Object context);

@@ -18,7 +18,9 @@ package org.projectodd.wunderboss.web.async;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,13 +41,13 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     protected abstract void execute(Runnable runnable);
 
     @Override
-    public Object originatingRequest() {
-        return this.originatingRequest;
+    public Object get(Object key) {
+        return this.attachments.get(key);
     }
 
     @Override
-    public void setOriginatingRequest(Object request) {
-        this.originatingRequest = request;
+    public void attach(Object key, Object value) {
+        this.attachments.put(key, value);
     }
 
     @Override
@@ -194,12 +196,12 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean open = false;
     private boolean sendStarted = false;
     private OutputStream stream;
-    private Object originatingRequest;
     private final OnOpen onOpen;
     private final OnError onError;
     private final OnClose onClose;
     private final Queue<PendingSend> queue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean workerRunning = new AtomicBoolean(false);
+    private final Map<Object, Object> attachments = new ConcurrentHashMap<>();
 
     class PendingSend {
         PendingSend(final byte[] message,

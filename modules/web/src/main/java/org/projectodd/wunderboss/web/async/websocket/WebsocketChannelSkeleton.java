@@ -18,6 +18,9 @@ package org.projectodd.wunderboss.web.async.websocket;
 
 import org.projectodd.wunderboss.web.async.Util;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
 
 
@@ -32,13 +35,13 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     @Override
-    public Object originatingRequest() {
-        return this.originatingRequest;
+    public Object get(Object key) {
+        return this.attachments.get(key);
     }
 
     @Override
-    public void setOriginatingRequest(Object request) {
-        this.originatingRequest = request;
+    public void attach(Object key, Object value) {
+        this.attachments.put(key, value);
     }
 
     @Override
@@ -79,7 +82,7 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     private final OnClose onClose;
     private final OnMessage onMessage;
     private final OnError onError;
-    private Object originatingRequest;
+    private final Map<Object, Object> attachments = new ConcurrentHashMap<>();
     private boolean closeNotified = false;
     private boolean openNotified = false;
 }
