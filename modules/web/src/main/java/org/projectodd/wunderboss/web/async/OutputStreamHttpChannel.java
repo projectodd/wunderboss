@@ -72,6 +72,11 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         return this.open;
     }
 
+    @Override
+    public boolean headersSent() {
+        return this.sendStarted;
+    }
+
     // message must be String or byte[]. Allowing Object makes life easier from clojure
     @Override
     public boolean send(final Object message,
