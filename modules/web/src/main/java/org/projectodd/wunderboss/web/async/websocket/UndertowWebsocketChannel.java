@@ -98,7 +98,10 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
                 maybeCloseOnError(throwable);
             }
         };
-        if (message instanceof String) {
+
+        if (message == null) {
+            callback.complete(this.underlyingChannel, null);
+        } else if (message instanceof String) {
             WebSockets.sendText((String) message,
                     this.underlyingChannel,
                     callback);

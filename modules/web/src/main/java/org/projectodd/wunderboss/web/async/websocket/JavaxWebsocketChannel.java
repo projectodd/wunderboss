@@ -108,7 +108,9 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
             }
         };
 
-        if (message instanceof String) {
+        if (message == null) {
+            handler.onResult(null);
+        } else if (message instanceof String) {
             this.session.getAsyncRemote().sendText((String)message, handler);
         } else if (message instanceof byte[]) {
             this.session.getAsyncRemote().sendBinary(ByteBuffer.wrap((byte[])message), handler);

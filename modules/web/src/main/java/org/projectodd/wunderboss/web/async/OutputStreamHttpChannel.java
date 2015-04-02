@@ -87,7 +87,9 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         }
 
         byte[] data;
-        if (message instanceof String) {
+        if (message == null) {
+            data = null;
+        } else if (message instanceof String) {
             data = ((String)message).getBytes(getResponseCharset());
         } else if (message instanceof byte[]) {
             data = (byte[])message;
@@ -147,14 +149,18 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         Throwable ex = null;
         try {
             if (!sendStarted) {
-                if (shouldClose) {
+                if (shouldClose &&
+                        data != null) {
                     setContentLength(data.length);
                 }
                 this.stream = getOutputStream();
                 sendStarted = true;
             }
 
-            this.stream.write(data);
+            if (data != null) {
+                this.stream.write(data);
+            }
+
             if (shouldClose) {
                 this.closer.run();
             } else {
