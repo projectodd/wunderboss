@@ -228,6 +228,8 @@
   (is (empty? (.scheduledJobs default)))
   (let [p (promise)
         id "auto-unschedule"]
+    ;; Ensure scheduler is started
+    (.start default)
     (-> (.scheduler default)
       .getListenerManager
       (.addTriggerListener (proxy [TriggerListenerSupport] []
