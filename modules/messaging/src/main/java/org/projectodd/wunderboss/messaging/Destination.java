@@ -27,7 +27,7 @@ public interface Destination {
 
     class ListenOption extends Option {
         public static final ListenOption CONTEXT     = opt("context", ListenOption.class);
-        public static final ListenOption CONCURRENCY = opt("concurrency", Runtime.getRuntime().availableProcessors(), ListenOption.class);
+        public static final ListenOption CONCURRENCY = opt("concurrency", ListenOption.class);
         public static final ListenOption SELECTOR    = opt("selector", ListenOption.class);
         public static final ListenOption MODE        = opt("mode", Context.Mode.TRANSACTED, ListenOption.class);
     }

@@ -45,7 +45,8 @@ public class MessageHandlerGroup implements Listener {
 
     public synchronized MessageHandlerGroup start() throws Exception {
         if (!this.started) {
-            int concurrency = this.options.getInt(ListenOption.CONCURRENCY);
+            Integer option = this.options.getInt(ListenOption.CONCURRENCY);
+            int concurrency = option != null ? option : this.destination.defaultConcurrency();
             log.info("Starting listener for '" + this.destination.name() + "' concurrency=" + concurrency);
             while(concurrency-- > 0) {
                 HQSpecificContext subContext =

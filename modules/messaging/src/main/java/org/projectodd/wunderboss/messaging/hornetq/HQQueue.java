@@ -118,4 +118,8 @@ public class HQQueue extends HQDestination implements Queue {
         return fullName(name());
     }
 
+    @Override
+    public int defaultConcurrency() {
+        return Runtime.getRuntime().availableProcessors();
+    }
 }

@@ -57,6 +57,8 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
     public abstract String jmsName();
 
+    public abstract int defaultConcurrency();
+
     @Override
     public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);

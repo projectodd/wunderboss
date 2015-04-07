@@ -107,6 +107,11 @@ public class HQTopic extends HQDestination implements Topic {
         return broker().lookupTopic(name());
     }
 
+    @Override
+    public int defaultConcurrency() {
+        return 1;
+    }
+
     protected HQSpecificContext context(final String id, final Object context) throws Exception {
         if (context != null) {
             return ((HQSpecificContext)context).asNonCloseable();
