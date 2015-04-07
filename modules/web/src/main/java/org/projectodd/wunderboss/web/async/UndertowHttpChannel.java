@@ -30,6 +30,11 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
+    public boolean asyncSendSupported() {
+        return true;
+    }
+
+    @Override
     protected String getResponseCharset() {
         // getResponseCharset claims to return ISO-8859-1 if a charset can't be found,
         // but returns null instead if content-type isn't set

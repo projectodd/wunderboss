@@ -41,6 +41,11 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
+    public boolean asyncSendSupported() {
+        return isAsync();
+    }
+    
+    @Override
     protected String getResponseCharset() {
         return this.response.getCharacterEncoding();
     }
@@ -87,7 +92,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     @Override
     void enqueue(PendingSend pending) {
         //be async in 9.x, sync in 8.x (due to https://issues.jboss.org/browse/WFLY-3715)
-        if (isAsync()) {
+        if (asyncSendSupported()) {
             super.enqueue(pending); // async
         } else {
             send(pending); // sync

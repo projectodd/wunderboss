@@ -18,4 +18,5 @@ package org.projectodd.wunderboss.web.async;
 
 public interface HttpChannel extends Channel {
     boolean sendStarted();
+    boolean asyncSendSupported();
 }
