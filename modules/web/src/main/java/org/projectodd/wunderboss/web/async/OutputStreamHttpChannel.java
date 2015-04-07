@@ -73,18 +73,20 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     }
 
     @Override
-    public boolean headersSent() {
-        return this.sendStarted;
+    public boolean sendStarted() {
+        return this.sendQueued;
     }
 
     // message must be String or byte[]. Allowing Object makes life easier from clojure
     @Override
-    public boolean send(final Object message,
-                        final boolean shouldClose,
-                        final OnComplete onComplete) throws IOException {
+    public synchronized boolean send(final Object message,
+                                     final boolean shouldClose,
+                                     final OnComplete onComplete) throws IOException {
         if (!isOpen()) {
             return false;
         }
+
+        this.sendQueued = true;
 
         byte[] data;
         if (message == null) {
@@ -148,13 +150,13 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
                           final OnComplete onComplete) {
         Throwable ex = null;
         try {
-            if (!sendStarted) {
+            if (!headersSent) {
                 if (shouldClose &&
                         data != null) {
                     setContentLength(data.length);
                 }
                 this.stream = getOutputStream();
-                sendStarted = true;
+                headersSent = true;
             }
 
             if (data != null) {
@@ -205,7 +207,8 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     };
 
     private boolean open = false;
-    private boolean sendStarted = false;
+    private boolean sendQueued = false;
+    private boolean headersSent = false;
     private OutputStream stream;
     private final OnOpen onOpen;
     private final OnError onError;
