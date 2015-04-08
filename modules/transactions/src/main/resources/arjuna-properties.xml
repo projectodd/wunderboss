@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
+    <entry key="CoordinatorEnvironmentBean.commitOnePhase">YES</entry>
+    <entry key="ObjectStoreEnvironmentBean.objectStoreDir">PutObjectStoreDirHere</entry>
+    <entry key="ObjectStoreEnvironmentBean.transactionSync">ON</entry>
     <entry key="CoreEnvironmentBean.nodeIdentifier">1</entry>
+    <entry key="JTAEnvironmentBean.xaRecoveryNodes">1</entry>
+    <entry key="JTAEnvironmentBean.xaResourceOrphanFilterClassNames">
+        com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter
+        com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter
+    </entry>
+    <entry key="CoreEnvironmentBean.socketProcessIdPort">0</entry>
+    <entry key="RecoveryEnvironmentBean.recoveryModuleClassNames">
+        com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule
+        com.arjuna.ats.internal.txoj.recovery.TORecoveryModule
+        com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule
+    </entry>
+    <entry key="RecoveryEnvironmentBean.expiryScannerClassNames">
+        com.arjuna.ats.internal.arjuna.recovery.ExpiredTransactionStatusManagerScanner
+    </entry>
+    <entry key="RecoveryEnvironmentBean.recoveryPort">4712</entry>
+    <entry key="RecoveryEnvironmentBean.recoveryAddress"></entry>
+    <entry key="RecoveryEnvironmentBean.transactionStatusManagerPort">0</entry>
+    <entry key="RecoveryEnvironmentBean.transactionStatusManagerAddress"></entry>
+    <entry key="RecoveryEnvironmentBean.recoveryListener">NO</entry>
 </properties>
