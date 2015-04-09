@@ -94,6 +94,12 @@ public class NarayanaTransaction implements Transaction {
 
     @Override
     public synchronized TransactionManager manager() {
+        // jbossts-properties.xml won't be loaded in an uberjar
+        // without this - see JBTM-2357
+        String propName = "com.arjuna.ats.arjuna.common.propertiesFile";
+        if (System.getProperty(propName) == null) {
+            System.setProperty(propName, "jbossts-properties.xml");
+        }
         if (this.manager == null) {
             this.manager = com.arjuna.ats.jta.TransactionManager.transactionManager();
         }
