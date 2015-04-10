@@ -23,11 +23,14 @@ import javax.websocket.Session;
 import java.io.IOException;
 
 public class DelegatingJavaxEndpoint extends Endpoint {
-    public static final String ENDPOINT_KEY = "session-endpoint";
+
+    public static String endpointKey() {
+        return "session-endpoint-" + Thread.currentThread().getId();
+    }
 
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
-        Endpoint endpoint = sessionEndpoint(session);
+        Endpoint endpoint = delegate(session);
         if (endpoint != null) {
             endpoint.onOpen(session, endpointConfig);
         } else {
@@ -37,7 +40,7 @@ public class DelegatingJavaxEndpoint extends Endpoint {
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        Endpoint endpoint = sessionEndpoint(session);
+        Endpoint endpoint = delegate(session);
         if (endpoint != null) {
             endpoint.onClose(session, closeReason);
         }
@@ -45,7 +48,7 @@ public class DelegatingJavaxEndpoint extends Endpoint {
 
     @Override
     public void onError(Session session, Throwable err) {
-        Endpoint endpoint = sessionEndpoint(session);
+        Endpoint endpoint = delegate(session);
         if (endpoint != null) {
             endpoint.onError(session, err);
         } else {
@@ -61,9 +64,14 @@ public class DelegatingJavaxEndpoint extends Endpoint {
         }
     }
 
-    private Endpoint sessionEndpoint(final Session session) {
-        return (Endpoint)session.getUserProperties().get(ENDPOINT_KEY);
+    private synchronized Endpoint delegate(final Session session) {
+        if (this.delegate == null) {
+            this.delegate = (Endpoint)session.getUserProperties().remove(endpointKey());
+        }
+        return this.delegate;
     }
+
+    private Endpoint delegate;
 
     private final static CloseReason POLICY_CLOSE = new CloseReason(new CloseReason.CloseCode() {
         @Override
