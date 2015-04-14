@@ -93,7 +93,7 @@ public class ApplicationRunner {
             return;
         }
         String[] extractPaths = Utils.classpathStringToArray(properties.getProperty("extract_paths"));
-        extractRoot = Files.createTempDirectory("wunderboss").toFile().getPath();
+        extractRoot = Files.createTempDirectory("wunderboss").toFile().getAbsolutePath();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
