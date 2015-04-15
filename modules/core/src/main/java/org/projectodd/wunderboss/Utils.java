@@ -46,7 +46,26 @@ public class Utils {
     }
     
     public static String[] classpathStringToArray(String cp) {
-        return cp.trim().split(":");
+        cp = cp.trim();
+        String[] entries = cp.split(":");
+        // Basic splitting on ":" may break some entries under Windows of the
+        // form C:\foo\bar.jar
+        List<String> results = new ArrayList<>();
+        for (int i = 0; i < entries.length; i++) {
+            String entry = entries[i];
+            if (i + 1 < entries.length) {
+                String nextEntry = entries[i + 1];
+                if (entry.matches("[A-Za-z]") && nextEntry.charAt(0) == '\\') {
+                    // We split up a path containing a Windows drive letter so
+                    // reassemble it
+                    results.add(entry + ":" + nextEntry);
+                    i++;
+                    continue;
+                }
+            }
+            results.add(entry);
+        }
+        return results.toArray(new String[results.size()]);
     }
 
     public static void deleteRecursively(File directory) {
