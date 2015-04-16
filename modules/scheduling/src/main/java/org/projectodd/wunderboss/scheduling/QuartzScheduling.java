@@ -220,7 +220,9 @@ public class QuartzScheduling implements Scheduling {
         }
         public void triggerComplete(Trigger trigger, JobExecutionContext ctx, Trigger.CompletedExecutionInstruction i) {
             if (!trigger.mayFireAgain()) {
-                QuartzScheduling.this.currentJobs.remove(ctx.getJobDetail().getKey());
+                synchronized(QuartzScheduling.this) {
+                    QuartzScheduling.this.currentJobs.remove(ctx.getJobDetail().getKey());
+                }
             }
         }
     }
