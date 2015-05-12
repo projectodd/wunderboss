@@ -103,11 +103,6 @@ public class HQTopic extends HQDestination implements Topic {
     }
 
     @Override
-    public Destination jmsDestination() {
-        return broker().lookupTopic(name());
-    }
-
-    @Override
     public int defaultConcurrency() {
         return 1;
     }
