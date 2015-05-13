@@ -24,13 +24,9 @@ import java.io.IOException;
 
 public class DelegatingJavaxEndpoint extends Endpoint {
 
-    public static String endpointKey() {
-        return "session-endpoint-" + Thread.currentThread().getId();
-    }
-
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
-        Endpoint endpoint = delegate(session);
+        Endpoint endpoint = delegate();
         if (endpoint != null) {
             endpoint.onOpen(session, endpointConfig);
         } else {
@@ -40,7 +36,7 @@ public class DelegatingJavaxEndpoint extends Endpoint {
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        Endpoint endpoint = delegate(session);
+        Endpoint endpoint = delegate();
         if (endpoint != null) {
             endpoint.onClose(session, closeReason);
         }
@@ -48,12 +44,16 @@ public class DelegatingJavaxEndpoint extends Endpoint {
 
     @Override
     public void onError(Session session, Throwable err) {
-        Endpoint endpoint = delegate(session);
+        Endpoint endpoint = delegate();
         if (endpoint != null) {
             endpoint.onError(session, err);
         } else {
             close(session);
         }
+    }
+
+    public static void setCurrentDelegate(Endpoint endpoint) {
+        delegateTL.set(endpoint);
     }
 
     private void close(Session session) {
@@ -64,10 +64,12 @@ public class DelegatingJavaxEndpoint extends Endpoint {
         }
     }
 
-    private synchronized Endpoint delegate(final Session session) {
+    private synchronized Endpoint delegate() {
         if (this.delegate == null) {
-            this.delegate = (Endpoint)session.getUserProperties().remove(endpointKey());
+            this.delegate = delegateTL.get();
+            delegateTL.remove();
         }
+        
         return this.delegate;
     }
 
@@ -79,4 +81,5 @@ public class DelegatingJavaxEndpoint extends Endpoint {
             return 1003;
         }
     }, null);
+    private final static ThreadLocal<Endpoint> delegateTL = new ThreadLocal<>();
 }
