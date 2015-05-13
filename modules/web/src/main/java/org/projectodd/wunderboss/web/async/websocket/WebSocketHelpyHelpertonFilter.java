@@ -39,7 +39,7 @@ import java.io.IOException;
  * It also grabs the original ServletRequest in a ThreadLocal for the
  * downstream handshake to use.
  */
-public class WebSocketHelpyHelpersonFilter implements Filter {
+public class WebSocketHelpyHelpertonFilter implements Filter {
 
     public static final ThreadLocal<HttpServletRequest> requestTL = new ThreadLocal<>();
 
