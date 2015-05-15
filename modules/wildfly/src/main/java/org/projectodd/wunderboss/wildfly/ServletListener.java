@@ -30,8 +30,16 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class ServletListener implements ServletContextListener {
+    public static final String TIMEOUT_PROPERTY = "wunderboss.deployment.timeout";
+    public static final long DEFAULT_TIMEOUT = 240; // 4 minutes
+
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         WunderBoss.putOption("servlet-context-path", sce.getServletContext().getContextPath());
@@ -61,10 +69,35 @@ public class ServletListener implements ServletContextListener {
             }
         };
 
+        Future<?> future = WunderBoss.workerPool().submit(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                applicationRunner.start(null);
+
+                return null;
+            }
+        });
+
+        long timeout = DEFAULT_TIMEOUT;
+        String timeoutProp = System.getProperty(TIMEOUT_PROPERTY);
+        if (timeoutProp != null) {
+            timeout = Long.parseLong(timeoutProp);
+        }
+
         try {
-            applicationRunner.start(null);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            future.get(timeout, TimeUnit.SECONDS);
+        } catch (TimeoutException _) {
+            future.cancel(true);
+            String message = String.format("Timed out waiting for initialization to complete after %d seconds. If you need more time, use the %s sysprop.",
+                                           timeout, TIMEOUT_PROPERTY);
+            log.error(message);
+            throw new RuntimeException(message);
+        } catch (InterruptedException _) {
+            future.cancel(true);
+            throw new RuntimeException("Initialization failed");
+        } catch (ExecutionException e) {
+            future.cancel(true);
+            throw new RuntimeException("Initialization failed", e.getCause());
         }
     }
 

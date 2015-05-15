@@ -24,6 +24,10 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class WunderBoss {
 
@@ -109,6 +113,8 @@ public class WunderBoss {
             component.stop();
         }
         components.clear();
+
+        shutdownWorkerPool();
     }
 
     private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> iface, boolean throwIfMissing) {
@@ -198,12 +204,37 @@ public class WunderBoss {
         options = options.merge(other);
     }
 
+    public static synchronized ExecutorService workerPool() {
+        if (workerExecutor == null) {
+            final String deploymentName = options().getString("deployment-name", "wunderboss");
+            workerExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
+                private final AtomicLong counter = new AtomicLong(0);
+
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, String.format("%s-worker-%d",
+                                                       deploymentName, counter.getAndIncrement()));
+                }
+            });
+        }
+
+        return workerExecutor;
+    }
+
+    public static synchronized void shutdownWorkerPool() {
+        if (workerExecutor != null) {
+            workerExecutor.shutdown();
+            workerExecutor = null;
+        }
+    }
+
     private static Locator locator;
     private static Options<String> options;
     private static final Map<String, Language> languages = new HashMap<>();
     private static final Map<Class, ComponentProvider> componentProviders = new HashMap<>();
     private static final Map<String, Component> components = new HashMap<>();
     private static DynamicClassLoader classLoader;
+    private static ExecutorService workerExecutor;
     private static final Logger log = logger(WunderBoss.class);
 
 }
