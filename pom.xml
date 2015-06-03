@@ -5,7 +5,7 @@
 
   <groupId>org.projectodd.wunderboss</groupId>
   <artifactId>wunderboss</artifactId>
-  <version>0.8.0</version>
+  <version>0.8.1-SNAPSHOT</version>
   <name>WunderBoss</name>
 
   <packaging>pom</packaging>
