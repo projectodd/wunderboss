@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.Response;
@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class HQResponse implements Response {
+public class JMSResponse implements Response {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {

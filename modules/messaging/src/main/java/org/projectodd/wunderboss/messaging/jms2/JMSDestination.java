@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
@@ -28,7 +28,6 @@ import org.projectodd.wunderboss.messaging.Messaging;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSConsumer;
-import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import java.io.Serializable;
@@ -36,9 +35,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class HQDestination implements org.projectodd.wunderboss.messaging.Destination {
+public abstract class JMSDestination implements org.projectodd.wunderboss.messaging.Destination {
 
-    public HQDestination(String name, Destination destination, HQMessaging broker) {
+    public JMSDestination(String name, Destination destination, JMSMessaging broker) {
         this.name = name;
         this.jmsDestination = destination;
         this.broker = broker;
@@ -69,7 +68,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
             throw new IllegalArgumentException("Listening only accepts a remote context.");
         }
 
-        HQSpecificContext context = context(givenContext);
+        JMSSpecificContext context = context(givenContext);
         Listener listener = new MessageHandlerGroup(context,
                                                     handler,
                                                     codecs,
@@ -97,13 +96,13 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         }
     }
 
-    protected HQSpecificContext context(final Object context) throws Exception {
+    protected JMSSpecificContext context(final Object context) throws Exception {
         Context newContext;
-        HQSpecificContext threadContext = HQContext.currentContext.get();
+        JMSSpecificContext threadContext = JMSContext.currentContext.get();
 
         if (context != null) {
-            newContext = ((HQSpecificContext) context).asNonCloseable();
-        } else if (HQXAContext.isTransactionActive()) {
+            newContext = ((JMSSpecificContext) context).asNonCloseable();
+        } else if (JMSXAContext.isTransactionActive()) {
             newContext = this.broker.createContext(new HashMap() {{
                 put(Messaging.CreateContextOption.XA, true);
             }});
@@ -115,7 +114,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
 
         newContext.enlist();
 
-        return (HQSpecificContext)newContext;
+        return (JMSSpecificContext)newContext;
     }
 
     protected void publish(Object message, Codec codec,
@@ -124,8 +123,8 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
             throw new IllegalArgumentException("codec can't be null");
         }
         Options<MessageOpOption> opts = new Options<>(options);
-        HQSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
-        JMSContext jmsContext = context.jmsContext();
+        JMSSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
+        javax.jms.JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
 
         try {
@@ -133,7 +132,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
             fillInProperties(producer, (Map<String, Object>) opts.get(PublishOption.PROPERTIES, Collections.emptyMap()));
             fillInProperties(producer, additionalProperties);
             producer
-                    .setProperty(HQMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
+                    .setProperty(JMSMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
                     .setDeliveryMode((opts.getBoolean(PublishOption.PERSISTENT) ?
                             DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
                     .setPriority(opts.getInt(PublishOption.PRIORITY))
@@ -157,8 +156,8 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     public Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception {
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
-        HQSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
-        JMSContext jmsContext = context.jmsContext();
+        JMSSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
+        javax.jms.JMSContext jmsContext = context.jmsContext();
         javax.jms.Destination destination = jmsDestination();
         String selector = opts.getString(ReceiveOption.SELECTOR);
 
@@ -171,9 +170,9 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
             }
 
             if (message != null) {
-                String contentType = HQMessage.contentType(message);
+                String contentType = JMSMessage.contentType(message);
                 Codec codec = codecs.forContentType(contentType);
-                return new HQMessage(message, codec, this);
+                return new JMSMessage(message, codec, this);
             } else {
                 return null;
             }
@@ -190,7 +189,7 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
         }
     }
 
-    protected HQMessaging broker() {
+    protected JMSMessaging broker() {
         return this.broker;
     }
 
@@ -206,5 +205,5 @@ public abstract class HQDestination implements org.projectodd.wunderboss.messagi
     private final String name;
     private final Destination jmsDestination;
     private boolean stopped = false;
-    private final HQMessaging broker;
+    private final JMSMessaging broker;
 }

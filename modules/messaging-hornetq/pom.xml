@@ -10,19 +10,16 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-transactions</artifactId>
-  <name>WunderBoss Transactions Module</name>
+  <artifactId>wunderboss-messaging-hornetq</artifactId>
+  <name>WunderBoss HornetQ Messaging Module</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.narayana>5.0.3.Final</version.narayana>
-    <version.jta>1.1</version.jta>
-    <version.jboss-transaction-spi>7.1.0.Final</version.jboss-transaction-spi>
+    <version.hornetq>2.4.5.Final</version.hornetq>
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-core</artifactId>
@@ -30,35 +27,21 @@
     </dependency>
 
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>jta</artifactId>
-      <version>${version.jta}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.narayana.jta</groupId>
-      <artifactId>narayana-jta</artifactId>
-      <version>${version.narayana}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss</groupId>
-      <artifactId>jboss-transaction-spi</artifactId>
-      <version>${version.jboss-transaction-spi}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-messaging-hornetq</artifactId>
+      <artifactId>wunderboss-messaging</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-caching</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-server</artifactId>
+      <version>${version.hornetq}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-jms-server</artifactId>
+      <version>${version.hornetq}</version>
     </dependency>
 
   </dependencies>

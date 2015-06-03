@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.codecs.Codecs;
@@ -30,7 +30,7 @@ public class JMSListener implements Listener, MessageListener {
     public JMSListener(MessageHandler handler,
                        Codecs codecs,
                        Destination endpoint,
-                       HQSpecificContext context,
+                       JMSSpecificContext context,
                        JMSConsumer consumer) {
         this.handler = handler;
         this.codecs = codecs;
@@ -74,9 +74,9 @@ public class JMSListener implements Listener, MessageListener {
     @Override
     public void onMessage(Message message) {
         try {
-            HQContext.currentContext.set(this.context.asNonCloseable());
-            this.handler.onMessage(new HQMessage(message,
-                                                      this.codecs.forContentType(HQMessage.contentType(message)),
+            JMSContext.currentContext.set(this.context.asNonCloseable());
+            this.handler.onMessage(new JMSMessage(message,
+                                                      this.codecs.forContentType(JMSMessage.contentType(message)),
                                                       this.endpoint),
                                    this.context);
 
@@ -85,7 +85,7 @@ public class JMSListener implements Listener, MessageListener {
             this.context.rollback();
             throw new RuntimeException("Unexpected error handling message", e);
         } finally {
-            HQContext.currentContext.remove();
+            JMSContext.currentContext.remove();
         }
 
     }
@@ -93,7 +93,7 @@ public class JMSListener implements Listener, MessageListener {
     private final MessageHandler handler;
     private final Codecs codecs;
     private final Destination endpoint;
-    private final HQSpecificContext context;
+    private final JMSSpecificContext context;
     private final JMSConsumer consumer;
     private boolean started = false;
 

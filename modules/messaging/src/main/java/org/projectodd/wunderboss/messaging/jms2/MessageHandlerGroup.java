@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
@@ -31,10 +31,10 @@ import java.util.List;
 
 public class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(HQSpecificContext context,
+    public MessageHandlerGroup(JMSSpecificContext context,
                                MessageHandler handler,
                                Codecs codecs,
-                               HQDestination destination,
+                               JMSDestination destination,
                                Options<ListenOption> options) {
         this.context = context;
         this.handler = handler;
@@ -49,7 +49,7 @@ public class MessageHandlerGroup implements Listener {
             int concurrency = option != null ? option : this.destination.defaultConcurrency();
             log.info("Starting listener for '" + this.destination.name() + "' concurrency=" + concurrency);
             while(concurrency-- > 0) {
-                HQSpecificContext subContext =
+                JMSSpecificContext subContext =
                         this.context.createChildContext((Context.Mode)this.options.get(ListenOption.MODE));
                 listeners.add((new JMSListener(this.handler,
                                                this.codecs,
@@ -77,7 +77,7 @@ public class MessageHandlerGroup implements Listener {
         }
     }
 
-    protected JMSConsumer createConsumer(HQSpecificContext context) throws JMSException {
+    protected JMSConsumer createConsumer(JMSSpecificContext context) throws JMSException {
         String selector = this.options.getString(ListenOption.SELECTOR);
         javax.jms.Destination destination = this.destination.jmsDestination();
 
@@ -86,9 +86,9 @@ public class MessageHandlerGroup implements Listener {
 
     private final MessageHandler handler;
     private final Codecs codecs;
-    private final HQDestination destination;
+    private final JMSDestination destination;
     private final Options<ListenOption> options;
-    private final HQSpecificContext context;
+    private final JMSSpecificContext context;
     private final List<JMSListener> listeners = new ArrayList<>();
     private boolean started = false;
 

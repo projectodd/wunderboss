@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
@@ -29,9 +29,9 @@ import javax.jms.JMSConsumer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HQTopic extends HQDestination implements Topic {
+public class JMSTopic extends JMSDestination implements Topic {
 
-    public HQTopic(String name, Destination destination, HQMessaging broker) {
+    public JMSTopic(String name, Destination destination, JMSMessaging broker) {
         super(name, destination, broker);
     }
 
@@ -40,7 +40,7 @@ public class HQTopic extends HQDestination implements Topic {
                               final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
-        final HQSpecificContext context = context(id, opts.get(SubscribeOption.CONTEXT));
+        final JMSSpecificContext context = context(id, opts.get(SubscribeOption.CONTEXT));
         final JMSConsumer consumer = context
                 .jmsContext()
                 .createDurableConsumer((javax.jms.Topic) jmsDestination(),
@@ -72,7 +72,7 @@ public class HQTopic extends HQDestination implements Topic {
     @Override
     public void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception {
         final Options<UnsubscribeOption> opts = new Options<>(options);
-        HQSpecificContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
+        JMSSpecificContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
         try {
             context.jmsContext().unsubscribe(id);
         } finally {
@@ -107,11 +107,11 @@ public class HQTopic extends HQDestination implements Topic {
         return 1;
     }
 
-    protected HQSpecificContext context(final String id, final Object context) throws Exception {
+    protected JMSSpecificContext context(final String id, final Object context) throws Exception {
         if (context != null) {
-            return ((HQSpecificContext)context).asNonCloseable();
+            return ((JMSSpecificContext)context).asNonCloseable();
         } else {
-            return (HQSpecificContext)broker()
+            return (JMSSpecificContext)broker()
                     .createContext(new HashMap<Messaging.CreateContextOption, Object>() {{
                         put(Messaging.CreateContextOption.CLIENT_ID, id);
                     }});

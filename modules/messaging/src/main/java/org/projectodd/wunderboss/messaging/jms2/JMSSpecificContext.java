@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging;
+package org.projectodd.wunderboss.messaging.jms2;
 
-import org.projectodd.wunderboss.ComponentProvider;
-import org.projectodd.wunderboss.Options;
-import org.projectodd.wunderboss.messaging.hornetq.HQMessaging;
+import org.projectodd.wunderboss.messaging.Context;
+import org.projectodd.wunderboss.messaging.Messaging;
 
-public class MessagingProvider implements ComponentProvider<Messaging> {
-    @Override
-    public Messaging create(String name, Options opts) {
-        return new HQMessaging(name, opts);
-    }
+import javax.jms.JMSContext;
+
+public interface JMSSpecificContext extends Context {
+    String id();
+
+    JMSContext jmsContext();
+
+    Messaging broker();
+
+    boolean isXAEnabled();
+
+    boolean isChild();
+
+    JMSSpecificContext asNonCloseable();
+
+    JMSSpecificContext createChildContext(Mode mode);
 }

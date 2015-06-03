@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-messaging</artifactId>
+      <artifactId>wunderboss-messaging-hornetq</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

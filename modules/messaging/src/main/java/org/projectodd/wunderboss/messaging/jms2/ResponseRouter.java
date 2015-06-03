@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
@@ -36,8 +36,8 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
 
     @Override
     public Reply onMessage(Message msg, Context ignored) throws Exception {
-        String id = ((HQMessage)msg).requestID();
-        HQResponse response = this.responses.remove(id);
+        String id = ((JMSMessage)msg).requestID();
+        JMSResponse response = this.responses.remove(id);
         if (response == null) {
             throw new IllegalStateException("No responder for id " + id);
         }
@@ -47,15 +47,15 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
 
-    public void registerResponse(String id, HQResponse response) {
+    public void registerResponse(String id, JMSResponse response) {
         this.responses.put(id, response);
     }
 
 
-    public synchronized static ResponseRouter routerFor(HQQueue queue, Codecs codecs,
+    public synchronized static ResponseRouter routerFor(JMSQueue queue, Codecs codecs,
                                                         Options<Destination.ListenOption> options) {
         String id = queue.name();
-        HQSpecificContext givenContext = (HQSpecificContext)options.get(Destination.ListenOption.CONTEXT);
+        JMSSpecificContext givenContext = (JMSSpecificContext)options.get(Destination.ListenOption.CONTEXT);
         if (givenContext != null) {
             id += ":" + givenContext.id();
         }
@@ -95,7 +95,7 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
     private final static Map<String, ResponseRouter> routers = new HashMap<>();
-    private final Map<String, HQResponse> responses = new HashMap<>();
+    private final Map<String, JMSResponse> responses = new HashMap<>();
     private final String id;
     private Listener enclosingListener;
 

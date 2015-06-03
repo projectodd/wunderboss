@@ -26,7 +26,7 @@ import org.jboss.msc.service.Service;
 import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.hornetq.HQDestination;
+import org.projectodd.wunderboss.messaging.jms2.JMSDestination;
 import org.projectodd.wunderboss.messaging.hornetq.HQMessaging;
 import org.slf4j.Logger;
 
@@ -64,7 +64,7 @@ public class WildFlyMessaging extends HQMessaging {
         Queue queue = (Queue) waitForValueAvailabilityChange(
                                 installService(JMSQueueService.class, name, this.wildFlyService.serviceTarget(),
                                                hqServiceName(),
-                                               selector, durable, new String[]{HQDestination.jndiName(name, "queue")}),
+                                               selector, durable, new String[]{JMSDestination.jndiName(name, "queue")}),
                                 false);
         if (queue == null) {
             throwTimeout("creation of queue " + name);
@@ -78,7 +78,7 @@ public class WildFlyMessaging extends HQMessaging {
         Topic topic = (Topic) waitForValueAvailabilityChange(
                                 installService(JMSTopicService.class, name, hqServiceName(),
                                                this.wildFlyService.serviceTarget(),
-                                               new String[]{HQDestination.jndiName(name, "topic")}),
+                                               new String[]{JMSDestination.jndiName(name, "topic")}),
                                 false);
         if (topic == null) {
             throwTimeout("creation of topic " + name);

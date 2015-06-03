@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.jboss.logging.Logger;
 
-import javax.jms.JMSContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class HQContext implements HQSpecificContext {
+public class JMSContext implements JMSSpecificContext {
 
-    public static ThreadLocal<HQSpecificContext> currentContext = new ThreadLocal<>();
+    public static ThreadLocal<JMSSpecificContext> currentContext = new ThreadLocal<>();
 
-    public HQContext(JMSContext jmsContext,
-                     Messaging broker,
-                     Mode mode,
-                     boolean remote) {
+    public JMSContext(javax.jms.JMSContext jmsContext,
+                      Messaging broker,
+                      Mode mode,
+                      boolean remote) {
         this(jmsContext, broker, mode, remote, null);
     }
 
-    public HQContext(JMSContext jmsContext,
-                     Messaging broker,
-                     Mode mode,
-                     boolean remote,
-                     HQSpecificContext parent) {
+    public JMSContext(javax.jms.JMSContext jmsContext,
+                      Messaging broker,
+                      Mode mode,
+                      boolean remote,
+                      JMSSpecificContext parent) {
         this.jmsContext = jmsContext;
         this.broker = broker;
         this.mode = mode;
@@ -56,13 +55,13 @@ public class HQContext implements HQSpecificContext {
         int jmsMode = 0;
         switch (mode) {
             case AUTO_ACK:
-                jmsMode = JMSContext.AUTO_ACKNOWLEDGE;
+                jmsMode = javax.jms.JMSContext.AUTO_ACKNOWLEDGE;
                 break;
             case CLIENT_ACK:
-                jmsMode = JMSContext.CLIENT_ACKNOWLEDGE;
+                jmsMode = javax.jms.JMSContext.CLIENT_ACKNOWLEDGE;
                 break;
             case TRANSACTED:
-                jmsMode = JMSContext.SESSION_TRANSACTED;
+                jmsMode = javax.jms.JMSContext.SESSION_TRANSACTED;
                 break;
         }
 
@@ -100,7 +99,7 @@ public class HQContext implements HQSpecificContext {
 
     @Override
     public boolean enlist() throws Exception {
-        if (HQXAContext.isTransactionActive()) {
+        if (JMSXAContext.isTransactionActive()) {
             log.warn("This non-XA context cannot participate in the active transaction; hijinks may ensue");
         }
         return false;
@@ -128,7 +127,7 @@ public class HQContext implements HQSpecificContext {
     }
 
     @Override
-    public JMSContext jmsContext() {
+    public javax.jms.JMSContext jmsContext() {
         return this.jmsContext;
     }
 
@@ -148,56 +147,56 @@ public class HQContext implements HQSpecificContext {
     }
 
     @Override
-    public HQSpecificContext asNonCloseable() {
+    public JMSSpecificContext asNonCloseable() {
         return this.new NonClosing();
     }
 
     @Override
-    public HQSpecificContext createChildContext(Mode mode) {
-        JMSContext subContext = this.jmsContext.createContext(modeToJMSMode(mode));
+    public JMSSpecificContext createChildContext(Mode mode) {
+        javax.jms.JMSContext subContext = this.jmsContext.createContext(modeToJMSMode(mode));
 
-        return new HQContext(subContext, this.broker, this.mode, this.remote, this);
+        return new JMSContext(subContext, this.broker, this.mode, this.remote, this);
     }
 
-    class NonClosing implements HQSpecificContext {
+    class NonClosing implements JMSSpecificContext {
         @Override
         public String id() {
-            return HQContext.this.id();
+            return JMSContext.this.id();
         }
 
         @Override
         public Mode mode() {
-            return HQContext.this.mode();
+            return JMSContext.this.mode();
         }
 
         @Override
         public void commit() {
-            HQContext.this.commit();
+            JMSContext.this.commit();
         }
 
         @Override
         public void rollback() {
-            HQContext.this.rollback();
+            JMSContext.this.rollback();
         }
 
         @Override
         public void acknowledge() {
-            HQContext.this.acknowledge();
+            JMSContext.this.acknowledge();
         }
 
         @Override
         public boolean enlist() throws Exception {
-            return HQContext.this.enlist();
+            return JMSContext.this.enlist();
         }
 
         @Override
         public void addCloseable(AutoCloseable closeable) {
-            HQContext.this.addCloseable(closeable);
+            JMSContext.this.addCloseable(closeable);
         }
 
         @Override
         public boolean isRemote() {
-            return HQContext.this.isRemote();
+            return JMSContext.this.isRemote();
         }
 
         @Override
@@ -205,42 +204,42 @@ public class HQContext implements HQSpecificContext {
             // Nope
         }
 
-        public JMSContext jmsContext() {
-            return HQContext.this.jmsContext();
+        public javax.jms.JMSContext jmsContext() {
+            return JMSContext.this.jmsContext();
         }
 
         @Override
         public Messaging broker() {
-            return HQContext.this.broker();
+            return JMSContext.this.broker();
         }
 
         @Override
         public boolean isXAEnabled() {
-            return HQContext.this.isXAEnabled();
+            return JMSContext.this.isXAEnabled();
         }
 
         @Override
         public boolean isChild() {
-            return HQContext.this.isChild();
+            return JMSContext.this.isChild();
         }
 
         @Override
-        public HQSpecificContext asNonCloseable() {
+        public JMSSpecificContext asNonCloseable() {
             return this;
         }
 
         @Override
-        public HQSpecificContext createChildContext(Mode mode) {
-            return HQContext.this.createChildContext(mode);
+        public JMSSpecificContext createChildContext(Mode mode) {
+            return JMSContext.this.createChildContext(mode);
         }
     }
 
     private final String id;
     private final Mode mode;
     private final boolean remote;
-    private final JMSContext jmsContext;
-    private final HQSpecificContext parentContext;
+    private final javax.jms.JMSContext jmsContext;
+    private final JMSSpecificContext parentContext;
     private final Messaging broker;
     private final List<AutoCloseable> closeables = new ArrayList<>();
-    private final static Logger log = Logger.getLogger(HQContext.class);
+    private final static Logger log = Logger.getLogger(JMSContext.class);
 }

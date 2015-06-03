@@ -18,6 +18,8 @@ package org.projectodd.wunderboss.web.async.websocket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Set;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -32,6 +34,7 @@ import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.BufferedBinaryMessage;
 import io.undertow.websockets.core.CloseMessage;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
+import org.projectodd.wunderboss.web.async.Channel;
 import org.xnio.Buffers;
 import org.xnio.Pooled;
 
@@ -101,6 +104,27 @@ public class UndertowWebsocket {
 
     }
 
+    public static WebsocketChannel createWebsocketChannel(final Channel.OnOpen onOpen,
+                                                          final Channel.OnError onError,
+                                                          final Channel.OnClose onClose,
+                                                          final WebsocketChannel.OnMessage onMessage) {
+        Channel.OnClose removeOnClose = new Channel.OnClose() {
+            @Override
+            public void handle(final Channel channel, final Object code, final String reason) {
+                openChannels.remove(channel);
+                if (onClose != null) {
+                    onClose.handle(channel, code, reason);
+                }
+            }
+        };
+
+        WebsocketChannel chan = new UndertowWebsocketChannel(onOpen, onError, removeOnClose, onMessage);
+
+        openChannels.add(chan);
+
+        return chan;
+    }
+
     // Lifted from Undertow's FrameHandler.java
     protected static byte[] toArray(ByteBuffer... payload) {
         if (payload.length == 1) {
@@ -116,4 +140,6 @@ public class UndertowWebsocket {
         }
         return data;
     }
+
+    private final static Set<Channel> openChannels = new HashSet<>();
 }

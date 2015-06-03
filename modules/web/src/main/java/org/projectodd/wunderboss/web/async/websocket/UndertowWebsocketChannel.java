@@ -22,6 +22,7 @@ import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
+import org.projectodd.wunderboss.web.async.Channel;
 import org.projectodd.wunderboss.web.async.Util;
 
 import java.io.IOException;

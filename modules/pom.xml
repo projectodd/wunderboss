@@ -18,6 +18,7 @@
   <modules>
     <module>core</module>
     <module>messaging</module>
+    <module>messaging-hornetq</module>
     <module>scheduling</module>
     <module>caching</module>
     <module>web</module>

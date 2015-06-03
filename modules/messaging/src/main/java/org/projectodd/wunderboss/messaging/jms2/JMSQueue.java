@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
@@ -33,9 +33,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class HQQueue extends HQDestination implements Queue {
+public class JMSQueue extends JMSDestination implements Queue {
 
-    public HQQueue(String name, Destination destination, HQMessaging broker) {
+    public JMSQueue(String name, Destination destination, JMSMessaging broker) {
         super(name, destination, broker);
     }
 
@@ -44,7 +44,7 @@ public class HQQueue extends HQDestination implements Queue {
                             final Codecs codecs,
                             Map<ListenOption, Object> options) throws Exception {
         final Options<ListenOption> opts = new Options<>(options);
-        String selector = HQMessage.SYNC_PROPERTY + " = TRUE";
+        String selector = JMSMessage.SYNC_PROPERTY + " = TRUE";
         if (opts.has(ListenOption.SELECTOR)) {
             selector += " AND " + opts.getString(ListenOption.SELECTOR);
         }
@@ -73,13 +73,13 @@ public class HQQueue extends HQDestination implements Queue {
                             Map<MessageOpOption, Object> options) throws Exception {
         final Options<MessageOpOption> opts = new Options<>(options);
         final String id = UUID.randomUUID().toString();
-        final HQSpecificContext context = (HQSpecificContext)opts.get(MessageOpOption.CONTEXT);
-        final String nodeId = context != null ? context.id() : HQMessaging.BROKER_ID;
-        final HQResponse response = new HQResponse();
+        final JMSSpecificContext context = (JMSSpecificContext)opts.get(MessageOpOption.CONTEXT);
+        final String nodeId = context != null ? context.id() : JMSMessaging.BROKER_ID;
+        final JMSResponse response = new JMSResponse();
         Options<ListenOption> routerOpts = new Options<>();
         routerOpts.put(ListenOption.SELECTOR,
-                       HQMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
-                               HQMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
+                       JMSMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
+                               JMSMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
         if (context != null) {
             routerOpts.put(ListenOption.CONTEXT, context);
         }
@@ -88,9 +88,9 @@ public class HQQueue extends HQDestination implements Queue {
 
         publish(content, codec, options,
                 new HashMap<String, Object>() {{
-                    put(HQMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
-                    put(HQMessage.SYNC_PROPERTY, true);
-                    put(HQMessage.REQUEST_ID_PROPERTY, id);
+                    put(JMSMessage.REQUEST_NODE_ID_PROPERTY, nodeId);
+                    put(JMSMessage.SYNC_PROPERTY, true);
+                    put(JMSMessage.REQUEST_ID_PROPERTY, id);
                 }});
 
         return response;

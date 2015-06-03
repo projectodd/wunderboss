@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.hornetq;
+package org.projectodd.wunderboss.messaging.jms2;
 
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Messaging;
 
-import javax.jms.JMSContext;
 import javax.jms.XAJMSContext;
 import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import java.lang.reflect.Method;
 
-public class HQXAContext extends HQContext implements Synchronization {
-    public HQXAContext(JMSContext jmsContext,
-                       Messaging broker,
-                       Mode mode,
-                       boolean remote) {
+public class JMSXAContext extends JMSContext implements Synchronization {
+    public JMSXAContext(javax.jms.JMSContext jmsContext,
+                        Messaging broker,
+                        Mode mode,
+                        boolean remote) {
         super(jmsContext, broker, mode, remote);
     }
 
@@ -88,7 +87,7 @@ public class HQXAContext extends HQContext implements Synchronization {
     }
 
     @Override
-    public HQSpecificContext createChildContext(Mode mode) {
+    public JMSSpecificContext createChildContext(Mode mode) {
         throw new IllegalStateException("You can't create a child context from an XA context.");
     }
 

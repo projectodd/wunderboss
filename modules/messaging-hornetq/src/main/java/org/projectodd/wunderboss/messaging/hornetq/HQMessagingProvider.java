@@ -16,23 +16,14 @@
 
 package org.projectodd.wunderboss.messaging.hornetq;
 
-import org.projectodd.wunderboss.messaging.Context;
+import org.projectodd.wunderboss.ComponentProvider;
+import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.messaging.Messaging;
 
-import javax.jms.JMSContext;
-
-public interface HQSpecificContext extends Context {
-    String id();
-
-    JMSContext jmsContext();
-
-    Messaging broker();
-
-    boolean isXAEnabled();
-
-    boolean isChild();
-
-    HQSpecificContext asNonCloseable();
-
-    HQSpecificContext createChildContext(Mode mode);
+public class HQMessagingProvider implements ComponentProvider<Messaging> {
+    @Override
+    public Messaging create(String name, Options opts) {
+        return new HQMessaging(name, opts);
+    }
 }
+

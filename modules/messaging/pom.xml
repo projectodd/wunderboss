@@ -15,10 +15,6 @@
 
   <packaging>jar</packaging>
 
-  <properties>
-    <version.hornetq>2.4.5.Final</version.hornetq>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
@@ -27,15 +23,15 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hornetq</groupId>
-      <artifactId>hornetq-server</artifactId>
-      <version>${version.hornetq}</version>
+      <groupId>org.jboss.spec.javax.jms</groupId>
+      <artifactId>jboss-jms-api_2.0_spec</artifactId>
+      <version>1.0.0.Final</version>
     </dependency>
 
     <dependency>
-      <groupId>org.hornetq</groupId>
-      <artifactId>hornetq-jms-server</artifactId>
-      <version>${version.hornetq}</version>
+      <groupId>org.jboss.spec.javax.transaction</groupId>
+      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
+      <version>1.0.0.Final</version>
     </dependency>
 
   </dependencies>
