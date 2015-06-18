@@ -30,6 +30,7 @@ import io.undertow.websockets.core.CloseMessage;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.xnio.Buffers;
+import org.xnio.ChannelListener;
 import org.xnio.Pooled;
 
 import java.io.IOException;
@@ -46,6 +47,12 @@ public class UndertowWebsocket {
                 final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
                 if (checker.shouldConnect(exchange, endpoint)) {
                     endpoint.onOpen(channel, exchange);
+                    channel.addCloseTask(new ChannelListener<WebSocketChannel>() {
+                        @Override
+                        public void handleEvent(WebSocketChannel channel) {
+                            endpoint.onClose(channel, new CloseMessage(CloseMessage.GOING_AWAY, null));
+                        }
+                    });
                     channel.getReceiveSetter().set(new AbstractReceiveListener() {
                         protected void onError (WebSocketChannel channel, Throwable error) {
                             endpoint.onError(channel, error);
