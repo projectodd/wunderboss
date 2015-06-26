@@ -28,6 +28,10 @@ public class Option {
 
     public Option() {}
 
+    public String toString() {
+        return "[" + this.getClass().getName() + ": " + name + ", default = " + defaultValue + "]";
+    }
+    
     public static <T extends Option> T opt(String name, Class T) {
         return opt(name, null, T);
     }
