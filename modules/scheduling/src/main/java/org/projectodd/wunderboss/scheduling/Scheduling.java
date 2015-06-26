@@ -28,13 +28,13 @@ public interface Scheduling extends Component {
     }
 
     class ScheduleOption extends Option {
-        public static final ScheduleOption CRON      = opt("cron", ScheduleOption.class);
-        public static final ScheduleOption AT        = opt("at", ScheduleOption.class);
-        public static final ScheduleOption EVERY     = opt("every", ScheduleOption.class);
-        public static final ScheduleOption IN        = opt("in", ScheduleOption.class);
-        public static final ScheduleOption LIMIT     = opt("limit", ScheduleOption.class);
-        public static final ScheduleOption UNTIL     = opt("until", ScheduleOption.class);
-        public static final ScheduleOption SINGLETON = opt("singleton", true, ScheduleOption.class);
+        public static final ScheduleOption CRON                  = opt("cron", ScheduleOption.class);
+        public static final ScheduleOption AT                    = opt("at", ScheduleOption.class);
+        public static final ScheduleOption EVERY                 = opt("every", ScheduleOption.class);
+        public static final ScheduleOption IN                    = opt("in", ScheduleOption.class);
+        public static final ScheduleOption LIMIT                 = opt("limit", ScheduleOption.class);
+        public static final ScheduleOption UNTIL                 = opt("until", ScheduleOption.class);
+        public static final ScheduleOption SINGLETON             = opt("singleton", true, ScheduleOption.class);
         public static final ScheduleOption ALLOW_CONCURRENT_EXEC = opt("allow_concurrent_exec", true, ScheduleOption.class);
     }
 
