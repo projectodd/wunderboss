@@ -16,6 +16,7 @@
 
 package org.projectodd.wunderboss.scheduling;
 
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -28,5 +29,10 @@ public class RunnableJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         Runnable runFunction = (Runnable) context.getMergedJobDataMap().get(RUN_FUNCTION_KEY);
         runFunction.run();
+    }
+    
+    @DisallowConcurrentExecution
+    public static class NotConcurrentlyExecuting extends RunnableJob {
+    	// Tagging
     }
 }

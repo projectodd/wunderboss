@@ -119,9 +119,15 @@ public class QuartzScheduling implements Scheduling {
 
         // TODO: Quartz says only serializable things should be in here
         jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
-        JobDetail job = JobBuilder.newJob(RunnableJob.class)
-                .usingJobData(jobDataMap)
-                .build();
+        
+        JobBuilder jobBuilder;
+        if (options.getBoolean(ALLOW_CONCURRENT_EXEC)) {
+            jobBuilder = JobBuilder.newJob(RunnableJob.class);
+        } else {
+            jobBuilder = JobBuilder.newJob(RunnableJob.NotConcurrentlyExecuting.class);
+        }
+		JobDetail job = jobBuilder.usingJobData(jobDataMap).build();
+        
 
         this.scheduler.scheduleJob(job, initTrigger(name, options));
 
