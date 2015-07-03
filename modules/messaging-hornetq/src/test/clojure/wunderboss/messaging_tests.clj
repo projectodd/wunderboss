@@ -31,6 +31,9 @@
 (def default (doto (WunderBoss/findOrCreateComponent Messaging) (.start)))
 
 (defn create-opts-fn [class]
+  ;; clojure 1.7.0 no longer initializes classes on import, so we have
+  ;; to force init here (see CLJ-1315)
+  (Class/forName (.getName class))
   (let [avail-options (->> class
                         Option/optsFor
                         (map #(vector (keyword (.name %)) %))

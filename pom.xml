@@ -46,7 +46,7 @@
     <version.logback>1.1.2</version.logback>
     <version.jboss-logging>3.1.4.GA</version.jboss-logging>
     <version.junit>4.11</version.junit>
-    <version.clojure>1.6.0</version.clojure>
+    <version.clojure>1.7.0</version.clojure>
     <version.lein>2.4.3</version.lein>
   </properties>
 
