@@ -23,7 +23,7 @@
     <module>caching</module>
     <module>web</module>
     <module>transactions</module>
-    <module>wildfly</module>
+    <module>as-support</module>
 
     <module>ruby</module>
     <module>clojure</module>
