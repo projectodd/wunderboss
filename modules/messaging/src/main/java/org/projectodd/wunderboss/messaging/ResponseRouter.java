@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
-import org.projectodd.wunderboss.messaging.Context;
-import org.projectodd.wunderboss.messaging.Destination;
-import org.projectodd.wunderboss.messaging.Listener;
-import org.projectodd.wunderboss.messaging.Message;
-import org.projectodd.wunderboss.messaging.MessageHandler;
-import org.projectodd.wunderboss.messaging.Reply;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +30,8 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
 
     @Override
     public Reply onMessage(Message msg, Context ignored) throws Exception {
-        String id = ((JMSMessage)msg).requestID();
-        JMSResponse response = this.responses.remove(id);
+        String id = msg.requestID();
+        Response response = this.responses.remove(id);
         if (response == null) {
             throw new IllegalStateException("No responder for id " + id);
         }
@@ -47,15 +41,15 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
 
-    public void registerResponse(String id, JMSResponse response) {
+    public void registerResponse(String id, Response response) {
         this.responses.put(id, response);
     }
 
 
-    public synchronized static ResponseRouter routerFor(JMSQueue queue, Codecs codecs,
+    public synchronized static ResponseRouter routerFor(Queue queue, Codecs codecs,
                                                         Options<Destination.ListenOption> options) {
         String id = queue.name();
-        JMSSpecificContext givenContext = (JMSSpecificContext)options.get(Destination.ListenOption.CONTEXT);
+        Context givenContext = (Context)options.get(Destination.ListenOption.CONTEXT);
         if (givenContext != null) {
             id += ":" + givenContext.id();
         }
@@ -70,7 +64,7 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
             if (givenContext != null) {
                 givenContext.addCloseable(router);
             }
-            queue.broker().addCloseableForDestination(queue, router);
+            queue.addCloseable(router);
             routers.put(router.id(), router);
         }
 
@@ -95,7 +89,7 @@ public class ResponseRouter implements AutoCloseable, MessageHandler {
     }
 
     private final static Map<String, ResponseRouter> routers = new HashMap<>();
-    private final Map<String, JMSResponse> responses = new HashMap<>();
+    private final Map<String, Response> responses = new HashMap<>();
     private final String id;
     private Listener enclosingListener;
 

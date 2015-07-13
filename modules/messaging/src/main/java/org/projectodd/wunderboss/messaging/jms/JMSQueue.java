@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
+import org.projectodd.wunderboss.messaging.ConcreteResponse;
 import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
@@ -27,6 +28,7 @@ import org.projectodd.wunderboss.messaging.Queue;
 import org.projectodd.wunderboss.messaging.Reply;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 import org.projectodd.wunderboss.messaging.Response;
+import org.projectodd.wunderboss.messaging.ResponseRouter;
 
 import javax.jms.Destination;
 import java.util.HashMap;
@@ -35,7 +37,7 @@ import java.util.UUID;
 
 public class JMSQueue extends JMSDestination implements Queue {
 
-    public JMSQueue(String name, Destination destination, JMSMessaging broker) {
+    public JMSQueue(String name, Destination destination, JMSMessagingSkeleton broker) {
         super(name, destination, broker);
     }
 
@@ -74,8 +76,8 @@ public class JMSQueue extends JMSDestination implements Queue {
         final Options<MessageOpOption> opts = new Options<>(options);
         final String id = UUID.randomUUID().toString();
         final JMSSpecificContext context = (JMSSpecificContext)opts.get(MessageOpOption.CONTEXT);
-        final String nodeId = context != null ? context.id() : JMSMessaging.BROKER_ID;
-        final JMSResponse response = new JMSResponse();
+        final String nodeId = context != null ? context.id() : JMSMessagingSkeleton.BROKER_ID;
+        final ConcreteResponse response = new ConcreteResponse();
         Options<ListenOption> routerOpts = new Options<>();
         routerOpts.put(ListenOption.SELECTOR,
                        JMSMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
@@ -96,30 +98,9 @@ public class JMSQueue extends JMSDestination implements Queue {
         return response;
     }
 
-    public static String jmsName(String name) {
-        return "jms.queue." + name;
-    }
-
-    public static String fullName(String name) {
-        if (isJndiName(name)) {
-            return name;
-        } else {
-            return jmsName(name);
-        }
-    }
-
     @Override
-    public String jmsName() {
-        return jmsName(name());
+    public JMSDestination.Type type() {
+        return JMSDestination.Type.QUEUE;
     }
 
-    @Override
-    public String fullName() {
-        return fullName(name());
-    }
-
-    @Override
-    public int defaultConcurrency() {
-        return Runtime.getRuntime().availableProcessors();
-    }
 }

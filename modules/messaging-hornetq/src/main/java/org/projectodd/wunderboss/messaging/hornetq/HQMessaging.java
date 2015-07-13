@@ -23,10 +23,9 @@ import org.hornetq.jms.client.HornetQConnectionFactory;
 import org.hornetq.jms.server.JMSServerManager;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.messaging.jms2.JMSDestination;
-import org.projectodd.wunderboss.messaging.jms2.JMSMessaging;
-import org.projectodd.wunderboss.messaging.jms2.JMSQueue;
-import org.projectodd.wunderboss.messaging.jms2.JMSTopic;
+import org.projectodd.wunderboss.messaging.jms.DestinationUtil;
+import org.projectodd.wunderboss.messaging.jms.JMSDestination;
+import org.projectodd.wunderboss.messaging.jms.JMSMessagingSkeleton;
 import org.slf4j.Logger;
 
 import javax.jms.ConnectionFactory;
@@ -34,8 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class HQMessaging extends JMSMessaging {
+public class HQMessaging extends JMSMessagingSkeleton {
 
     public static final String REMOTE_TYPE_WILDFLY = "hornetq_wildfly";
     public static final String REMOTE_TYPE_STANDALONE = "hornetq_standalone";
@@ -95,14 +95,17 @@ public class HQMessaging extends JMSMessaging {
 
     protected ConnectionFactory createRemoteConnectionFactory(final Options<CreateContextOption> options) {
         //TODO: possibly cache the remote cf's?
+        Map<String, Object> transportOpts = new HashMap<>();
+        transportOpts.put("host", options.getString(CreateContextOption.HOST));
+        transportOpts.put("port", options.getInt(CreateContextOption.PORT));
+        if (options.has(CreateContextOption.REMOTE_TYPE)) {
+            transportOpts.put("http-upgrade-enabled",
+                              REMOTE_TYPE_WILDFLY.equals(options.getString(CreateContextOption.REMOTE_TYPE)));
+        }
+
         TransportConfiguration config =
                 new TransportConfiguration("org.hornetq.core.remoting.impl.netty.NettyConnectorFactory",
-                        new HashMap() {{
-                            put("host", options.getString(CreateContextOption.HOST));
-                            put("port", options.getInt(CreateContextOption.PORT));
-                            put("http-upgrade-enabled",
-                                    REMOTE_TYPE_WILDFLY.equals(options.getString(CreateContextOption.REMOTE_TYPE)));
-                        }});
+                                           transportOpts);
         HornetQConnectionFactory hornetQcf = HornetQJMSClient
                 .createConnectionFactoryWithoutHA(options.has(CreateContextOption.XA) ?
                                                           JMSFactoryType.XA_CF :
@@ -120,7 +123,7 @@ public class HQMessaging extends JMSMessaging {
     protected javax.jms.Topic createTopic(String name) throws Exception {
         this.server
                 .serverManager()
-                .createTopic(false, name, JMSDestination.jndiName(name, "topic"));
+                .createTopic(false, name, DestinationUtil.jndiName(name, JMSDestination.Type.TOPIC));
 
         return lookupTopic(name);
     }
@@ -128,7 +131,7 @@ public class HQMessaging extends JMSMessaging {
     protected javax.jms.Queue createQueue(String name, String selector, boolean durable) throws Exception {
         this.server
                 .serverManager()
-                .createQueue(false, name, selector, durable, JMSDestination.jndiName(name, "queue"));
+                .createQueue(false, name, selector, durable, DestinationUtil.jndiName(name, JMSDestination.Type.QUEUE));
 
         return lookupQueue(name);
     }
@@ -140,8 +143,8 @@ public class HQMessaging extends JMSMessaging {
             jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnTopic(name)));
         }
         jndiNames.add(name);
-        jndiNames.add(JMSTopic.jmsName(name));
-        jndiNames.add(JMSDestination.jndiName(name, "topic"));
+        jndiNames.add(DestinationUtil.jmsName(name, JMSDestination.Type.TOPIC));
+        jndiNames.add(DestinationUtil.jndiName(name, JMSDestination.Type.TOPIC));
 
         return (javax.jms.Topic)lookupJNDI(jndiNames);
     }
@@ -153,8 +156,8 @@ public class HQMessaging extends JMSMessaging {
             jndiNames.addAll(Arrays.asList(this.server.serverManager().getJNDIOnQueue(name)));
         }
         jndiNames.add(name);
-        jndiNames.add(JMSQueue.jmsName(name));
-        jndiNames.add(JMSDestination.jndiName(name, "queue"));
+        jndiNames.add(DestinationUtil.jmsName(name, JMSDestination.Type.QUEUE));
+        jndiNames.add(DestinationUtil.jndiName(name, JMSDestination.Type.QUEUE));
 
         return (javax.jms.Queue)lookupJNDI(jndiNames);
     }

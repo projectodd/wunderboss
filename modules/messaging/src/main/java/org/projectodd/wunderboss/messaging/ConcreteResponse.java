@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
-
-import org.projectodd.wunderboss.messaging.Message;
-import org.projectodd.wunderboss.messaging.Response;
+package org.projectodd.wunderboss.messaging;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class JMSResponse implements Response {
+public class ConcreteResponse implements Response {
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-        throw new UnsupportedOperationException("HornetQ response futures can't be cancelled.");
+        throw new UnsupportedOperationException("Messaging response futures can't be cancelled.");
     }
 
     @Override
@@ -65,6 +62,7 @@ public class JMSResponse implements Response {
         return this.value;
     }
 
+    @Override
     public synchronized void deliver(Message value) {
         if (this.value != null) {
             throw new IllegalStateException("Delivery to a future that is already delivered.");

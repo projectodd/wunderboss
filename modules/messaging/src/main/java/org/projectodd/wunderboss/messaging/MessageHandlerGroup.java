@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
-import org.projectodd.wunderboss.messaging.Context;
 import org.projectodd.wunderboss.messaging.Destination.ListenOption;
-import org.projectodd.wunderboss.messaging.Listener;
-import org.projectodd.wunderboss.messaging.MessageHandler;
 
-import javax.jms.JMSConsumer;
-import javax.jms.JMSException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MessageHandlerGroup implements Listener {
+public abstract class MessageHandlerGroup implements Listener {
 
-    public MessageHandlerGroup(JMSSpecificContext context,
+    public MessageHandlerGroup(Context context,
                                MessageHandler handler,
                                Codecs codecs,
-                               JMSDestination destination,
+                               Destination destination,
                                Options<ListenOption> options) {
         this.context = context;
         this.handler = handler;
@@ -43,20 +38,18 @@ public class MessageHandlerGroup implements Listener {
         this.options = options;
     }
 
+    public abstract Listener createListener(MessageHandler handler, Codecs codecs,
+                                            Destination destination, Context context,
+                                            Options<ListenOption> options) throws Exception;
+
     public synchronized MessageHandlerGroup start() throws Exception {
         if (!this.started) {
             Integer option = this.options.getInt(ListenOption.CONCURRENCY);
             int concurrency = option != null ? option : this.destination.defaultConcurrency();
             log.info("Starting listener for '" + this.destination.name() + "' concurrency=" + concurrency);
             while(concurrency-- > 0) {
-                JMSSpecificContext subContext =
-                        this.context.createChildContext((Context.Mode)this.options.get(ListenOption.MODE));
-                listeners.add((new JMSListener(this.handler,
-                                               this.codecs,
-                                               this.destination,
-                                               subContext,
-                                               createConsumer(subContext)))
-                                      .start());
+                listeners.add(createListener(this.handler, this.codecs, this.destination,
+                                             this.context, this.options));
             }
 
             this.started = true;
@@ -70,26 +63,21 @@ public class MessageHandlerGroup implements Listener {
         if (this.started) {
             this.started = false;
             this.context.close();
-            for(JMSListener each : this.listeners) {
-                each.stop();
+            for(Listener each : this.listeners) {
+                each.close();
             }
             this.listeners.clear();
         }
     }
 
-    protected JMSConsumer createConsumer(JMSSpecificContext context) throws JMSException {
-        String selector = this.options.getString(ListenOption.SELECTOR);
-        javax.jms.Destination destination = this.destination.jmsDestination();
 
-        return context.jmsContext().createConsumer(destination, selector);
-    }
 
     private final MessageHandler handler;
     private final Codecs codecs;
-    private final JMSDestination destination;
+    private final Destination destination;
     private final Options<ListenOption> options;
-    private final JMSSpecificContext context;
-    private final List<JMSListener> listeners = new ArrayList<>();
+    private final Context context;
+    private final List<Listener> listeners = new ArrayList<>();
     private boolean started = false;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");

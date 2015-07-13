@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
@@ -23,7 +23,10 @@ import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Destination.MessageOpOption;
 import org.projectodd.wunderboss.messaging.ReplyableMessage;
 
+import javax.jms.BytesMessage;
 import javax.jms.JMSException;
+import javax.jms.ObjectMessage;
+import javax.jms.TextMessage;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,12 +35,12 @@ import java.util.Map;
 public class JMSMessage implements ReplyableMessage {
 
     public static final String CONTENT_TYPE_PROPERTY = "contentType";
-    protected static final String SYNC_PROPERTY = "synchronous";
-    protected static final String SYNC_RESPONSE_PROPERTY = "synchronous_response";
-    protected static final String REQUEST_ID_PROPERTY = "sync_request_id";
-    protected static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
+    public static final String SYNC_PROPERTY = "synchronous";
+    public static final String SYNC_RESPONSE_PROPERTY = "synchronous_response";
+    public static final String REQUEST_ID_PROPERTY = "sync_request_id";
+    public static final String REQUEST_NODE_ID_PROPERTY = "sync_request_node_id";
 
-    JMSMessage(javax.jms.Message message, Codec codec,
+    public JMSMessage(javax.jms.Message message, Codec codec,
                Destination destination) {
         this.baseMessage = message;
         this.codec = (codec == null ? None.INSTANCE : codec);
@@ -87,8 +90,21 @@ public class JMSMessage implements ReplyableMessage {
 
     @Override
     public Object body() {
+        Object body;
         try {
-            return this.codec.decode(this.baseMessage.getBody(this.codec.encodesTo()));
+            if (this.baseMessage instanceof TextMessage) {
+                body = ((TextMessage)this.baseMessage).getText();
+            } else if (this.baseMessage instanceof ObjectMessage) {
+                body = ((ObjectMessage)this.baseMessage).getObject();
+            } else if (this.baseMessage instanceof BytesMessage) {
+                body = new byte[(int)((BytesMessage) this.baseMessage).getBodyLength()];
+                ((BytesMessage)this.baseMessage).readBytes((byte[]) body);
+            } else {
+                throw new IllegalArgumentException("Don't know how to deal with message of type "
+                                                           + this.baseMessage.getClass());
+            }
+
+            return this.codec.decode(body);
         } catch (JMSException e) {
             e.printStackTrace();
         }
@@ -109,7 +125,8 @@ public class JMSMessage implements ReplyableMessage {
         this.destination.publish(content, codec, replyOptions(options));
     }
 
-    protected String requestID() {
+    @Override
+    public String requestID() {
         try {
 
             return this.baseMessage.getStringProperty(REQUEST_ID_PROPERTY);
@@ -120,7 +137,8 @@ public class JMSMessage implements ReplyableMessage {
         }
     }
 
-    protected String nodeID() {
+    @Override
+    public String requestNodeID() {
         try {
 
             return this.baseMessage.getStringProperty(REQUEST_NODE_ID_PROPERTY);
@@ -140,7 +158,7 @@ public class JMSMessage implements ReplyableMessage {
         }
         newProperties.put(SYNC_RESPONSE_PROPERTY, true);
         newProperties.put(REQUEST_ID_PROPERTY, requestID());
-        newProperties.put(REQUEST_NODE_ID_PROPERTY, nodeID());
+        newProperties.put(REQUEST_NODE_ID_PROPERTY, requestNodeID());
 
         opts.put(Destination.PublishOption.PROPERTIES, newProperties);
 

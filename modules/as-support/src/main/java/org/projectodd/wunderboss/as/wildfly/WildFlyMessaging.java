@@ -20,24 +20,27 @@ import org.jboss.as.messaging.MessagingServices;
 import org.jboss.as.messaging.jms.JMSQueueService;
 import org.jboss.as.messaging.jms.JMSServices;
 import org.jboss.as.messaging.jms.JMSTopicService;
+import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.Service;
 import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.as.MSCService;
-import org.projectodd.wunderboss.messaging.jms2.JMSDestination;
 import org.projectodd.wunderboss.messaging.hornetq.HQMessaging;
+import org.projectodd.wunderboss.messaging.jms.DestinationUtil;
+import org.projectodd.wunderboss.messaging.jms.JMSDestination;
 import org.slf4j.Logger;
 
 import javax.jms.Queue;
 import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.NamingException;
-
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class WildFlyMessaging extends HQMessaging {
 
@@ -65,7 +68,8 @@ public class WildFlyMessaging extends HQMessaging {
         Queue queue = (Queue) waitForValueAvailabilityChange(
                                 installService(JMSQueueService.class, name, this.mscService.serviceTarget(),
                                                hqServiceName(),
-                                               selector, durable, new String[]{JMSDestination.jndiName(name, "queue")}),
+                                               selector, durable,
+                                               new String[]{DestinationUtil.jndiName(name, JMSDestination.Type.QUEUE)}),
                                 false);
         if (queue == null) {
             throwTimeout("creation of queue " + name);
@@ -79,7 +83,7 @@ public class WildFlyMessaging extends HQMessaging {
         Topic topic = (Topic) waitForValueAvailabilityChange(
                                 installService(JMSTopicService.class, name, hqServiceName(),
                                                this.mscService.serviceTarget(),
-                                               new String[]{JMSDestination.jndiName(name, "topic")}),
+                                               new String[]{DestinationUtil.jndiName(name, JMSDestination.Type.TOPIC)}),
                                 false);
         if (topic == null) {
             throwTimeout("creation of topic " + name);
@@ -190,6 +194,6 @@ public class WildFlyMessaging extends HQMessaging {
     private final MSCService mscService;
     private final Context context;
 
-    private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.wildfly");
+    private final static Logger log = WunderBoss.logger("org.projectodd.wunderboss.as");
     private final static String TIMEOUT_PROP = "wunderboss.messaging.destination-availability-timeout";
 }

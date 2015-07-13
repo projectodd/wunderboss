@@ -82,6 +82,12 @@
 (defn create-topic [name]
   (.findOrCreateTopic default name nil))
 
+(defmacro throws-with-cause [clazz & body]
+  `(try
+     ~@body
+     (catch Exception e#
+       (is (instance? ~clazz (.getCause e#))))))
+
 (deftest queue-creation-publish-receive-close
   (let [queue (create-queue "a-queue")]
 
@@ -97,16 +103,16 @@
 
     ;; a stopped queue should no longer be avaiable
     (.stop queue)
-    (is (thrown? javax.jms.InvalidDestinationRuntimeException
+    (is (thrown? javax.jms.InvalidDestinationException
           (.receive queue codecs (coerce-receive-options {:timeout 1}))))))
 
 (deftest publish-should-use-the-passed-context
   (let [c (.createContext default nil)
         q (create-queue "publish-c")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.publish q "boom" None/INSTANCE
-            (coerce-publish-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.publish q "boom" None/INSTANCE
+        (coerce-publish-options {:context c})))))
 
 (deftest publish-should-encode-with-the-given-codec-and-receive-should-find-the-right-one
   (let [q (create-queue)]
@@ -121,42 +127,42 @@
       (.request q "boom" None/INSTANCE codecs
         (coerce-publish-options {:context c}))
       (catch Exception e
-        (is (instance? javax.jms.IllegalStateRuntimeException (.getCause e)))))))
+        (is (instance? javax.jms.IllegalStateException (-> e .getCause .getCause)))))))
 
 (deftest receive-should-use-the-passed-context
   (let [c (.createContext default nil)
         q (create-queue "receive-context")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.receive q codecs (coerce-receive-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.receive q codecs (coerce-receive-options {:context c})))))
 
 (deftest listen-should-use-the-passed-context
   (let [c (.createContext default (coerce-context-options {:host "localhost"}))
         q (create-queue "listen-context")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.listen q (handler identity) codecs (coerce-listen-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.listen q (handler identity) codecs (coerce-listen-options {:context c})))))
 
 (deftest respond-should-use-the-passed-context
   (let [c (.createContext default (coerce-context-options {:host "localhost"}))
         q (create-queue "listen-context")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.respond q (handler identity) codecs (coerce-listen-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.respond q (handler identity) codecs (coerce-listen-options {:context c})))))
 
 (deftest subscribe-should-use-the-passed-context
   (let [c (.createContext default (coerce-context-options {:client_id "ham"}))
         t (create-topic "subscribe-context")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.subscribe t "ham" (handler identity) codecs (coerce-subscribe-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.subscribe t "ham" (handler identity) codecs (coerce-subscribe-options {:context c})))))
 
 (deftest unsubscribe-should-use-the-passed-context
   (let [c (.createContext default (coerce-context-options {:client_id "ham"}))
         t (create-topic "subscribe-context")]
     (.close c)
-    (is (thrown? javax.jms.IllegalStateRuntimeException
-          (.unsubscribe t "ham" (coerce-unsubscribe-options {:context c}))))))
+    (throws-with-cause javax.jms.IllegalStateException
+      (.unsubscribe t "ham" (coerce-unsubscribe-options {:context c})))))
 
 (deftest closing-a-listener-should-work
   (let [queue (create-queue "listen-queue")]

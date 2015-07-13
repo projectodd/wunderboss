@@ -16,7 +16,9 @@
 
 package org.projectodd.wunderboss.messaging;
 
-public interface Context extends AutoCloseable {
+public interface Context extends AutoCloseable, HasCloseables {
+
+    String id();
 
     public enum Mode { AUTO_ACK, CLIENT_ACK, TRANSACTED }
 
@@ -29,8 +31,6 @@ public interface Context extends AutoCloseable {
     void acknowledge();
 
     boolean enlist() throws Exception;
-
-    void addCloseable(AutoCloseable closeable);
 
     boolean isRemote();
 }

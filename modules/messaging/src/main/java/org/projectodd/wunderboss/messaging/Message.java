@@ -23,6 +23,10 @@ public interface Message {
 
     String contentType();
 
+    String requestID();
+
+    String requestNodeID();
+
     Map<String, Object> properties();
 
     Destination endpoint();

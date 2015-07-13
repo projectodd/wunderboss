@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Red Hat, Inc, and individual contributors.
+ * Copyright 2015 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,50 +14,61 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.MessageHandler;
+import org.projectodd.wunderboss.messaging.WithCloseables;
 
-import javax.jms.JMSConsumer;
 import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 
-public class JMSListener implements Listener, MessageListener {
-    public JMSListener(MessageHandler handler,
-                       Codecs codecs,
-                       Destination endpoint,
-                       JMSSpecificContext context,
-                       JMSConsumer consumer) {
-        this.handler = handler;
+public class JMSListener extends WithCloseables implements Listener, MessageListener {
+
+    protected final MessageConsumer consumer;
+
+    public JMSListener(MessageHandler handler, Codecs codecs, Destination endpoint, JMSSpecificContext context, MessageConsumer consumer) {
         this.codecs = codecs;
         this.endpoint = endpoint;
+        this.handler = handler;
         this.context = context;
         this.consumer = consumer;
+        addCloseable(consumer);
+        addCloseable(context);
+
     }
 
     public JMSListener start() {
-        if (!this.started) {
-            try {
-                consumer.setMessageListener(this);
-            } catch (Exception e) {
-                log.error("Failed to start handler: ", e);
+        start(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    consumer.setMessageListener(JMSListener.this);
+                } catch (Exception e) {
+                    log.error("Failed to start handler: ", e);
+                }
             }
-
-            this.started = true;
-        }
+        });
 
         return this;
+    }
+
+    public void start(Runnable r) {
+        if (!this.started) {
+            r.run();
+        }
+
+        this.started = true;
     }
 
     public void stop() {
         if (this.started) {
             try {
-                this.context.close();
-                this.consumer.close();
+                closeCloseables();
             } catch (Exception e) {
                 log.error("Failed to stop handler: ", e);
             }
@@ -90,12 +101,10 @@ public class JMSListener implements Listener, MessageListener {
 
     }
 
-    private final MessageHandler handler;
-    private final Codecs codecs;
-    private final Destination endpoint;
-    private final JMSSpecificContext context;
-    private final JMSConsumer consumer;
-    private boolean started = false;
-
-    private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");
+    protected static final Logger log = Logger.getLogger("org.projectodd.wunderboss.messaging");
+    protected final MessageHandler handler;
+    protected final Codecs codecs;
+    protected final Destination endpoint;
+    protected final JMSSpecificContext context;
+    protected boolean started = false;
 }

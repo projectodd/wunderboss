@@ -14,10 +14,30 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging;
+package org.projectodd.wunderboss.messaging.jms;
 
-import java.util.concurrent.Future;
+import org.projectodd.wunderboss.messaging.Context;
+import org.projectodd.wunderboss.messaging.Messaging;
 
-public interface Response extends Future<Message> {
-    void deliver(Message value);
+import javax.jms.Connection;
+import javax.jms.Session;
+
+public interface JMSSpecificContext extends Context {
+    String id();
+
+    Connection jmsConnection();
+
+    Session jmsSession();
+
+    Messaging broker();
+
+    boolean isXAEnabled();
+
+    boolean isChild();
+
+    JMSSpecificContext asNonCloseable();
+
+    JMSSpecificContext createChildContext(Mode mode);
+
+    void setLatestMessage(JMSMessage message);
 }

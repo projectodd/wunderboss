@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging;
 
-import org.projectodd.wunderboss.messaging.Context;
-import org.projectodd.wunderboss.messaging.Messaging;
+public interface HasCloseables {
+    void addCloseable(Object closeable);
 
-import javax.jms.JMSContext;
-
-public interface JMSSpecificContext extends Context {
-    String id();
-
-    JMSContext jmsContext();
-
-    Messaging broker();
-
-    boolean isXAEnabled();
-
-    boolean isChild();
-
-    JMSSpecificContext asNonCloseable();
-
-    JMSSpecificContext createChildContext(Mode mode);
+    void closeCloseables() throws Exception;
 }

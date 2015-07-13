@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codecs;
@@ -25,13 +25,13 @@ import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.messaging.Topic;
 
 import javax.jms.Destination;
-import javax.jms.JMSConsumer;
+import javax.jms.TopicSubscriber;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JMSTopic extends JMSDestination implements Topic {
 
-    public JMSTopic(String name, Destination destination, JMSMessaging broker) {
+    public JMSTopic(String name, Destination destination, JMSMessagingSkeleton broker) {
         super(name, destination, broker);
     }
 
@@ -40,18 +40,18 @@ public class JMSTopic extends JMSDestination implements Topic {
                               final Codecs codecs,
                               final Map<SubscribeOption, Object> options) throws Exception {
         Options<SubscribeOption> opts = new Options<>(options);
-        final JMSSpecificContext context = context(id, opts.get(SubscribeOption.CONTEXT));
-        final JMSConsumer consumer = context
-                .jmsContext()
-                .createDurableConsumer((javax.jms.Topic) jmsDestination(),
-                                       id,
-                                       opts.getString(SubscribeOption.SELECTOR), false);
+        final JMSSpecificContext context = (JMSSpecificContext)context(id, opts.get(SubscribeOption.CONTEXT));
+        final TopicSubscriber subscriber = context
+                .jmsSession()
+                .createDurableSubscriber((javax.jms.Topic) jmsDestination(),
+                                         id,
+                                         opts.getString(SubscribeOption.SELECTOR), false);
 
         final Listener listener = new JMSListener(handler,
                                                   codecs,
                                                   this,
                                                   context,
-                                                  consumer).start();
+                                                  subscriber).start();
 
         Context parent = (Context)opts.get(SubscribeOption.CONTEXT);
         if (parent != null) {
@@ -72,34 +72,14 @@ public class JMSTopic extends JMSDestination implements Topic {
     @Override
     public void unsubscribe(String id, Map<UnsubscribeOption, Object> options) throws Exception {
         final Options<UnsubscribeOption> opts = new Options<>(options);
-        JMSSpecificContext context = context(id, opts.get(UnsubscribeOption.CONTEXT));
-        try {
-            context.jmsContext().unsubscribe(id);
-        } finally {
-            context.close();
-        }
-    }
-
-    public static String jmsName(String name) {
-        return "jms.topic." + name;
-    }
-
-    public static String fullName(String name) {
-        if (isJndiName(name)) {
-            return name;
-        } else {
-            return jmsName(name);
+        try (JMSSpecificContext context = (JMSSpecificContext)context(id, opts.get(UnsubscribeOption.CONTEXT))) {
+            context.jmsSession().unsubscribe(id);
         }
     }
 
     @Override
-    public String jmsName() {
-        return jmsName(name());
-    }
-
-    @Override
-    public String fullName() {
-        return fullName(name());
+    public JMSDestination.Type type() {
+        return JMSDestination.Type.TOPIC;
     }
 
     @Override

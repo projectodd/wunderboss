@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.messaging.Messaging;
 
-import javax.jms.XAJMSContext;
+import javax.jms.Connection;
+import javax.jms.JMSException;
+import javax.jms.Session;
+import javax.jms.XAConnection;
+import javax.jms.XASession;
 import javax.transaction.Synchronization;
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
-import java.lang.reflect.Method;
 
 public class JMSXAContext extends JMSContext implements Synchronization {
-    public JMSXAContext(javax.jms.JMSContext jmsContext,
+    public JMSXAContext(Connection jmsConnection,
                         Messaging broker,
                         Mode mode,
                         boolean remote) {
-        super(jmsContext, broker, mode, remote);
+        super(jmsConnection, broker, mode, remote, null);
     }
 
     @Override
@@ -41,7 +43,7 @@ public class JMSXAContext extends JMSContext implements Synchronization {
     @Override
     public void rollback() {
         try {
-            tm.setRollbackOnly();
+            TransactionUtil.tm.setRollbackOnly();
         } catch (Exception e) {
             throw new RuntimeException("Error rolling back session", e);
         }
@@ -49,12 +51,12 @@ public class JMSXAContext extends JMSContext implements Synchronization {
 
     @Override
     public boolean enlist() throws Exception {
-        if (tm.getTransaction() == null) {
-            return false;
+        if (TransactionUtil.tm.getTransaction() == null) {
+            return super.isXAEnabled();
         } else if (!WunderBoss.inContainer() ||
                     isRemote()) {
-            XAResource resource = ((XAJMSContext)jmsContext()).getXAResource();
-            return tm.getTransaction().enlistResource(resource);
+            XAResource resource = ((XASession)jmsSession()).getXAResource();
+            return TransactionUtil.tm.getTransaction().enlistResource(resource);
         } else {
             return true;
         }
@@ -64,8 +66,8 @@ public class JMSXAContext extends JMSContext implements Synchronization {
     public void close() throws Exception {
         if (!closed) {
             closed = true;
-            if (isTransactionActive()) {
-                tm.getTransaction().registerSynchronization(this);
+            if (TransactionUtil.isTransactionActive()) {
+                TransactionUtil.tm.getTransaction().registerSynchronization(this);
             } else {
                 super.close();
             }
@@ -96,25 +98,10 @@ public class JMSXAContext extends JMSContext implements Synchronization {
         return true;
     }
 
-    public static boolean isTransactionActive() {
-        try {
-            return tm != null && tm.getTransaction() != null;
-        } catch (Exception e) {
-            return false;
-        }
+    @Override
+    protected Session createJMSSession() throws JMSException {
+        return ((XAConnection)jmsConnection()).createXASession();
     }
 
-    private boolean closed = false;
-
-    public static final TransactionManager tm;
-    static {
-        TransactionManager found = null;
-        try {
-            Class clazz = Class.forName("org.projectodd.wunderboss.transactions.Transaction");
-            Method method = clazz.getDeclaredMethod("manager");
-            Object component = WunderBoss.findOrCreateComponent(clazz);
-            found = (TransactionManager) method.invoke(component);
-        } catch (Throwable ignored) {}
-        tm = found;
-    }
+    private boolean closed = super.isXAEnabled();
 }

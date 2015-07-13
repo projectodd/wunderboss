@@ -22,7 +22,7 @@ import org.projectodd.wunderboss.codecs.Codecs;
 
 import java.util.Map;
 
-public interface Destination {
+public interface Destination extends HasCloseables {
     String name();
 
     class ListenOption extends Option {
@@ -55,6 +55,8 @@ public interface Destination {
     }
 
     Message receive(Codecs codecs, Map<MessageOpOption, Object> options) throws Exception;
+
+    int defaultConcurrency();
 
     void stop() throws Exception;
 }

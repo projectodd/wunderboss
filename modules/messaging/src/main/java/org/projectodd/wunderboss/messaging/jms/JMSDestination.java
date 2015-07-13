@@ -14,52 +14,46 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.messaging.jms2;
+package org.projectodd.wunderboss.messaging.jms;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.codecs.Codec;
 import org.projectodd.wunderboss.codecs.Codecs;
 import org.projectodd.wunderboss.messaging.Context;
+import org.projectodd.wunderboss.messaging.Destination;
 import org.projectodd.wunderboss.messaging.Listener;
 import org.projectodd.wunderboss.messaging.Message;
 import org.projectodd.wunderboss.messaging.MessageHandler;
 import org.projectodd.wunderboss.messaging.Messaging;
+import org.projectodd.wunderboss.messaging.Reply;
+import org.projectodd.wunderboss.messaging.WithCloseables;
 
+import javax.jms.BytesMessage;
 import javax.jms.DeliveryMode;
-import javax.jms.Destination;
-import javax.jms.JMSConsumer;
 import javax.jms.JMSException;
-import javax.jms.JMSProducer;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class JMSDestination implements org.projectodd.wunderboss.messaging.Destination {
+public abstract class JMSDestination extends WithCloseables implements Destination {
 
-    public JMSDestination(String name, Destination destination, JMSMessaging broker) {
-        this.name = name;
-        this.jmsDestination = destination;
-        this.broker = broker;
+    protected static void fillInProperties(javax.jms.Message message, Map<String, Object> properties) throws JMSException {
+        for(Map.Entry<String, Object> each : properties.entrySet()) {
+            message.setObjectProperty(each.getKey(), each.getValue());
+        }
     }
 
     @Override
-    public String name() {
-        return this.name;
+    public int defaultConcurrency() {
+        return Runtime.getRuntime().availableProcessors();
     }
-
-    public Destination jmsDestination() {
-        return this.jmsDestination;
-    }
-
-    public abstract String fullName();
-
-    public abstract String jmsName();
-
-    public abstract int defaultConcurrency();
 
     @Override
-    public Listener listen(MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
+    public Listener listen(final MessageHandler handler, Codecs codecs, Map<ListenOption, Object> options) throws Exception {
         Options<ListenOption> opts = new Options<>(options);
         Context givenContext = (Context)opts.get(ListenOption.CONTEXT);
 
@@ -68,12 +62,22 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
             throw new IllegalArgumentException("Listening only accepts a remote context.");
         }
 
-        JMSSpecificContext context = context(givenContext);
-        Listener listener = new MessageHandlerGroup(context,
-                                                    handler,
-                                                    codecs,
-                                                    this,
-                                                    opts).start();
+        MessageHandler wrappedHandler = new MessageHandler() {
+            @Override
+            public Reply onMessage(Message msg, Context ctx) throws Exception {
+                ((JMSSpecificContext)ctx).setLatestMessage((JMSMessage)msg);
+
+                return handler.onMessage(msg, ctx);
+            }
+        };
+
+        final JMSSpecificContext context = context(givenContext);
+
+        Listener listener = new JMSMessageHandlerGroup(context,
+                                                       wrappedHandler,
+                                                       codecs,
+                                                       this,
+                                                       opts).start();
 
         if (givenContext != null) {
             givenContext.addCloseable(listener);
@@ -90,19 +94,13 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
         publish(content, codec, options, Collections.EMPTY_MAP);
     }
 
-    protected static void fillInProperties(JMSProducer producer, Map<String, Object> properties) throws JMSException {
-        for(Map.Entry<String, Object> each : properties.entrySet()) {
-            producer.setProperty(each.getKey(), each.getValue());
-        }
-    }
-
     protected JMSSpecificContext context(final Object context) throws Exception {
         Context newContext;
         JMSSpecificContext threadContext = JMSContext.currentContext.get();
 
         if (context != null) {
             newContext = ((JMSSpecificContext) context).asNonCloseable();
-        } else if (JMSXAContext.isTransactionActive()) {
+        } else if (TransactionUtil.isTransactionActive()) {
             newContext = this.broker.createContext(new HashMap() {{
                 put(Messaging.CreateContextOption.XA, true);
             }});
@@ -124,30 +122,35 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
         }
         Options<MessageOpOption> opts = new Options<>(options);
         JMSSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
-        javax.jms.JMSContext jmsContext = context.jmsContext();
+        Session session = context.jmsSession();
         javax.jms.Destination destination = jmsDestination();
+        MessageProducer producer = session.createProducer(destination);
 
         try {
-            JMSProducer producer = jmsContext.createProducer();
-            fillInProperties(producer, (Map<String, Object>) opts.get(PublishOption.PROPERTIES, Collections.emptyMap()));
-            fillInProperties(producer, additionalProperties);
-            producer
-                    .setProperty(JMSMessage.CONTENT_TYPE_PROPERTY, codec.contentType())
-                    .setDeliveryMode((opts.getBoolean(PublishOption.PERSISTENT) ?
-                            DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT))
-                    .setPriority(opts.getInt(PublishOption.PRIORITY))
-                    .setTimeToLive(opts.getLong(PublishOption.TTL, producer.getTimeToLive()));
             Object encoded = codec.encode(message);
             Class encodesTo = codec.encodesTo();
+            javax.jms.Message jmsMessage;
 
             if (encodesTo == String.class) {
-                producer.send(destination, (String)encoded);
+                jmsMessage = session.createTextMessage((String)encoded);
             } else if (encodesTo == byte[].class) {
-                producer.send(destination, (byte[])encoded);
+                jmsMessage = session.createBytesMessage();
+                ((BytesMessage)jmsMessage).writeBytes((byte[]) encoded);
             } else {
-                producer.send(destination, (Serializable)encoded);
+                jmsMessage = session.createObjectMessage((Serializable)encoded);
             }
+
+            fillInProperties(jmsMessage, (Map<String, Object>) opts.get(PublishOption.PROPERTIES, Collections.emptyMap()));
+            fillInProperties(jmsMessage, additionalProperties);
+            jmsMessage.setStringProperty(JMSMessage.CONTENT_TYPE_PROPERTY, codec.contentType());
+
+            producer.send(jmsMessage,
+                          opts.getBoolean(PublishOption.PERSISTENT) ?
+                                  DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT,
+                          opts.getInt(PublishOption.PRIORITY),
+                          opts.getLong(PublishOption.TTL, producer.getTimeToLive()));
         } finally {
+            producer.close();
             context.close();
         }
     }
@@ -157,11 +160,12 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
         Options<MessageOpOption> opts = new Options<>(options);
         int timeout = opts.getInt(ReceiveOption.TIMEOUT);
         JMSSpecificContext context = context(opts.get(MessageOpOption.CONTEXT));
-        javax.jms.JMSContext jmsContext = context.jmsContext();
+        Session jmsSession = context.jmsSession();
         javax.jms.Destination destination = jmsDestination();
         String selector = opts.getString(ReceiveOption.SELECTOR);
+        MessageConsumer consumer = jmsSession.createConsumer(destination, selector);
 
-        try (JMSConsumer consumer = jmsContext.createConsumer(destination, selector)) {
+        try {
             javax.jms.Message message;
             if (timeout == -1) {
                 message = consumer.receiveNoWait();
@@ -172,13 +176,55 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
             if (message != null) {
                 String contentType = JMSMessage.contentType(message);
                 Codec codec = codecs.forContentType(contentType);
-                return new JMSMessage(message, codec, this);
+
+                JMSMessage wrappedMessage = new JMSMessage(message, codec, this);
+                // so we can acknowledge from the context
+                context.setLatestMessage(wrappedMessage);
+
+                return wrappedMessage;
             } else {
+
                 return null;
             }
         } finally {
+            consumer.close();
             context.close();
         }
+    }
+
+    public enum Type {
+        QUEUE("queue"), TOPIC("topic");
+
+        public final String name;
+
+        Type(String name) {
+            this.name = name;
+        }
+    }
+
+    public JMSDestination(String name, javax.jms.Destination destination, JMSMessagingSkeleton broker) {
+        this.jmsDestination = destination;
+        this.name = name;
+        this.broker = broker;
+    }
+
+    @Override
+    public String name() {
+        return this.name;
+    }
+
+    public javax.jms.Destination jmsDestination() {
+        return this.jmsDestination;
+    }
+
+    public abstract Type type();
+
+    public String jmsName() {
+        return DestinationUtil.jmsName(name(), type());
+    }
+
+    public String fullName() {
+        return DestinationUtil.fullName(name(), type());
     }
 
     @Override
@@ -189,21 +235,12 @@ public abstract class JMSDestination implements org.projectodd.wunderboss.messag
         }
     }
 
-    protected JMSMessaging broker() {
+    protected JMSMessagingSkeleton broker() {
         return this.broker;
     }
 
-
-    public static String jndiName(String name, String type) {
-        return ("java:/jms/" + type + '/' + name).replace("//", "/_/");
-    }
-
-    public static boolean isJndiName(String name) {
-        return name.startsWith("java:");
-    }
-
-    private final String name;
-    private final Destination jmsDestination;
+    protected final String name;
+    protected final javax.jms.Destination jmsDestination;
+    protected final JMSMessagingSkeleton broker;
     private boolean stopped = false;
-    private final JMSMessaging broker;
 }
