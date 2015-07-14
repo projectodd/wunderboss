@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web.async;
+package org.projectodd.wunderboss.web.undertow.async;
 
 import io.undertow.server.HttpServerExchange;
+import org.projectodd.wunderboss.web.async.OutputStreamHttpChannel;
 
 import java.io.OutputStream;
 

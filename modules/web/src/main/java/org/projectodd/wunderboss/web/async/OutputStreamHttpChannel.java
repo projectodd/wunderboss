@@ -96,7 +96,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         } else if (message instanceof byte[]) {
             data = (byte[])message;
         } else {
-            throw Util.wrongMessageType(message.getClass());
+            throw WebsocketUtil.wrongMessageType(message.getClass());
         }
 
         enqueue(new PendingSend(data, shouldClose, onComplete));
@@ -173,7 +173,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
             ex = e;
         }
 
-        Util.notifyComplete(this, onComplete, ex);
+        WebsocketUtil.notifyComplete(this, onComplete, ex);
     }
 
     @Override

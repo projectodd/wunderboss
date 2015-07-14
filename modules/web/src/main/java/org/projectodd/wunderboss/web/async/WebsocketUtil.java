@@ -18,7 +18,7 @@ package org.projectodd.wunderboss.web.async;
 
 import javax.websocket.MessageHandler;
 
-public class Util {
+public class WebsocketUtil {
 
     // Overcomes the problem of Clojure's reify being incompatible with
     // generics and Undertow's dependence on ParameterizedType

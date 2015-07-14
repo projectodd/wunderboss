@@ -17,7 +17,8 @@
   (:import org.projectodd.wunderboss.WunderBoss
            org.projectodd.wunderboss.Options
            io.undertow.server.HttpHandler
-           [org.projectodd.wunderboss.web Web UndertowWeb UndertowWeb$Pathology]))
+           org.projectodd.wunderboss.web.Web
+           [org.projectodd.wunderboss.web.undertow UndertowWeb UndertowWeb$Pathology]))
 
 (def default (doto (WunderBoss/findOrCreateComponent Web) (.start)))
 

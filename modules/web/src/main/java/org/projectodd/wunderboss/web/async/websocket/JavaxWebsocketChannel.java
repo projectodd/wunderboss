@@ -16,7 +16,7 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
-import org.projectodd.wunderboss.web.async.Util;
+import org.projectodd.wunderboss.web.async.WebsocketUtil;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
@@ -115,7 +115,7 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
         } else if (message instanceof byte[]) {
             this.session.getAsyncRemote().sendBinary(ByteBuffer.wrap((byte[])message), handler);
         } else {
-            throw Util.wrongMessageType(message.getClass());
+            throw WebsocketUtil.wrongMessageType(message.getClass());
         }
 
 

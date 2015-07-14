@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web;
+package org.projectodd.wunderboss.web.undertow;
 
 import org.projectodd.wunderboss.ComponentProvider;
 import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.web.Web;
 
-public class WebProvider implements ComponentProvider<Web> {
+public class UndertowWebProvider implements ComponentProvider<Web> {
 
     @Override
     public Web create(String name, Options opts) {

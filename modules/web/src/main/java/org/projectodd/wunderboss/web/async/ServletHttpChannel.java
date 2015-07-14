@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.web.async;
 
-import io.undertow.util.Headers;
 import org.jboss.logging.Logger;
 import org.projectodd.wunderboss.WunderBoss;
 
@@ -25,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
 
 public class ServletHttpChannel extends OutputStreamHttpChannel {
 
@@ -52,8 +50,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
 
     @Override
     protected void setContentLength(int length) {
-        this.response.setIntHeader(Headers.CONTENT_LENGTH_STRING,
-                                   length);
+        this.response.setIntHeader("Content-Length", length);
     }
 
     @Override

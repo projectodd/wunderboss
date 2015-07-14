@@ -16,7 +16,7 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
-import org.projectodd.wunderboss.web.async.Util;
+import org.projectodd.wunderboss.web.async.WebsocketUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,7 +75,7 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     protected void notifyComplete(OnComplete callback, Throwable error) {
-        Util.notifyComplete(this, callback, error);
+        WebsocketUtil.notifyComplete(this, callback, error);
     }
 
     private final OnOpen onOpen;

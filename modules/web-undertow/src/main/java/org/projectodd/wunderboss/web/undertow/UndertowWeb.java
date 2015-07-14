@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web;
+package org.projectodd.wunderboss.web.undertow;
 
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -42,6 +42,7 @@ import io.undertow.util.Headers;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.web.Web;
 import org.slf4j.Logger;
 import org.xnio.OptionMap;
 import org.xnio.Xnio;
@@ -58,9 +59,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import static org.projectodd.wunderboss.web.Web.CreateOption.*;
-import static org.projectodd.wunderboss.web.Web.RegisterOption.*;
 
 public class UndertowWeb implements Web<HttpHandler> {
 
@@ -100,15 +98,15 @@ public class UndertowWeb implements Web<HttpHandler> {
     }
 
     private void configure(Options<CreateOption> options) {
-        autoStart = options.getBoolean(AUTO_START);
-        Undertow.Builder builder = (Undertow.Builder) options.get(CONFIGURATION);
+        autoStart = options.getBoolean(CreateOption.AUTO_START);
+        Undertow.Builder builder = (Undertow.Builder) options.get(CreateOption.CONFIGURATION);
         if (builder != null) {
             undertow = builder
                 .setHandler(Handlers.header(pathology.handler(), Headers.SERVER_STRING, "undertow"))
                 .build();
         } else {
-            int port = options.getInt(PORT);
-            String host = options.getString(HOST);
+            int port = options.getInt(CreateOption.PORT);
+            String host = options.getString(CreateOption.HOST);
             undertow = Undertow.builder()
                 .addHttpListener(port, host)
                 .setHandler(Handlers.header(pathology.handler(), Headers.SERVER_STRING, "undertow"))
@@ -123,16 +121,16 @@ public class UndertowWeb implements Web<HttpHandler> {
 
     protected boolean registerHandler(HttpHandler httpHandler, Map<RegisterOption, Object> opts, Runnable cleanup) {
         final Options<RegisterOption> options = new Options<>(opts);
-        final String context = options.getString(PATH);
+        final String context = options.getString(RegisterOption.PATH);
 
         httpHandler = wrapWithSessionHandler(httpHandler);
-        if (options.has(STATIC_DIR)) {
-            httpHandler = wrapWithStaticHandler(httpHandler, options.getString(STATIC_DIR));
+        if (options.has(RegisterOption.STATIC_DIR)) {
+            httpHandler = wrapWithStaticHandler(httpHandler, options.getString(RegisterOption.STATIC_DIR));
         }
-        if (options.getBoolean(DISPATCH)) {
+        if (options.getBoolean(RegisterOption.DISPATCH)) {
             httpHandler = wrapWithDispatcher(httpHandler);
         }
-        final boolean replacement = pathology.add(context, options.getList(VHOSTS), httpHandler);
+        final boolean replacement = pathology.add(context, options.getList(RegisterOption.VHOSTS), httpHandler);
         if (cleanup != null) {
             pathology.epilogue(httpHandler, cleanup);
         }
@@ -147,8 +145,8 @@ public class UndertowWeb implements Web<HttpHandler> {
     @Override
     public boolean registerServlet(Servlet servlet, Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
-        final String context = options.getString(PATH);
-        final String servletName = options.getString(SERVLET_NAME);
+        final String context = options.getString(RegisterOption.PATH);
+        final String servletName = options.getString(RegisterOption.SERVLET_NAME);
 
         Class servletClass = servlet.getClass();
         final ServletInfo servletInfo = Servlets.servlet(servletName != null ? servletName : servletClass.getSimpleName(),
@@ -208,7 +206,7 @@ public class UndertowWeb implements Web<HttpHandler> {
     @Override
     public boolean unregister(Map<RegisterOption, Object> opts) {
         final Options<RegisterOption> options = new Options<>(opts);
-        return pathology.remove(options.getString(PATH), options.getList(VHOSTS));
+        return pathology.remove(options.getString(RegisterOption.PATH), options.getList(RegisterOption.VHOSTS));
     }
 
     @Override

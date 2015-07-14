@@ -10,14 +10,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-web</artifactId>
-  <name>WunderBoss Web Module</name>
+  <artifactId>wunderboss-web-undertow</artifactId>
+  <name>WunderBoss Undertow Web Module</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.javax-websocket>1.1.0.Final</version.javax-websocket>
-    <version.javax-servlet>1.0.0.Final</version.javax-servlet>
+    <version.undertow>1.1.0.Final</version.undertow>
   </properties>
 
   <dependencies>
@@ -28,15 +27,27 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.spec.javax.websocket</groupId>
-      <artifactId>jboss-websocket-api_1.1_spec</artifactId>
-      <version>${version.javax-websocket}</version>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-web</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.spec.javax.servlet</groupId>
-      <artifactId>jboss-servlet-api_3.1_spec</artifactId>
-      <version>${version.javax-servlet}</version>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-core</artifactId>
+      <version>${version.undertow}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-servlet</artifactId>
+      <version>${version.undertow}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-websockets-jsr</artifactId>
+      <version>${version.undertow}</version>
     </dependency>
   </dependencies>
 

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.web;
+package org.projectodd.wunderboss.web.undertow;
 
 import org.junit.Test;
 import org.projectodd.wunderboss.WunderBoss;
+import org.projectodd.wunderboss.web.Web;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
