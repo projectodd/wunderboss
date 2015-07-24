@@ -16,6 +16,7 @@
 
 package org.projectodd.wunderboss.as;
 
+import org.jboss.as.messaging.MessagingServices;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
@@ -26,20 +27,13 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.as.wildfly.WildFlyCachingProvider;
-import org.projectodd.wunderboss.as.wildfly.WildFlyMessagingProvider;
 import org.projectodd.wunderboss.as.wildfly.WildFlyTransactionProvider;
 import org.projectodd.wunderboss.caching.Caching;
 import org.projectodd.wunderboss.messaging.Messaging;
 import org.projectodd.wunderboss.singleton.SingletonContext;
 import org.projectodd.wunderboss.transactions.Transaction;
 
-import javax.management.MBeanException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.OperationsException;
-import javax.management.ReflectionException;
 import javax.naming.Context;
-import java.lang.management.ManagementFactory;
 
 public class MSCService implements Service<MSCService> {
     public static final String KEY = "wunderboss-msc-service";
@@ -64,14 +58,13 @@ public class MSCService implements Service<MSCService> {
         // TODO: Get rid of these options and just make them statics here
         WunderBoss.putOption("deployment-name", this.deploymentName);
         WunderBoss.putOption("service-registry", this.serviceRegistry);
-        WunderBoss.putOption("wildfly-version", getWildFlyVersion());
         WunderBoss.putOption(KEY, this);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         try {
-            WunderBoss.registerComponentProvider(Messaging.class, new WildFlyMessagingProvider());
+            WunderBoss.registerComponentProvider(Messaging.class, new ASMessagingProvider());
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our messaging
         }
@@ -98,25 +91,8 @@ public class MSCService implements Service<MSCService> {
         return this;
     }
 
-    String getWildFlyVersion() {
-        //TODO: what about EAP?
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        String version = null;
-        try {
-            ObjectName name = new ObjectName("jboss.as:management-root=server");
-            // 9.x stores it under "productVersion"
-            version = (String)mbs.getAttribute(name, "productVersion");
-            if (version == null) {
-                // 8.x stores it under "releaseVersion"
-                version = (String)mbs.getAttribute(name, "releaseVersion");
-            }
-        } catch (OperationsException |
-                MBeanException |
-                ReflectionException ffs) {
-            ffs.printStackTrace();
-        }
-
-        return version;
+    public static ServiceName hqServiceName() {
+        return MessagingServices.getHornetQServiceName("default");
     }
 
     public ServiceTarget serviceTarget() {

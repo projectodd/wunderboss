@@ -98,9 +98,8 @@ public class HQMessaging extends JMSMessagingSkeleton {
         Map<String, Object> transportOpts = new HashMap<>();
         transportOpts.put("host", options.getString(CreateContextOption.HOST));
         transportOpts.put("port", options.getInt(CreateContextOption.PORT));
-        if (options.has(CreateContextOption.REMOTE_TYPE)) {
-            transportOpts.put("http-upgrade-enabled",
-                              REMOTE_TYPE_WILDFLY.equals(options.getString(CreateContextOption.REMOTE_TYPE)));
+        if (REMOTE_TYPE_WILDFLY.equals(options.getString(CreateContextOption.REMOTE_TYPE))) {
+            transportOpts.put("http-upgrade-enabled", true);
         }
 
         TransportConfiguration config =

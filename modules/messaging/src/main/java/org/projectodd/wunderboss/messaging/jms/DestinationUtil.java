@@ -47,4 +47,5 @@ public class DestinationUtil {
             throw new RuntimeException(e);
         }
     }
+
 }

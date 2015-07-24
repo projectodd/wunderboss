@@ -17,7 +17,6 @@
 package org.projectodd.wunderboss.web.async;
 
 import org.jboss.logging.Logger;
-import org.projectodd.wunderboss.WunderBoss;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
@@ -31,16 +30,18 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
                               final HttpServletResponse response,
                               final OnOpen onOpen,
                               final OnError onError,
-                              final OnClose onClose){
+                              final OnClose onClose,
+                              final boolean asyncSupported){
         super(onOpen, onError, onClose);
         this.response = response;
         this.asyncContext = request.startAsync();
         this.asyncContext.setTimeout(0);
+        this.asyncSupported = asyncSupported;
     }
 
     @Override
     public boolean asyncSendSupported() {
-        return isAsync();
+        return this.asyncSupported;
     }
     
     @Override
@@ -63,29 +64,6 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
         this.asyncContext.start(runnable);
     }
 
-    static boolean isAsync() {
-        if (asyncSupported == null) {
-            asyncSupported = false;
-            String version = WunderBoss.options().getString("wildfly-version", "");
-            String[] parts = version.split("\\.");
-            if (parts.length > 0) {
-                try {
-                    if (Integer.parseInt(parts[0]) >= 9) {
-                        asyncSupported = true;
-                    }
-                } catch (NumberFormatException _) {
-                }
-            }
-
-            if (!asyncSupported) {
-                log.warn("NOTE: HTTP stream sends are synchronous in WildFly " + version +
-                                 ". Use 9.0.0.Alpha1 or higher to have asynchronous sends.");
-            }
-        }
-
-        return asyncSupported;
-    }
-
     @Override
     void enqueue(PendingSend pending) {
         //be async in 9.x, sync in 8.x (due to https://issues.jboss.org/browse/WFLY-3715)
@@ -104,7 +82,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
 
     private final HttpServletResponse response;
     private final AsyncContext asyncContext;
-    private static Boolean asyncSupported;
+    private final boolean asyncSupported;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.web.async");
 }

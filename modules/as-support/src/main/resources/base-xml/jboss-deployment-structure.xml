@@ -16,6 +16,7 @@
       <module name="org.jboss.as.clustering.infinispan"/>
       <module name="org.jboss.xnio"/>
       <module name="org.jboss.as.messaging"/>
+      <module name="org.jboss.as.server" optional="true"/>
 
       <system export="true">
         <paths>
