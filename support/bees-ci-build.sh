@@ -16,6 +16,7 @@ function mark {
     echo
 }
 
+mark "Starting build script"
 java -version
 mvn -version
 git clean -fd
