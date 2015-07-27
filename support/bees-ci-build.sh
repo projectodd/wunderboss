@@ -16,6 +16,8 @@ function mark {
     echo
 }
 
+export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m"
+
 mark "Starting build script"
 java -version
 mvn -version
