@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.as;
 
 import org.jboss.logging.Logger;
+import org.projectodd.wunderboss.CompletableFuture;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.web.Web;
 
@@ -29,7 +30,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;

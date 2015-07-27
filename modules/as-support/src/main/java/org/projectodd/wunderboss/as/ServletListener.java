@@ -19,6 +19,7 @@ package org.projectodd.wunderboss.as;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.projectodd.wunderboss.ApplicationRunner;
+import org.projectodd.wunderboss.CompletableFuture;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.web.Web;
 
@@ -33,8 +34,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 @WebListener
@@ -149,10 +149,10 @@ public class ServletListener implements ServletContextListener {
         addServletActions.close();
 
         try {
-            initDone.join();
-        } catch (CompletionException e) {
+            initDone.get();
+        } catch (ExecutionException e) {
             throw new RuntimeException("Application initialization failed", e.getCause());
-        } catch (CancellationException e) {
+        } catch (CancellationException | InterruptedException e) {
             // shouldn't happen, but...
             throw new RuntimeException("Application initialization was cancelled", e);
         }
