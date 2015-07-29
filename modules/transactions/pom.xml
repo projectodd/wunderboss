@@ -39,6 +39,12 @@
       <groupId>org.jboss.narayana.jta</groupId>
       <artifactId>narayana-jta</artifactId>
       <version>${version.narayana}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hornetq</groupId>
+          <artifactId>hornetq-native</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
