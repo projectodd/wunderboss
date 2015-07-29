@@ -67,6 +67,14 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         }
     }
 
+    protected void notifyClose() {
+        if (!closeNotified &&
+                this.onClose != null) {
+            this.onClose.handle(this, null, null);
+        }
+        closeNotified = true;
+    }
+
     @Override
     public boolean isOpen() {
         return this.open;
@@ -189,9 +197,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         this.stream.close();
         this.open = false;
 
-        if (this.onClose != null) {
-            this.onClose.handle(this, null, null);
-        }
+        notifyClose();
     }
 
     protected Runnable closer = new Runnable() {
@@ -209,6 +215,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean open = false;
     private boolean sendQueued = false;
     private boolean headersSent = false;
+    private boolean closeNotified = false;
     private OutputStream stream;
     private final OnOpen onOpen;
     private final OnError onError;

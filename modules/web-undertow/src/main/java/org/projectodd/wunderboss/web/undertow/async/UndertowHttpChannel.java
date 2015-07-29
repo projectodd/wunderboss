@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.web.undertow.async;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.ServerConnection;
 import org.projectodd.wunderboss.web.async.OutputStreamHttpChannel;
 
 import java.io.OutputStream;
@@ -28,6 +29,12 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
                                final OnClose onClose) {
         super(onOpen, onError, onClose);
         this.exchange = exchange.setPersistent(true).dispatch();
+        this.exchange.getConnection().addCloseListener(new ServerConnection.CloseListener() {
+            @Override
+            public void closed(ServerConnection _) {
+                notifyClose();
+            }
+        });
     }
 
     @Override
