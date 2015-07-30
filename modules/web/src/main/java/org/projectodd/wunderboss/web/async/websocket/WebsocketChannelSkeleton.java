@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
 
 
+    private long idleTimeout = -1;
+
     public WebsocketChannelSkeleton(final OnOpen onOpen,
                                     final OnError onError,
                                     final OnClose onClose,
@@ -78,6 +80,23 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
         WebsocketUtil.notifyComplete(this, callback, error);
     }
 
+    @Override
+    public void setIdleTimeout(long timeout) {
+        if (timeout < 0) {
+            throw new IllegalArgumentException("Idle timeout must be 0 or greater, was:" +
+                                                       timeout);
+        }
+
+        this.idleTimeout = timeout;
+        setTimeoutOnUnderlyingChannel();
+    }
+
+    public long idleTimeout() {
+        return this.idleTimeout;
+    }
+
+    protected abstract void setTimeoutOnUnderlyingChannel();
+
     private final OnOpen onOpen;
     private final OnClose onClose;
     private final OnMessage onMessage;
@@ -85,4 +104,6 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     private final Map<Object, Object> attachments = new ConcurrentHashMap<>();
     private boolean closeNotified = false;
     private boolean openNotified = false;
+
+
 }
