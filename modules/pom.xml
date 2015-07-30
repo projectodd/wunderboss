@@ -24,7 +24,7 @@
     <module>web</module>
     <module>web-undertow</module>
     <module>transactions</module>
-    <module>as-support</module>
+    <module>wildfly</module>
 
     <module>ruby</module>
     <module>clojure</module>
