@@ -29,6 +29,8 @@ import org.projectodd.wunderboss.messaging.jms.JMSMessagingSkeleton;
 import org.slf4j.Logger;
 
 import javax.jms.ConnectionFactory;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -116,7 +118,10 @@ public class HQMessaging extends JMSMessagingSkeleton {
         hornetQcf.setRetryIntervalMultiplier(options.getDouble(CreateContextOption.RECONNECT_RETRY_INTERVAL_MULTIPLIER));
         hornetQcf.setMaxRetryInterval(options.getLong(CreateContextOption.RECONNECT_MAX_RETRY_INTERVAL));
 
-        return hornetQcf;
+        // We have to cast for HornetQ 2.3 - the factory object that is returned is both a HornetQConnectionFactory
+        // and a javax.jms.ConnectionFactory, but HornetQConnectionFactory doesn't implement j.j.ConnectionFactory.
+        // With HornetQ 2.4, this cast is redundant.
+        return (ConnectionFactory)hornetQcf;
     }
 
     protected javax.jms.Topic createTopic(String name) throws Exception {
@@ -162,11 +167,37 @@ public class HQMessaging extends JMSMessagingSkeleton {
     }
 
     protected void destroyQueue(String name) throws Exception {
-        this.jmsServerManager().destroyQueue(name, true);
+        invokeDestroy("destroyQueue", name);
     }
 
     protected void destroyTopic(String name) throws Exception {
-        this.jmsServerManager().destroyTopic(name, true);
+        invokeDestroy("destroyTopic", name);
+    }
+
+    //HornetQ 2.3 has single-arity destroy functions, 2.4 has double-arity
+    private void invokeDestroy(String method, String name) {
+        Class clazz = this.jmsServerManager().getClass();
+        Method destroy = null;
+        for (Method each: clazz.getMethods()) {
+            if (method.equals(each.getName())) {
+                destroy = each;
+                break;
+            }
+        }
+
+        if (destroy == null) {
+            throw new IllegalStateException(String.format("Class %s has no %s method", clazz, method));
+        }
+
+        try {
+            if (destroy.getParameterTypes().length == 1) {
+                destroy.invoke(this.jmsServerManager(), name);
+            } else {
+                destroy.invoke(this.jmsServerManager(), name, true);
+            }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to destroy destination " + name, e);
+        }
     }
 
     protected Object lookupJNDI(String jndiName) {

@@ -46,6 +46,15 @@
 
   </dependencies>
 
+  <profiles>
+    <profile>
+      <id>hornetq-2.3</id>
+      <properties>
+        <version.hornetq>2.3.25.Final</version.hornetq>
+      </properties>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
       <plugin>

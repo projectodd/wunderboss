@@ -30,4 +30,10 @@ mark "Reversioning"
 mvn -B versions:set -DnewVersion=1.x.incremental.${BUILD_NUMBER}
 
 mark "Building"
-mvn -B -s ${SETTINGS_FILE} -Pbees install deploy
+mvn -B -s ${SETTINGS_FILE} install
+
+mark "Testing messaging against HornetQ 2.3"
+mvn -B -s ${SETTINGS_FILE} -f modules/messaging-hornetq/pom.xml -P hornetq-2.3 test
+
+mark "Deploying"
+mvn -B -s ${SETTINGS_FILE} -Pbees deploy
