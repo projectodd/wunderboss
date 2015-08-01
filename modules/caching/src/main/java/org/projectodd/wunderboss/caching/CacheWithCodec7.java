@@ -59,6 +59,9 @@ public class CacheWithCodec7 extends CacheWithCodec {
         public Object next() {
             return decode(iterator.next());
         }
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
         protected CloseableIterator iterator;
     }
 
