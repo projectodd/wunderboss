@@ -18,21 +18,13 @@ package org.projectodd.wunderboss.caching;
 
 import org.infinispan.Cache;
 import org.infinispan.AbstractDelegatingCache;
-import org.infinispan.commons.util.CloseableIterator;
-import org.infinispan.commons.util.CloseableIteratorCollection;
-import org.infinispan.commons.util.CloseableIteratorSet;
 import org.projectodd.wunderboss.codecs.Codec;
 import java.util.concurrent.TimeUnit;
-import java.util.AbstractCollection;
-import java.util.Collection;
 import java.util.Map;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
 
 
-public class CacheWithCodec extends AbstractDelegatingCache {
+public abstract class CacheWithCodec extends AbstractDelegatingCache {
 
     public CacheWithCodec(Cache cache, Codec codec) {
         super(cache);
@@ -166,74 +158,5 @@ public class CacheWithCodec extends AbstractDelegatingCache {
         }
     }
 
-    @Override
-    public CloseableIteratorSet keySet() {
-        return new EncodedSet(super.keySet());
-    }
-
-    @Override
-    public CloseableIteratorSet entrySet() {
-        return new EncodedEntrySet(super.entrySet());
-    }
-
-    @Override
-    public CloseableIteratorCollection values() {
-        return new EncodedCollection(super.values());
-    }
-
     private Codec codec;
-
-    class Decoded implements CloseableIterator {
-        Decoded(CloseableIterator iterator) {
-            this.iterator = iterator;
-        }
-        public void close() {
-            iterator.close();
-        }
-        public boolean hasNext() {
-            return iterator.hasNext();
-        }
-        public Object next() {
-            return decode(iterator.next());
-        }
-        protected CloseableIterator iterator;
-    }
-
-    class DecodedEntry extends Decoded {
-        DecodedEntry(CloseableIterator iterator) {
-            super(iterator);
-        }
-        public Object next() {
-            Entry e = (Entry) iterator.next();
-            return new SimpleImmutableEntry(decode(e.getKey()), decode(e.getValue()));
-        }
-    }
-
-    class EncodedCollection extends AbstractCollection implements CloseableIteratorCollection {
-        EncodedCollection(CloseableIteratorCollection collection) {
-            this.collection = collection;
-        }
-        public int size() {
-            return CacheWithCodec.this.size();
-        }
-        public CloseableIterator iterator() {
-            return new Decoded(collection.iterator());
-        }
-        protected CloseableIteratorCollection collection;
-    }
-
-    class EncodedSet extends EncodedCollection implements CloseableIteratorSet {
-        EncodedSet(CloseableIteratorCollection collection) {
-            super(collection);
-        }
-    }
-
-    class EncodedEntrySet extends EncodedSet {
-        EncodedEntrySet(CloseableIteratorCollection collection) {
-            super(collection);
-        }
-        public CloseableIterator iterator() {
-            return new DecodedEntry(collection.iterator());
-        }
-    }
 }

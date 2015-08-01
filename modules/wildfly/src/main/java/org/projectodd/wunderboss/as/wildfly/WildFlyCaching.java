@@ -24,7 +24,9 @@ import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.as.ClusterUtils;
 import org.projectodd.wunderboss.as.MSCService;
+import org.projectodd.wunderboss.as.ASUtils;
 import org.projectodd.wunderboss.caching.InfinispanCaching;
+import org.projectodd.wunderboss.caching.Encoder6;
 
 import java.util.Map;
 
@@ -33,6 +35,9 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public WildFlyCaching(String name, Options<CreateOption> options) {
         super(name, options);
+        if (ASUtils.containerIsWildFly8()) {
+            this.encoder = new Encoder6();
+        }
     }
 
     public synchronized EmbeddedCacheManager manager() {

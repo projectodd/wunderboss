@@ -62,6 +62,17 @@
     </dependency>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching-ispan6</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.projectodd.wunderboss</groupId>
+          <artifactId>wunderboss-caching</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-transactions</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>

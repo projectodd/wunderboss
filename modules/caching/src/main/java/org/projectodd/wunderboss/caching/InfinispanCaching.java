@@ -87,7 +87,7 @@ public class InfinispanCaching implements Caching {
 
     @Override
     public Cache withCodec(Cache cache, Codec codec) {
-        return (codec==null) ? cache : new CacheWithCodec(cache, codec);
+        return (codec==null) ? cache : encoder.encode(cache, codec);
     }
 
     @Override
@@ -115,6 +115,7 @@ public class InfinispanCaching implements Caching {
     private final String name;
     protected final Options options;
     protected EmbeddedCacheManager manager;
+    protected Encoder encoder = new Encoder7();
 
     protected static final Logger log = Logger.getLogger(Caching.class);
 }

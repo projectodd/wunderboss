@@ -44,6 +44,10 @@ public class ASUtils {
         return CONTAINER_IS_WILDFLY_9;
     }
 
+    public static boolean containerIsWildFly8() {
+        return containerType()==ContainerType.WILDFLY && !containerIsWildFly9();
+    }
+
     public static ContainerType containerType() {
         return CONTAINER_TYPE;
     }
