@@ -16,14 +16,8 @@
   (:import [org.projectodd.wunderboss
             DynamicClassLoader WunderBoss]))
 
-(defonce ^:private exit-tasks (atom []))
-
 (defn at-exit [f]
-  (swap! exit-tasks conj f))
-
-(defn exit! []
-  (doseq [f @exit-tasks]
-    (f)))
+  (WunderBoss/addShutdownAction f))
 
 (defn options []
   (WunderBoss/options))
@@ -56,6 +50,3 @@
                (assoc base-url-classloader
                  :can-add? (constantly false))))))
   (catch Exception _))
-
-(when-not (WunderBoss/inContainer)
-  (.addShutdownHook (Runtime/getRuntime) (Thread. ^Runnable exit!)))

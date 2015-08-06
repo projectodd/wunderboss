@@ -51,7 +51,6 @@ public class ClojureLanguage implements Language {
                 Clojure.var("clojure.core", "require")
                         .invoke(Clojure.var("clojure.core", "symbol")
                                         .invoke("wunderboss.util"));
-                Clojure.var("wunderboss.util", "exit!").invoke();
                 Clojure.var("clojure.core", "shutdown-agents").invoke();
 
                 return null;

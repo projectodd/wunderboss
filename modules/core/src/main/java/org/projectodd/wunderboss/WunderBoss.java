@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +105,11 @@ public class WunderBoss {
     }
 
     public static void shutdownAndReset() throws Exception {
+        for (Runnable action : shutdownActions) {
+            action.run();
+        }
+        shutdownActions.clear();
+
         for (Language language : languages.values()) {
             language.shutdown();
         }
@@ -115,6 +121,10 @@ public class WunderBoss {
         components.clear();
 
         shutdownWorkerPool();
+    }
+
+    public static void addShutdownAction(Runnable action) {
+        shutdownActions.add(action);
     }
 
     private static <T extends Component> ComponentProvider<T> getComponentProvider(Class<T> iface, boolean throwIfMissing) {
@@ -233,6 +243,7 @@ public class WunderBoss {
     private static final Map<String, Language> languages = new HashMap<>();
     private static final Map<Class, ComponentProvider> componentProviders = new HashMap<>();
     private static final Map<String, Component> components = new HashMap<>();
+    private static final List<Runnable> shutdownActions = new ArrayList<>();
     private static DynamicClassLoader classLoader;
     private static ExecutorService workerExecutor;
     private static final Logger log = logger(WunderBoss.class);
