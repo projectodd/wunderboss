@@ -19,8 +19,11 @@ package org.projectodd.wunderboss.web.undertow.async;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
 import org.projectodd.wunderboss.web.async.OutputStreamHttpChannel;
+import org.xnio.XnioExecutor;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 public class UndertowHttpChannel extends OutputStreamHttpChannel {
     public UndertowHttpChannel(final HttpServerExchange exchange,
@@ -40,6 +43,34 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
     @Override
     public boolean asyncSendSupported() {
         return true;
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            super.close();
+        } finally {
+            cancelTimeout();
+        }
+    }
+
+    private boolean cancelTimeout() {
+        XnioExecutor.Key key = this.timeoutKey;
+        if (key != null) {
+            return key.remove();
+        }
+
+        return true;
+    }
+
+    @Override
+    public void setTimeout(long timeout) {
+        if (!cancelTimeout()) {
+            return;
+        }
+        if (timeout > 0) {
+            this.timeoutKey = exchange.getIoThread().executeAfter(closer, timeout, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Override
@@ -73,5 +104,5 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
     }
 
     private final HttpServerExchange exchange;
-
+    private XnioExecutor.Key timeoutKey;
 }

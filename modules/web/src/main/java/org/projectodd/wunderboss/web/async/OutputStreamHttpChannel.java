@@ -157,7 +157,6 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     protected void doSend(final byte[] data,
                           final boolean shouldClose,
                           final OnComplete onComplete) {
-        this.lastActive = System.currentTimeMillis();
         Throwable ex = null;
         try {
             if (!headersSent) {
@@ -202,28 +201,6 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         notifyClose();
     }
 
-    @Override
-    public void setIdleTimeout(long timeout) {
-        this.idleTimeout = timeout;
-
-        if (idleTimeout > 0) {
-            IdleChannelReaper.INSTANCE.watchChannel(this);
-        }
-    }
-
-    @Override
-    public boolean closeIfIdleTimeoutExpired() {
-        if (this.idleTimeout > 0 &&
-                isOpen() &&
-                this.lastActive + this.idleTimeout < System.currentTimeMillis()) {
-            closer.run();
-
-            return true;
-        }
-
-        return false;
-    }
-
     protected Runnable closer = new Runnable() {
         @Override
         public void run() {
@@ -240,8 +217,6 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean sendQueued = false;
     private boolean headersSent = false;
     private boolean closeNotified = false;
-    private long lastActive = System.currentTimeMillis();
-    private long idleTimeout = -1;
     private OutputStream stream;
     private final OnOpen onOpen;
     private final OnError onError;

@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
-import org.projectodd.wunderboss.web.async.IdleChannelReaper;
 import org.projectodd.wunderboss.web.async.WebsocketUtil;
 
 import java.io.IOException;
@@ -71,7 +70,6 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     protected void notifyMessage(Object message) {
-        updateLastActive();
         if (this.onMessage != null) {
             this.onMessage.handle(this, message);
         }
@@ -81,47 +79,11 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
         WebsocketUtil.notifyComplete(this, callback, error);
     }
 
-    @Override
-    public void setIdleTimeout(long timeout) {
-        this.idleTimeout = timeout;
-
-        if (idleTimeout > 0) {
-            IdleChannelReaper.INSTANCE.watchChannel(this);
-        }
-    }
-
-    @Override
-    public boolean closeIfIdleTimeoutExpired() {
-        if (this.idleTimeout > 0 &&
-                isOpen() &&
-                this.lastActive + this.idleTimeout < System.currentTimeMillis()) {
-            try {
-                close();
-            } catch (IOException ignored) {}
-
-            return true;
-        }
-
-        return false;
-    }
-
-    protected void updateLastActive() {
-        this.lastActive = System.currentTimeMillis();
-    }
-
-    public long idleTimeout() {
-        return this.idleTimeout;
-    }
-
     private final OnOpen onOpen;
     private final OnClose onClose;
     private final OnMessage onMessage;
     private final OnError onError;
     private final Map<Object, Object> attachments = new ConcurrentHashMap<>();
-    private long idleTimeout = -1;
-    private long lastActive = System.currentTimeMillis();
     private boolean closeNotified = false;
     private boolean openNotified = false;
-
-
 }

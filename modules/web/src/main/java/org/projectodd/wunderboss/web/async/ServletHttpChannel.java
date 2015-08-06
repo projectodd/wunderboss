@@ -19,6 +19,8 @@ package org.projectodd.wunderboss.web.async;
 import org.jboss.logging.Logger;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -37,6 +39,24 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
         this.asyncContext = request.startAsync();
         this.asyncContext.setTimeout(0);
         this.asyncSupported = asyncSupported;
+        this.asyncContext.addListener(new AsyncListener() {
+            @Override
+            public void onComplete(AsyncEvent event) throws IOException {
+            }
+
+            @Override
+            public void onTimeout(AsyncEvent event) throws IOException {
+                close();
+            }
+
+            @Override
+            public void onError(AsyncEvent event) throws IOException {
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event) throws IOException {
+            }
+        });
     }
 
     @Override
@@ -78,6 +98,13 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     public void close() throws IOException {
         this.asyncContext.complete();
         super.close();
+    }
+
+    @Override
+    public void setTimeout(long timeout) {
+        if (timeout >= 0) {
+            this.asyncContext.setTimeout(timeout);
+        }
     }
 
     private final HttpServletResponse response;
