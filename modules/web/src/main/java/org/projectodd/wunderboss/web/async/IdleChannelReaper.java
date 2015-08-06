@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.web.async;
 
 import org.jboss.logging.Logger;
+import org.projectodd.wunderboss.WunderBoss;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,13 +31,7 @@ public class IdleChannelReaper implements Runnable {
     @Override
     public void run() {
         log.debug("starting idle channel reaper thread");
-        while(true) {
-            if (Thread.currentThread().isInterrupted()) {
-                log.debug("exiting idle channel reaper thread");
-
-                return;
-            }
-
+        while(this.running) {
             try {
                 checkChannels();
             } catch (Exception e) {
@@ -48,8 +43,11 @@ public class IdleChannelReaper implements Runnable {
             } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
             }
-        }
 
+            if (Thread.currentThread().isInterrupted()) {
+                stop();
+            }
+        }
     }
 
     private synchronized void checkChannels() {
@@ -64,14 +62,28 @@ public class IdleChannelReaper implements Runnable {
         channels.removeAll(removals);
     }
 
-    public synchronized void watchChannel(Channel channel) {
-        log.debug("watching for idleness: " + channel);
-        this.channels.add(channel);
+    private void start() {
         if (!this.running) {
             (new Thread(this, "idle-channel-reaper")).start();
             this.running = true;
+            WunderBoss.addShutdownAction(new Runnable() {
+                @Override
+                public void run() {
+                    stop();
+                }
+            });
         }
+    }
 
+    public void stop() {
+        log.debug("shutting down");
+        this.running = false;
+    }
+
+    public synchronized void watchChannel(Channel channel) {
+        log.debug("watching for idleness: " + channel);
+        this.channels.add(channel);
+        start();
     }
 
     private boolean running = false;
