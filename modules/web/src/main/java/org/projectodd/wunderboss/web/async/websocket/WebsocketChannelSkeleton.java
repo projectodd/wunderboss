@@ -16,15 +16,15 @@
 
 package org.projectodd.wunderboss.web.async.websocket;
 
+import org.projectodd.wunderboss.web.async.IdleChannelReaper;
 import org.projectodd.wunderboss.web.async.WebsocketUtil;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
 
-
-    private long idleTimeout = -1;
 
     public WebsocketChannelSkeleton(final OnOpen onOpen,
                                     final OnError onError,
@@ -71,6 +71,7 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
     }
 
     protected void notifyMessage(Object message) {
+        updateLastActive();
         if (this.onMessage != null) {
             this.onMessage.handle(this, message);
         }
@@ -82,26 +83,43 @@ public abstract class WebsocketChannelSkeleton implements WebsocketChannel {
 
     @Override
     public void setIdleTimeout(long timeout) {
-        if (timeout < 0) {
-            throw new IllegalArgumentException("Idle timeout must be 0 or greater, was:" +
-                                                       timeout);
+        this.idleTimeout = timeout;
+
+        if (idleTimeout > 0) {
+            IdleChannelReaper.INSTANCE.watchChannel(this);
+        }
+    }
+
+    @Override
+    public boolean closeIfIdleTimeoutExpired() {
+        if (this.idleTimeout > 0 &&
+                isOpen() &&
+                this.lastActive + this.idleTimeout < System.currentTimeMillis()) {
+            try {
+                close();
+            } catch (IOException ignored) {}
+
+            return true;
         }
 
-        this.idleTimeout = timeout;
-        setTimeoutOnUnderlyingChannel();
+        return false;
+    }
+
+    protected void updateLastActive() {
+        this.lastActive = System.currentTimeMillis();
     }
 
     public long idleTimeout() {
         return this.idleTimeout;
     }
 
-    protected abstract void setTimeoutOnUnderlyingChannel();
-
     private final OnOpen onOpen;
     private final OnClose onClose;
     private final OnMessage onMessage;
     private final OnError onError;
     private final Map<Object, Object> attachments = new ConcurrentHashMap<>();
+    private long idleTimeout = -1;
+    private long lastActive = System.currentTimeMillis();
     private boolean closeNotified = false;
     private boolean openNotified = false;
 

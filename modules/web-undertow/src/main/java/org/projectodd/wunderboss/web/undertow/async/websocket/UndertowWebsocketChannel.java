@@ -68,7 +68,6 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
     @Override
     public void setUnderlyingChannel(final Object channel) {
         this.underlyingChannel = (WebSocketChannel) channel;
-        setTimeoutOnUnderlyingChannel();
     }
 
     @Override
@@ -84,6 +83,8 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
         if (!isOpen()) {
             return false;
         }
+
+        updateLastActive();
 
         final WebSocketCallback<Void> callback = new WebSocketCallback<Void>() {
             @Override
@@ -116,14 +117,6 @@ public class UndertowWebsocketChannel extends WebsocketChannelSkeleton {
         }
 
         return true;
-    }
-
-    @Override
-    protected void setTimeoutOnUnderlyingChannel() {
-        if (this.underlyingChannel != null
-                && idleTimeout() > -1) {
-            this.underlyingChannel.setIdleTimeout(idleTimeout());
-        }
     }
 
     @Override

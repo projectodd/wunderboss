@@ -53,8 +53,8 @@ public class IdleChannelReaper implements Runnable {
     }
 
     private synchronized void checkChannels() {
-        List<OutputStreamHttpChannel> removals = new ArrayList<>();
-        for (OutputStreamHttpChannel each : channels) {
+        List<Channel> removals = new ArrayList<>();
+        for (Channel each : channels) {
             if (each.closeIfIdleTimeoutExpired()) {
                 log.debug("closed idle " + each);
                 removals.add(each);
@@ -64,7 +64,7 @@ public class IdleChannelReaper implements Runnable {
         channels.removeAll(removals);
     }
 
-    public synchronized void watchChannel(OutputStreamHttpChannel channel) {
+    public synchronized void watchChannel(Channel channel) {
         log.debug("watching for idleness: " + channel);
         this.channels.add(channel);
         if (!this.running) {
@@ -75,6 +75,6 @@ public class IdleChannelReaper implements Runnable {
     }
 
     private boolean running = false;
-    private final Set<OutputStreamHttpChannel> channels = new HashSet<>();
+    private final Set<Channel> channels = new HashSet<>();
     private final Logger log = Logger.getLogger("org.projectodd.wunderboss.web.async");
 }

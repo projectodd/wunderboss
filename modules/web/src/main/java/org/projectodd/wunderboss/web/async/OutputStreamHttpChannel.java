@@ -211,6 +211,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         }
     }
 
+    @Override
     public boolean closeIfIdleTimeoutExpired() {
         if (this.idleTimeout > 0 &&
                 isOpen() &&
@@ -240,7 +241,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean headersSent = false;
     private boolean closeNotified = false;
     private long lastActive = System.currentTimeMillis();
-    private long idleTimeout;
+    private long idleTimeout = -1;
     private OutputStream stream;
     private final OnOpen onOpen;
     private final OnError onError;

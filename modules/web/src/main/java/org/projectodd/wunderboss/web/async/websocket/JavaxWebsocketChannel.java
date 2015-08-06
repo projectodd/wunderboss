@@ -75,7 +75,6 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
     @Override
     public void setUnderlyingChannel(Object channel) {
         this.session = (Session)channel;
-        setTimeoutOnUnderlyingChannel();
     }
 
     @Override
@@ -91,6 +90,8 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
         if (!isOpen()) {
             return false;
         }
+
+        updateLastActive();
 
         SendHandler handler = new SendHandler() {
             @Override
@@ -127,14 +128,6 @@ public class JavaxWebsocketChannel extends WebsocketChannelSkeleton {
     public void close() throws IOException {
         if (isOpen()) {
             this.session.close();
-        }
-    }
-
-    @Override
-    protected void setTimeoutOnUnderlyingChannel() {
-        if (this.session != null
-                && idleTimeout() > -1) {
-            this.session.setMaxIdleTimeout(idleTimeout());
         }
     }
 

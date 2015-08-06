@@ -33,6 +33,8 @@ public interface Channel extends Attachments {
 
     void setIdleTimeout(long timeout);
 
+    boolean closeIfIdleTimeoutExpired();
+
     interface OnOpen {
         void handle(Channel channel, Object context);
     }
