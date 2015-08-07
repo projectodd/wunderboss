@@ -22,6 +22,7 @@
     <module>scheduling</module>
     <module>caching</module>
     <module>caching-ispan6</module>
+    <module>caching-ispan5</module>
     <module>web</module>
     <module>web-undertow</module>
     <module>transactions</module>

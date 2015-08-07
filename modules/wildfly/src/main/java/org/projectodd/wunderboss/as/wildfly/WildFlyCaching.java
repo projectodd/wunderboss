@@ -16,6 +16,7 @@
 
 package org.projectodd.wunderboss.as.wildfly;
 
+import org.infinispan.Cache;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -27,6 +28,9 @@ import org.projectodd.wunderboss.as.MSCService;
 import org.projectodd.wunderboss.as.ASUtils;
 import org.projectodd.wunderboss.caching.InfinispanCaching;
 import org.projectodd.wunderboss.caching.Encoder6;
+import org.projectodd.wunderboss.caching.Config;
+import org.projectodd.wunderboss.caching.KeyEquivalenceCache;
+import org.projectodd.wunderboss.codecs.Codec;
 
 import java.util.Map;
 
@@ -35,9 +39,18 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public WildFlyCaching(String name, Options<CreateOption> options) {
         super(name, options);
-        if (ASUtils.containerIsWildFly8()) {
+        if (!ASUtils.containerIsWildFly9()) {
             this.encoder = new Encoder6();
         }
+        if (ASUtils.containerIsEAP()) {
+            Config.className = "org.projectodd.wunderboss.caching.Config5";
+        }
+    }
+
+    @Override
+    public Cache withCodec(Cache cache, Codec codec) {
+        Cache c = ASUtils.containerIsEAP() ? new KeyEquivalenceCache(cache) : cache;
+        return super.withCodec(c, codec);
     }
 
     public synchronized EmbeddedCacheManager manager() {

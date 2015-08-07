@@ -25,9 +25,11 @@ import org.infinispan.transaction.LockingMode;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.lookup.GenericTransactionManagerLookup;
 import org.infinispan.util.concurrent.IsolationLevel;
+import org.jboss.logging.Logger;
 
 import org.projectodd.wunderboss.Options;
-import java.util.Arrays;
+
+import java.lang.reflect.Constructor;
 
 
 public class Config {
@@ -39,12 +41,19 @@ public class Config {
     }
 
     public static ConfigurationBuilder builder(Options<Caching.CreateOption> options) {
-        return new Config(options).builder;
+        try {
+            Class config = Class.forName(className);
+            Constructor<Config> ctor = config.getConstructor(Options.class);
+            return ctor.newInstance(options).builder;
+        } catch (Exception ignored) { 
+            log.error("Unable to construct ConfigurationBuilder", ignored);
+        }
+        return null;
     }
 
     Config(Options<Caching.CreateOption> options) {
         this.options = options;
-        builder.dataContainer().keyEquivalence(EQUIVALENCE);
+        equivalate();
         read();
         mode();
         evict();
@@ -52,6 +61,12 @@ public class Config {
         transact();
         persist();
     }
+
+    /* See subclasses for impl as these don't work across all ispan versions: 5, 6, & 7 */
+    void equivalate() {
+    }
+    void persist() {
+    }     
 
     void read() {
         Configuration c = (Configuration) options.get(Caching.CreateOption.CONFIGURATION);
@@ -91,52 +106,11 @@ public class Config {
             builder.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
         }
     }
-    void persist() {
-        Object v = options.get(Caching.CreateOption.PERSIST);
-        if (v instanceof Boolean && (boolean) v) {
-            builder.persistence().addSingleFileStore();
-        }
-        if (v instanceof String) {
-            builder.persistence().addSingleFileStore().location(v.toString());
-        }
-    }     
 
-    private Options<Caching.CreateOption> options;
-    ConfigurationBuilder builder = new ConfigurationBuilder();
-    static final Equivalence EQUIVALENCE = new Equivalence();
+    protected Options<Caching.CreateOption> options;
+    protected ConfigurationBuilder builder = new ConfigurationBuilder();
     static final GenericTransactionManagerLookup TM_LOOKUP = new GenericTransactionManagerLookup();
+    protected static final Logger log = Logger.getLogger(Config.class);
 
-    static class Equivalence implements org.infinispan.commons.equivalence.Equivalence<Object> {
-        private static boolean isByteArray(Object obj) {
-            return byte[].class == obj.getClass();
-        }
-        public int hashCode(Object obj) {
-            if (isByteArray(obj)) {
-                return 41 + Arrays.hashCode((byte[]) obj);
-            } else {
-                return obj.hashCode();
-            }
-        }
-        public boolean equals(Object obj, Object otherObj) {
-            if (obj == otherObj)
-                return true;
-            if (obj == null || otherObj == null)
-                return false;
-            if (isByteArray(obj) && isByteArray(otherObj))
-                return Arrays.equals((byte[]) obj, (byte[]) otherObj);
-            return obj.equals(otherObj);
-        }
-        public String toString(Object obj) {
-            if (isByteArray(obj))
-                return Arrays.toString((byte[]) obj);
-            else
-                return obj.toString();
-        }
-        public boolean isComparable(Object obj) {
-            return obj instanceof Comparable;
-        }
-        public int compare(Object obj, Object otherObj) {
-            return ((Comparable<Object>) obj).compareTo(otherObj);
-        }
-    }
+    public static String className = "org.projectodd.wunderboss.caching.Config7";
 }
