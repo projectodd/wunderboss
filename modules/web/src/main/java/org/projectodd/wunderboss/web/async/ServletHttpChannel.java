@@ -35,10 +35,15 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
                               final OnClose onClose,
                               final boolean asyncSupported){
         super(onOpen, onError, onClose);
+        this.request = request;
         this.response = response;
-        this.asyncContext = request.startAsync();
-        this.asyncContext.setTimeout(0);
         this.asyncSupported = asyncSupported;
+
+    }
+
+    private void open() {
+        this.asyncContext = request.startAsync();
+        this.asyncContext.setTimeout(this.timeout);
         this.asyncContext.addListener(new AsyncListener() {
             @Override
             public void onComplete(AsyncEvent event) throws IOException {
@@ -95,6 +100,12 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     }
 
     @Override
+    public void notifyOpen(final Object context) {
+        open();
+        super.notifyOpen(context);
+    }
+
+    @Override
     public void close() throws IOException {
         this.asyncContext.complete();
         super.close();
@@ -103,13 +114,18 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
     @Override
     public void setTimeout(long timeout) {
         if (timeout >= 0) {
-            this.asyncContext.setTimeout(timeout);
+            if (!this.asyncSupported) {
+                throw new IllegalArgumentException("HTTP stream timeouts are not supported on this platform");
+            }
+            this.timeout = timeout;
         }
     }
 
+    private final HttpServletRequest request;
     private final HttpServletResponse response;
-    private final AsyncContext asyncContext;
     private final boolean asyncSupported;
+    private long timeout = 0;
+    private AsyncContext asyncContext;
 
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.web.async");
 }
