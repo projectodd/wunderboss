@@ -34,9 +34,10 @@ public class WithCloseables implements HasCloseables {
                 ((AutoCloseable) each).close();
             } else {
                 try {
-                    Method close = each.getClass().getDeclaredMethod("close");
+                    Method close = each.getClass().getMethod("close");
                     close.invoke(each);
                 } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+
                     throw new RuntimeException("Can't close object of class " + each.getClass().getName(), e);
                 }
             }
