@@ -76,26 +76,27 @@ public class ASUtils {
 
     // this can't be recursive, as it can blow the stack
     public static Object waitForAppearanceInJNDI(final Context ctx, final String jndiName, long timeout) {
-        Object result = null;
-        boolean found = false;
-        while (!found && timeout > 0) {
+        while (timeout > 0) {
             try {
-                result = ctx.lookup(jndiName);
-                found = true;
-            } catch (NameNotFoundException ex) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException ex2) {
-                    throw new RuntimeException("Interrupted while doing JNDI lookup for " + jndiName);
+                Object result = ctx.lookup(jndiName);
+                if (result != null) {
+                    return result;
                 }
-
-                timeout -= 10;
+            } catch (NameNotFoundException ignored) {
             } catch (NamingException ex) {
                 throw new RuntimeException("Failed JNDI lookup for " + jndiName, ex);
             }
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ex2) {
+                throw new RuntimeException("Interrupted while doing JNDI lookup for " + jndiName);
+            }
+
+            timeout -= 10;
         }
 
-        return result;
+        return null;
     }
 
     // this can't be recursive, as it can blow the stack
