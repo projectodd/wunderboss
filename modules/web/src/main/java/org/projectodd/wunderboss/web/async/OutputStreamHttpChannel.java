@@ -160,9 +160,12 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         Throwable ex = null;
         try {
             if (!headersSent) {
-                if (shouldClose &&
-                        data != null) {
-                    setContentLength(data.length);
+                if (shouldClose) {
+                    if (data == null) {
+                        setContentLength(0);
+                    } else {
+                        setContentLength(data.length);
+                    }
                 }
                 this.stream = getOutputStream();
                 headersSent = true;
