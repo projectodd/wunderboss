@@ -38,7 +38,6 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
         this.request = request;
         this.response = response;
         this.asyncSupported = asyncSupported;
-
     }
 
     private void open() {
@@ -76,7 +75,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
 
     @Override
     protected void setContentLength(int length) {
-        this.response.setIntHeader("Content-Length", length);
+        this.response.setContentLength(length);
     }
 
     @Override
