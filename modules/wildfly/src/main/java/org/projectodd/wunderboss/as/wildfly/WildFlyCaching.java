@@ -39,7 +39,8 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public WildFlyCaching(String name, Options<CreateOption> options) {
         super(name, options);
-        if (!ASUtils.containerIsWildFly9()) {
+        if (!ASUtils.containerIsWildFly9() &&
+                !ASUtils.containerIsWildFly10()) {
             this.encoder = new Encoder6();
         }
         if (ASUtils.containerIsEAP()) {
