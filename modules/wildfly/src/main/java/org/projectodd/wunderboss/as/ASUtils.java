@@ -17,6 +17,7 @@
 package org.projectodd.wunderboss.as;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceName;
 
 import javax.management.MBeanException;
 import javax.management.MBeanServer;
@@ -27,6 +28,8 @@ import javax.naming.Context;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class ASUtils {
 
@@ -42,6 +45,10 @@ public class ASUtils {
 
     public static boolean containerIsWildFly9() {
         return CONTAINER_IS_WILDFLY_9;
+    }
+
+    public static boolean containerIsWildFly10() {
+        return CONTAINER_IS_WILDFLY_10;
     }
 
     public static boolean containerIsEAP() {
@@ -63,7 +70,8 @@ public class ASUtils {
     public static boolean isAsyncStreamingSupported() {
         if (asyncSupported == null) {
             asyncSupported = containerType() == ContainerType.EAP ||
-                    containerIsWildFly9();
+                    containerIsWildFly9() ||
+                    containerIsWildFly10();
 
             if (!asyncSupported) {
                 log.warn("NOTE: HTTP stream sends are synchronous in WildFly " + CONTAINER_VERSION +
@@ -72,6 +80,81 @@ public class ASUtils {
         }
 
         return asyncSupported;
+    }
+
+    private static final String WF10_MESSAGING_PREFIX = "org.wildfly.extension.messaging.activemq.";
+    private static final String NOT_WF10_MESSAGING_PREFIX = "org.jboss.as.messaging.";
+
+    public static ServiceName messagingServiceName() {
+        String prefix;
+        String methodName;
+        try {
+            if (containerIsWildFly10()) {
+                prefix = WF10_MESSAGING_PREFIX;
+                methodName = "getActiveMQServiceName";
+            } else {
+                prefix = NOT_WF10_MESSAGING_PREFIX;
+                methodName = "getHornetQServiceName";
+            }
+
+            Method method = loadClass(prefix + "MessagingServices").getMethod(methodName, String.class);
+
+            return (ServiceName) method.invoke(null, "default");
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to determine messaging service name", e);
+        }
+    }
+
+    public static ServiceName queueServiceName(String name) {
+        return ((ServiceName) callJMSServicesMethod("getJmsQueueBaseServiceName",
+                                                    messagingServiceName()))
+                .append(name);
+    }
+
+    public static ServiceName topicServiceName(String name) {
+        return ((ServiceName) callJMSServicesMethod("getJmsTopicBaseServiceName",
+                                                    messagingServiceName()))
+                .append(name);
+    }
+
+    private static Object callJMSServicesMethod(String methodName, Object... args) {
+        try  {
+            Class clazz = loadClass((containerIsWildFly10() ? WF10_MESSAGING_PREFIX : NOT_WF10_MESSAGING_PREFIX)
+                                        + "jms.JMSServices");
+            Method method = null;
+            for(Method each : clazz.getMethods()) {
+                if (methodName.equals(each.getName())) {
+                    method = each;
+                    break;
+                }
+            }
+
+            if (method == null) {
+                throw new NoSuchMethodException("No method " + methodName + " on class " + clazz);
+            }
+
+            return method.invoke(null, args);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to invoke JMSSservices method", e);
+        }
+    }
+
+    public static Class queueServiceClass() {
+        return loadClass((containerIsWildFly10() ? WF10_MESSAGING_PREFIX : NOT_WF10_MESSAGING_PREFIX) +
+                                 "jms.JMSQueueService");
+    }
+
+    public static Class topicServiceClass() {
+        return loadClass((containerIsWildFly10() ? WF10_MESSAGING_PREFIX : NOT_WF10_MESSAGING_PREFIX) +
+                                 "jms.JMSTopicService");
+    }
+
+    private static Class loadClass(String name) {
+        try {
+            return ASUtils.class.getClassLoader().loadClass(name);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load class " + name, e);
+        }
     }
 
     // this can't be recursive, as it can blow the stack
@@ -148,7 +231,6 @@ public class ASUtils {
         // WF 8 doesn't set the productName, so we can't identify solely based on it
 
         ContainerType type = ContainerType.UNKNOWN;
-        boolean wf9 = false;
         if ("EAP".equals(productName)) {
             type = ContainerType.EAP;
         } else if (version != null &&
@@ -158,15 +240,20 @@ public class ASUtils {
                 productName.startsWith("WildFly")) {
             // WF 9 (and up) actually set the productName
             type = ContainerType.WILDFLY;
-            wf9 = true;
         }
 
         CONTAINER_TYPE = type;
-        CONTAINER_IS_WILDFLY_9 = wf9;
+        CONTAINER_IS_WILDFLY_9 = type == ContainerType.WILDFLY &&
+                version != null &&
+                version.startsWith("9.");
+        CONTAINER_IS_WILDFLY_10 = type == ContainerType.WILDFLY &&
+                version != null &&
+                version.startsWith("10.");
     }
     private static final String CONTAINER_VERSION;
     private static final ContainerType CONTAINER_TYPE;
     private static final boolean CONTAINER_IS_WILDFLY_9;
+    private static final boolean CONTAINER_IS_WILDFLY_10;
     private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.as");
     private static Boolean asyncSupported;
 

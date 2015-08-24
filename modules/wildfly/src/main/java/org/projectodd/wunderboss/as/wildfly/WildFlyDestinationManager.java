@@ -16,13 +16,12 @@
 
 package org.projectodd.wunderboss.as.wildfly;
 
-import org.jboss.as.messaging.jms.JMSQueueService;
-import org.jboss.as.messaging.jms.JMSTopicService;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.Value;
 import org.projectodd.wunderboss.as.ASDestinationManager;
+import org.projectodd.wunderboss.as.ASUtils;
 import org.projectodd.wunderboss.messaging.jms.JMSDestination;
 
 import javax.jms.Queue;
@@ -43,7 +42,7 @@ public class WildFlyDestinationManager extends ASDestinationManager {
     public Queue installQueueService(String name, String jndiName,
                                        String selector, boolean durable) throws Exception {
         Queue queue = (Queue) waitForValueAvailabilityChange(
-                installService(JMSQueueService.class, name, target(),
+                installService(ASUtils.queueServiceClass(), name, target(),
                                hqServiceName(),
                                selector, durable,
                                new String[]{jndiName}),
@@ -59,7 +58,7 @@ public class WildFlyDestinationManager extends ASDestinationManager {
     @Override
     public Topic installTopicService(String name, String jndiName) throws Exception {
         Topic topic = (Topic) waitForValueAvailabilityChange(
-                installService(JMSTopicService.class, name, hqServiceName(),
+                installService(ASUtils.topicServiceClass(), name, hqServiceName(),
                                target(),
                                new String[]{jndiName}),
                 false);

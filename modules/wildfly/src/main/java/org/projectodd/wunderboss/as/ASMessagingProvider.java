@@ -32,11 +32,11 @@ public class ASMessagingProvider implements ComponentProvider<Messaging> {
 
         if (ASUtils.containerType() == ASUtils.ContainerType.EAP) {
             destManager = new EAPDestinationManager(service.serviceTarget(),
-                                                    MSCService.hqServiceName(),
+                                                    ASUtils.messagingServiceName(),
                                                     service.namingContext());
         } else {
             destManager = new WildFlyDestinationManager(service.serviceTarget(),
-                                                        MSCService.hqServiceName());
+                                                        ASUtils.messagingServiceName());
         }
 
         return new ASMessaging(name, service, destManager, options);

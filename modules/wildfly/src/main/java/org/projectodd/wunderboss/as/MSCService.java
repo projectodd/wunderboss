@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.as;
 
-import org.jboss.as.messaging.MessagingServices;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
@@ -89,10 +88,6 @@ public class MSCService implements Service<MSCService> {
     @Override
     public MSCService getValue() throws IllegalStateException, IllegalArgumentException {
         return this;
-    }
-
-    public static ServiceName hqServiceName() {
-        return MessagingServices.getHornetQServiceName("default");
     }
 
     public ServiceTarget serviceTarget() {

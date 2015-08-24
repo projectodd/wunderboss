@@ -16,7 +16,6 @@
 
 package org.projectodd.wunderboss.as;
 
-import org.jboss.as.messaging.jms.JMSServices;
 import org.jboss.msc.service.ServiceController;
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
@@ -68,8 +67,7 @@ public class ASMessaging extends HQMessaging {
 
     @Override
     protected void destroyQueue(final String name) {
-        ServiceController controller = this.mscService.serviceRegistry()
-                .getService(JMSServices.getJmsQueueBaseServiceName(MSCService.hqServiceName()).append(name));
+        ServiceController controller = this.mscService.serviceRegistry().getService(ASUtils.queueServiceName(name));
         controller.setMode(ServiceController.Mode.REMOVE);
 
         this.destinationManager.removeDestination(controller, name,
@@ -79,8 +77,7 @@ public class ASMessaging extends HQMessaging {
 
     @Override
     protected void destroyTopic(final String name) {
-        ServiceController controller = this.mscService.serviceRegistry()
-                .getService(JMSServices.getJmsTopicBaseServiceName(MSCService.hqServiceName()).append(name));
+        ServiceController controller = this.mscService.serviceRegistry().getService(ASUtils.topicServiceName(name));
         controller.setMode(ServiceController.Mode.REMOVE);
 
         this.destinationManager.removeDestination(controller, name,
