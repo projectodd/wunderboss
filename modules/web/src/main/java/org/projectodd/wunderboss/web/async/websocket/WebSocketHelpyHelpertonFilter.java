@@ -33,8 +33,10 @@ import java.io.IOException;
  * know all the pathInfos we need to register the endpoint under,
  * because they are handled by frameworks in ruby/clojure at the app-level.
  *
- * So, this filter sends a request down the chain that doesn't have a pathInfo
- * if the request is a websocket upgrade request.
+ * So, this filter sends a request down the chain (if the request is
+ * a websocket upgrade request) that doesn't have a pathInfo
+ * and returns "/" for servletPath when it is "" to workaround an EAP issue
+ * (https://bugzilla.redhat.com/show_bug.cgi?id=1256945).
  *
  * It also grabs the original ServletRequest in a ThreadLocal for the
  * downstream handshake to use.
@@ -45,17 +47,16 @@ public class WebSocketHelpyHelpertonFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (request instanceof HttpServletRequest &&
-                !(request instanceof PathInfoRemovingRequestJacket) && // this filter has already been applied
+                !(request instanceof PathMungingRequestJacket) && // this filter has already been applied
                 "websocket".equalsIgnoreCase(((HttpServletRequest) request).getHeader("Upgrade"))) {
             requestTL.set((HttpServletRequest)request);
             try {
-                chain.doFilter(new PathInfoRemovingRequestJacket((HttpServletRequest) request), response);
+                chain.doFilter(new PathMungingRequestJacket((HttpServletRequest) request), response);
             } finally {
                 requestTL.remove();
             }
@@ -66,12 +67,18 @@ public class WebSocketHelpyHelpertonFilter implements Filter {
 
     @Override
     public void destroy() {
-
     }
 
-    class PathInfoRemovingRequestJacket extends HttpServletRequestWrapper {
-        public PathInfoRemovingRequestJacket(HttpServletRequest request) {
+    class PathMungingRequestJacket extends HttpServletRequestWrapper {
+        public PathMungingRequestJacket(HttpServletRequest request) {
             super(request);
+        }
+
+        @Override
+        public String getServletPath() {
+            String superPath = super.getServletPath();
+
+            return "".equals(superPath) ? "/" : superPath;
         }
 
         @Override
