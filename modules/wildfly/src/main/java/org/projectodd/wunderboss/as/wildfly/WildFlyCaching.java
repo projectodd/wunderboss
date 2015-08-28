@@ -28,6 +28,7 @@ import org.projectodd.wunderboss.as.MSCService;
 import org.projectodd.wunderboss.as.ASUtils;
 import org.projectodd.wunderboss.caching.InfinispanCaching;
 import org.projectodd.wunderboss.caching.Encoder6;
+import org.projectodd.wunderboss.caching.Encoder8;
 import org.projectodd.wunderboss.caching.Config;
 import org.projectodd.wunderboss.caching.KeyEquivalenceCache;
 import org.projectodd.wunderboss.codecs.Codec;
@@ -39,8 +40,9 @@ public class WildFlyCaching extends InfinispanCaching {
 
     public WildFlyCaching(String name, Options<CreateOption> options) {
         super(name, options);
-        if (!ASUtils.containerIsWildFly9() &&
-                !ASUtils.containerIsWildFly10()) {
+        if (ASUtils.containerIsWildFly10()) {
+            this.encoder = new Encoder8();
+        } else if (!ASUtils.containerIsWildFly9()) {
             this.encoder = new Encoder6();
         }
         if (ASUtils.containerIsEAP()) {

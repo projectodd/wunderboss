@@ -73,6 +73,21 @@
     </dependency>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching-ispan8</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.projectodd.wunderboss</groupId>
+          <artifactId>wunderboss-caching</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.infinispan</groupId>
+          <artifactId>infinispan-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-transactions</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
