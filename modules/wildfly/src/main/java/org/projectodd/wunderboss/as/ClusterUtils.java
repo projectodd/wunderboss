@@ -66,8 +66,9 @@ public class ClusterUtils {
         return chan;
     }
 
-    private static final ServiceName WF8_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.stack");
-    private static final ServiceName WF9_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.factory.default-stack");
+    private static final ServiceName WF8_JGROUPS_STACK_NAME =  ServiceName.parse("jboss.jgroups.stack");
+    private static final ServiceName WF9_JGROUPS_STACK_NAME =  ServiceName.parse("jboss.jgroups.factory.default-stack");
+    private static final ServiceName WF10_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.factory.default");
 
     public static Object channelFactory() {
         ServiceRegistry registry = (ServiceRegistry)WunderBoss.options().get("service-registry");
@@ -75,6 +76,9 @@ public class ClusterUtils {
             ServiceController<?> serviceController = registry.getService(WF8_JGROUPS_STACK_NAME);
             if (serviceController == null) {
                 serviceController = registry.getService(WF9_JGROUPS_STACK_NAME);
+            }
+            if (serviceController == null) {
+                serviceController = registry.getService(WF10_JGROUPS_STACK_NAME);
             }
             return serviceController == null ? null : serviceController.getValue();
         }
