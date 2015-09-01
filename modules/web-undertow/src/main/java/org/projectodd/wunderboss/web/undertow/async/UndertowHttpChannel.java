@@ -66,6 +66,7 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
     @Override
     public void setTimeout(long timeout) {
         if (!cancelTimeout()) {
+            // the prior timeout has already fired
             return;
         }
         if (timeout > 0) {
