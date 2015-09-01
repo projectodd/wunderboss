@@ -31,23 +31,26 @@ public class ClusterUtils {
         return channelFactory() != null;
     }
 
-    private static final String WF8_CHANNEL_FACTORY_CLASS_NAME = "org.jboss.as.clustering.jgroups.ChannelFactory";
-    private static final String WF9_CHANNEL_FACTORY_CLASS_NAME = "org.wildfly.clustering.jgroups.ChannelFactory";
+    private static final String[] CHANNEL_FACTORY_CLASS_NAMES =
+            { "org.jboss.as.clustering.jgroups.ChannelFactory",  // WF8
+              "org.wildfly.clustering.jgroups.ChannelFactory" }; // WF9, WF10
 
     public static JChannel lockableChannel(final String id) throws Exception {
-        Class channelInterface;
-        try {
-            channelInterface = Class.forName(WF8_CHANNEL_FACTORY_CLASS_NAME);
-        } catch (ClassNotFoundException e) {
+        Class channelInterface = null;
+        Exception failure = null;
+        for (String each : CHANNEL_FACTORY_CLASS_NAMES) {
             try {
-                channelInterface = Class.forName(WF9_CHANNEL_FACTORY_CLASS_NAME);
-            } catch (ClassNotFoundException e2) {
-                throw new RuntimeException("Failed to find the ChannelFactory interface", e2);
+                channelInterface = Class.forName(each);
+                if (channelInterface != null) {
+                    break;
+                }
+            } catch (ClassNotFoundException e) {
+                failure = e;
             }
         }
  
         if (channelInterface == null) {
-            return null;
+            throw new RuntimeException("Failed to find the ChannelFactory interface", failure);
         }
 
         final Method createChannel = channelInterface.getDeclaredMethod("createChannel", String.class);
@@ -66,23 +69,23 @@ public class ClusterUtils {
         return chan;
     }
 
-    private static final ServiceName WF8_JGROUPS_STACK_NAME =  ServiceName.parse("jboss.jgroups.stack");
-    private static final ServiceName WF9_JGROUPS_STACK_NAME =  ServiceName.parse("jboss.jgroups.factory.default-stack");
-    private static final ServiceName WF10_JGROUPS_STACK_NAME = ServiceName.parse("jboss.jgroups.factory.default");
+    private static final ServiceName[] JGROUPS_FACTORY_NAMES =
+            { ServiceName.parse("jboss.jgroups.stack"),                 // WF8
+              ServiceName.parse("jboss.jgroups.factory.default-stack"), // WF9
+              ServiceName.parse("jboss.jgroups.factory.default") };     // WF10
 
     public static Object channelFactory() {
         ServiceRegistry registry = (ServiceRegistry)WunderBoss.options().get("service-registry");
+        ServiceController<?> serviceController = null;
         if (registry != null) {
-            ServiceController<?> serviceController = registry.getService(WF8_JGROUPS_STACK_NAME);
-            if (serviceController == null) {
-                serviceController = registry.getService(WF9_JGROUPS_STACK_NAME);
+            for(ServiceName each : JGROUPS_FACTORY_NAMES) {
+                serviceController = registry.getService(each);
+                if (serviceController != null) {
+                    break;
+                }
             }
-            if (serviceController == null) {
-                serviceController = registry.getService(WF10_JGROUPS_STACK_NAME);
-            }
-            return serviceController == null ? null : serviceController.getValue();
         }
 
-        return null;
+        return serviceController == null ? null : serviceController.getValue();
     }
 }
