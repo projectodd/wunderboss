@@ -72,7 +72,6 @@ public class ServletWeb implements Web<Servlet> {
                     servletRegistration.setAsyncSupported(true);
                     servletRegistration.setInitParameter(ORIGINAL_CONTEXT, context);
 
-                    // TODO: add this to UndertowWeb as well?
                     Map<String, Filter> filterMap = (Map<String, Filter>) options.get(RegisterOption.FILTER_MAP);
                     if (filterMap != null) {
                         for (Map.Entry<String, Filter> entry : filterMap.entrySet()) {

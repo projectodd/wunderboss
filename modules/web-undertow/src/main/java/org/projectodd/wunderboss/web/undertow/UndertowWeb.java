@@ -36,6 +36,9 @@ import io.undertow.server.session.SessionManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.InstanceFactory;
+import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ImmediateInstanceFactory;
 import io.undertow.util.Headers;
@@ -47,6 +50,8 @@ import org.slf4j.Logger;
 import org.xnio.OptionMap;
 import org.xnio.Xnio;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import java.io.File;
@@ -152,7 +157,9 @@ public class UndertowWeb implements Web<HttpHandler> {
         final ServletInfo servletInfo = Servlets.servlet(servletName != null ? servletName : servletClass.getSimpleName(),
                                                          servletClass,
                                                          new ImmediateInstanceFactory(servlet));
-        servletInfo.addMapping("/*");
+        final String mapping = "/*";
+
+        servletInfo.addMapping(mapping);
         // LoadOnStartup is required for any websocket Endpoints to work
         servletInfo.setLoadOnStartup(1);
         // Support async servlets
@@ -165,6 +172,20 @@ public class UndertowWeb implements Web<HttpHandler> {
                 .setIgnoreFlush(false)
                 .setDeploymentName(UUID.randomUUID().toString())
                 .addServlet(servletInfo);
+
+        Map<String, Filter> filterMap = (Map<String, Filter>) options.get(RegisterOption.FILTER_MAP);
+        if (filterMap != null) {
+            for (Map.Entry<String, Filter> entry : filterMap.entrySet()) {
+                final String filterName = entry.getKey() + servletName;
+                final Filter filter = entry.getValue();
+                FilterInfo filterInfo = Servlets.filter(filterName, filter.getClass(),
+                                                        new ImmediateInstanceFactory<>(filter));
+                filterInfo.setAsyncSupported(true);
+
+                servletBuilder.addFilterUrlMapping(filterName, mapping, DispatcherType.REQUEST);
+                servletBuilder.addFilter(filterInfo);
+            }
+        }
 
         // Required for any websocket support in undertow
         final WebSocketDeploymentInfo wsInfo = new WebSocketDeploymentInfo();
