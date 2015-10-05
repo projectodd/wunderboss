@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Red Hat, Inc, and individual contributors.
+ * Copyright 2015 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.as;
 
-import org.projectodd.wunderboss.ComponentProvider;
-import org.projectodd.wunderboss.Options;
+import org.projectodd.wunderboss.ec.AlwaysMasterClusterParticipant;
+import org.projectodd.wunderboss.ec.ClusterParticipant;
 
-public class SingletonContextProvider implements ComponentProvider<SingletonContext> {
+public class DaemonContextProvider extends org.projectodd.wunderboss.ec.DaemonContextProvider {
 
     @Override
-    public SingletonContext create(String name, Options options) {
-        if (options.getBoolean(SingletonContext.CreateOption.DAEMON)) {
-            return new DaemonContext(name, null, options);
-        } else {
-            return new SimpleContext(name, null, options);
-        }
+    protected ClusterParticipant clusterParticipant(final String name) {
+        return ClusterUtils.inCluster() ?
+                new SingletonClusterParticipant(name) :
+                AlwaysMasterClusterParticipant.INSTANCE;
     }
 }

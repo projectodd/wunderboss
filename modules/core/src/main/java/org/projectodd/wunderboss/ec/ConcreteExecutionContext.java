@@ -14,52 +14,55 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.ec;
 
-import org.projectodd.wunderboss.Options;
+public abstract class ConcreteExecutionContext implements ExecutionContext, ClusterChangeCallback {
 
-public class SimpleContext implements SingletonContext, ClusterChangeCallback {
-
-    public SimpleContext(String name, ClusterParticipant participant, Options<CreateOption> options) {
+    public ConcreteExecutionContext(final String name,
+                                    final ClusterParticipant clusterParticipant,
+                                    final boolean singleton) {
         this.name = name;
-        if (participant != null) {
-            participant.setClusterChangeCallback(this);
-        }
-        this.clusterParticipant = participant;
+        this.clusterParticipant = clusterParticipant;
+        this.singleton = singleton;
+
+        clusterParticipant.setClusterChangeCallback(this);
     }
 
     @Override
-    public SingletonContext setRunnable(Runnable r) {
-        this.runnable = r;
-
-        return this;
+    public void setAction(Runnable r) {
+        this.action = r;
     }
 
     @Override
     public void run() {
-        if (this.clusterParticipant == null ||
+        if (!this.singleton ||
                 this.clusterParticipant.isMaster()) {
-            this.runnable.run();
+            this.action.run();
         }
     }
 
     @Override
     public void clusterChanged(boolean wasMaster, boolean isMaster) {
-        //don't care
+        if (this.singleton &&
+                !wasMaster &&
+                isMaster) {
+            run();
+        }
     }
 
     @Override
-    public void start() throws Exception {
-
+    public void start() {
+        this.isRunning = true;
     }
 
     @Override
     public void stop() throws Exception {
+        this.isRunning = false;
     }
 
     @Override
     public boolean isRunning() {
-        return this.clusterParticipant != null;
+        return this.isRunning;
     }
 
     @Override
@@ -67,15 +70,11 @@ public class SimpleContext implements SingletonContext, ClusterChangeCallback {
         return this.name;
     }
 
-    protected Runnable runnable() {
-        return this.runnable;
-    }
+    protected boolean isRunning = false;
+    protected Runnable action;
+    protected final String name;
+    protected final ClusterParticipant clusterParticipant;
+    protected final boolean singleton;
 
-    protected ClusterParticipant clusterParticipant() {
-        return this.clusterParticipant;
-    }
 
-    private final String name;
-    private final ClusterParticipant clusterParticipant;
-    private Runnable runnable;
 }

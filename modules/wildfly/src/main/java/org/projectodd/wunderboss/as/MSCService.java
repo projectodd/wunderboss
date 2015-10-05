@@ -28,8 +28,10 @@ import org.projectodd.wunderboss.WunderBoss;
 import org.projectodd.wunderboss.as.wildfly.WildFlyCachingProvider;
 import org.projectodd.wunderboss.as.wildfly.WildFlyTransactionProvider;
 import org.projectodd.wunderboss.caching.Caching;
+import org.projectodd.wunderboss.ec.DaemonContext;
+import org.projectodd.wunderboss.ec.ImmediateContext;
 import org.projectodd.wunderboss.messaging.Messaging;
-import org.projectodd.wunderboss.singleton.SingletonContext;
+import org.projectodd.wunderboss.ec.ConcreteExecutionContext;
 import org.projectodd.wunderboss.transactions.Transaction;
 
 import javax.naming.Context;
@@ -77,7 +79,8 @@ public class MSCService implements Service<MSCService> {
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our caching
         }
-        WunderBoss.registerComponentProvider(SingletonContext.class, new SingletonContextProvider());
+        WunderBoss.registerComponentProvider(ImmediateContext.class, new ImmediateContextProvider());
+        WunderBoss.registerComponentProvider(DaemonContext.class, new DaemonContextProvider());
         WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
     }
 

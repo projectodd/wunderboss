@@ -18,7 +18,9 @@ package org.projectodd.wunderboss.scheduling;
 
 import org.projectodd.wunderboss.Options;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.singleton.SingletonContext;
+import org.projectodd.wunderboss.ec.ConcreteExecutionContext;
+import org.projectodd.wunderboss.ec.ExecutionContext;
+import org.projectodd.wunderboss.ec.ImmediateContext;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -109,17 +111,19 @@ public class QuartzScheduling implements Scheduling {
 
         start();
 
-        boolean replacedExisting = unschedule(name);
+        final boolean replacedExisting = unschedule(name);
 
-        JobDataMap jobDataMap = new JobDataMap();
+        final JobDataMap jobDataMap = new JobDataMap();
 
-        if (options.getBoolean(SINGLETON)) {
-            fn = WunderBoss.findOrCreateComponent(SingletonContext.class, name, null).setRunnable(fn);
-        }
+        final Map contextOptions = new HashMap();
+        contextOptions.put(ExecutionContext.CreateOption.SINGLETON, options.getBoolean(SINGLETON));
+
+        final ImmediateContext context = WunderBoss.findOrCreateComponent(ImmediateContext.class, name, contextOptions);
+        context.setAction(fn);
 
         // TODO: Quartz says only serializable things should be in here
-        jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, fn);
-
+        jobDataMap.put(RunnableJob.RUN_FUNCTION_KEY, context);
+        
         JobBuilder jobBuilder;
         if (options.getBoolean(ALLOW_CONCURRENT_EXEC)) {
             jobBuilder = JobBuilder.newJob(RunnableJob.class);

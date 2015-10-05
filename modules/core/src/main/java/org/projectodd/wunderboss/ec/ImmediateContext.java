@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.ec;
 
-public interface ClusterParticipant {
+public class ImmediateContext extends ConcreteExecutionContext {
 
-    boolean isMaster();
+    public ImmediateContext(String name,ClusterParticipant participant, boolean singleton) {
+        super(name, participant, singleton);
+    }
 
-    void setClusterChangeCallback(ClusterChangeCallback callback);
+    @Override
+    public void clusterChanged(boolean wasMaster, boolean isMaster) {
+        //don't care
+    }
+
 }
