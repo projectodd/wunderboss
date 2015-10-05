@@ -18,7 +18,6 @@ package org.projectodd.wunderboss.wildfly;
 
 import org.jboss.logging.Logger;
 import org.jgroups.Address;
-import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
 import org.jgroups.View;
@@ -26,8 +25,8 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.projectodd.wunderboss.WunderBoss;
-import org.projectodd.wunderboss.singleton.ClusterChangeCallback;
-import org.projectodd.wunderboss.singleton.ClusterParticipant;
+import org.projectodd.wunderboss.ec.ClusterChangeCallback;
+import org.projectodd.wunderboss.ec.ClusterParticipant;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,9 +37,33 @@ import java.util.concurrent.locks.Lock;
 public class SingletonClusterParticipant implements ClusterParticipant, RequestHandler, MembershipListener {
     public SingletonClusterParticipant(String name) {
         this.name = name;
-        this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class);
-        this.channel = (JChannel)this.channelWrapper.channel();
-        this.channelWrapper.registerHandler(name, this).addMembershipListener(this);
+        connect();
+    }
+
+    @Override
+    public synchronized void connect() {
+        if (this.channelWrapper == null) {
+            this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class);
+            try {
+                this.channelWrapper.start();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to start JGroups channel", e);
+            }
+            this.channelWrapper.registerHandler(name, this).addMembershipListener(this);
+        }
+    }
+
+    @Override
+    public synchronized void disconnect() {
+        if (this.channelWrapper != null) {
+            try {
+                this.channelWrapper.stop();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to stop JGroups channel", e);
+            }
+            this.channelWrapper = null;
+            this.currentMaster = null;
+        }
     }
 
     @Override
@@ -84,7 +107,7 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
     }
 
     public Address id() {
-        return this.channel.getAddress();
+        return this.channelWrapper.channel().getAddress();
     }
 
     public boolean isMasterWithoutInterrogatingCluster() {
@@ -170,8 +193,7 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
     }
 
     private final String name;
-    private final JChannel channel;
-    private final ChannelWrapper channelWrapper;
+    private ChannelWrapper channelWrapper;
     private Address currentMaster = null;
     private ClusterChangeCallback clusterChangeCallback;
 

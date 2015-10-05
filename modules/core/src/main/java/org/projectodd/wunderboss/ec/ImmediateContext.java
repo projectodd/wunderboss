@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.ec;
 
-import org.projectodd.wunderboss.ComponentProvider;
-import org.projectodd.wunderboss.Options;
+public class ImmediateContext extends ConcreteExecutionContext {
 
-public class SingletonContextProvider implements ComponentProvider<SingletonContext> {
+    public ImmediateContext(String name,ClusterParticipant participant, boolean singleton) {
+        super(name, participant, singleton);
+    }
 
     @Override
-    public SingletonContext create(String name, Options options) {
-        if (options.getBoolean(SingletonContext.CreateOption.DAEMON)) {
-            return new DaemonContext(name, null, options);
-        } else {
-            return new SimpleContext(name, null, options);
-        }
+    public void clusterChanged(boolean wasMaster, boolean isMaster) {
+        //don't care
     }
+
 }

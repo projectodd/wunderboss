@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Red Hat, Inc, and individual contributors.
+ * Copyright 2015 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.ec;
 
-public interface ClusterChangeCallback {
-
-    void clusterChanged(boolean wasMaster, boolean isMaster);
+public abstract class ExecutionContextProvider {
+    protected ClusterParticipant clusterParticipant(final String name) {
+        return AlwaysMasterClusterParticipant.INSTANCE;
+    }
 }

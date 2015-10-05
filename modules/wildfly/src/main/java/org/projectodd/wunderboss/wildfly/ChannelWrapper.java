@@ -61,6 +61,8 @@ public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, C
             this.channel.disconnect();
             this.channel.close();
             this.channel = null;
+            this.registeredHandlers.clear();
+            this.membershipListeners.clear();
         }
     }
 
@@ -74,7 +76,7 @@ public class ChannelWrapper extends ReceiverAdapter implements RequestHandler, C
             try {
                 start();
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException("Failed to start jgroups channel", e);
             }
         }
 

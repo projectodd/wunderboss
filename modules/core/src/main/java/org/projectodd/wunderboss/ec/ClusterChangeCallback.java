@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.singleton;
+package org.projectodd.wunderboss.ec;
 
-public interface ClusterParticipant {
+public interface ClusterChangeCallback {
 
-    boolean isMaster();
-
-    void setClusterChangeCallback(ClusterChangeCallback callback);
+    void clusterChanged(boolean wasMaster, boolean isMaster);
 }
