@@ -46,6 +46,14 @@ public class WunderBoss {
 
     private WunderBoss() {}
 
+    public static <T extends Component> T findComponent(Class<T> clazz) {
+        return findComponent(clazz, null);
+    }
+
+    public static <T extends Component> T findComponent(Class<T> clazz, String name) {
+        return (T) components.get(fullComponentName(clazz, name));
+    }
+
     public static <T extends Component> T findOrCreateComponent(Class<T> clazz) {
         return findOrCreateComponent(clazz, null, null);
     }
@@ -55,8 +63,8 @@ public class WunderBoss {
             name = "default";
         }
 
-        String fullName = clazz.getName() + ":" + name;
-        T component = (T) components.get(fullName);
+        T component = findComponent(clazz, name);
+        String fullName = fullComponentName(clazz, name);
         if (component != null) {
             log.debug("Returning existing component for " + fullName + ", ignoring options.");
         } else {
@@ -65,6 +73,10 @@ public class WunderBoss {
         }
 
         return component;
+    }
+
+    private static String fullComponentName(Class clazz, String name) {
+        return clazz.getName() + ":" + name;
     }
 
     public static Language findLanguage(String name) {
