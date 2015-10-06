@@ -103,11 +103,12 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
 
     @Override
     public synchronized void stop() throws TimeoutException, InterruptedException {
+        if (this.stopCallback != null) {
+            this.stopCallback.notify(this.name);
+        }
+
         if (isRunning()) {
             this.isRunning = false;
-            if (this.stopCallback != null) {
-                this.stopCallback.notify(this.name);
-            }
 
             this.thread.join(threadTimeout);
             if (this.thread.isAlive()) {
