@@ -43,7 +43,7 @@ public class SingletonClusterParticipant implements ClusterParticipant, RequestH
     @Override
     public synchronized void connect() {
         if (this.channelWrapper == null) {
-            this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class);
+            this.channelWrapper = WunderBoss.findOrCreateComponent(ChannelWrapper.class, this.name, null);
             try {
                 this.channelWrapper.start();
             } catch (Exception e) {
