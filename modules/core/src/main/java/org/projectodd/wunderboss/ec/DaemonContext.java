@@ -34,7 +34,7 @@ public interface DaemonContext extends ExecutionContext {
         /**
          * The amount of time a daemon context will wait for its thread to exit, in millis.
          */
-        public static final CreateOption DAEMON_THREAD_JOIN_TIMEOUT = opt("daemon_thread_join_timeout", 30000L, CreateOption.class);
+        public static final CreateOption STOP_TIMEOUT = opt("stop_timeout", 30000L, CreateOption.class);
 
     }
 

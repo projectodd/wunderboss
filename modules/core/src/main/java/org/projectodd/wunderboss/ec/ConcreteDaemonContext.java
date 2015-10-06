@@ -111,8 +111,8 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
 
             this.thread.join(threadTimeout);
             if (this.thread.isAlive()) {
-                throw new TimeoutException("Gave up after " + this.threadTimeout + " waiting for " +
-                                                   this.name + " daemon to exit.");
+                throw new TimeoutException("Gave up after " + this.threadTimeout + "ms waiting for " +
+                                                   this.name + " daemon to exit");
             }
         }
         this.clusterParticipant.disconnect();

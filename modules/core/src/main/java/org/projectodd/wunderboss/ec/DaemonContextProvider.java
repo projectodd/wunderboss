@@ -26,6 +26,6 @@ public class DaemonContextProvider extends ExecutionContextProvider implements C
         return new ConcreteDaemonContext(name,
                                          clusterParticipant(name),
                                          options.getBoolean(DaemonContext.CreateOption.SINGLETON),
-                                         options.getLong(DaemonContext.CreateOption.DAEMON_THREAD_JOIN_TIMEOUT));
+                                         options.getLong(DaemonContext.CreateOption.STOP_TIMEOUT));
     }
 }
