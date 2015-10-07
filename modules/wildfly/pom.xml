@@ -24,24 +24,35 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-core</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jgroups</groupId>
-      <artifactId>jgroups</artifactId>
-      <version>${version.jgroups}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.msc</groupId>
       <artifactId>jboss-msc</artifactId>
       <version>${version.jboss-msc}</version>
       <scope>provided</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.jboss.modules</groupId>
+      <artifactId>jboss-modules</artifactId>
+      <version>${version.jboss.modules}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-messaging</artifactId>
+      <version>${version.wildfly}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-clustering-singleton</artifactId>
+      <version>${version.wildfly}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-core</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-messaging-hornetq</artifactId>
@@ -90,20 +101,6 @@
       <groupId>org.projectodd.wunderboss</groupId>
       <artifactId>wunderboss-transactions</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.modules</groupId>
-      <artifactId>jboss-modules</artifactId>
-      <version>${version.jboss.modules}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.wildfly</groupId>
-      <artifactId>wildfly-messaging</artifactId>
-      <version>${version.wildfly}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

@@ -16,76 +16,137 @@
 
 package org.projectodd.wunderboss.as;
 
+import org.jboss.as.server.ServerEnvironment;
+import org.jboss.as.server.ServerEnvironmentService;
+import org.jboss.msc.service.DelegatingServiceContainer;
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceName;
-import org.jgroups.JChannel;
-import org.jgroups.protocols.CENTRAL_LOCK;
+import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.value.InjectedValue;
 import org.projectodd.wunderboss.WunderBoss;
-import java.lang.reflect.Method;
- 
- 
+import org.wildfly.clustering.singleton.SingletonElectionPolicy;
+import org.wildfly.clustering.singleton.SingletonServiceBuilderFactory;
+
+import java.lang.reflect.InvocationTargetException;
+
+
 public class ClusterUtils {
- 
-    public static boolean inCluster() {
-        return channelFactory() != null;
-    }
+    private static final ServiceName[] SINGLETON_FACTORY_NAMES =
+            { ServiceName.parse("jboss.clustering.singleton.builder.server.default"), // WF8,9
+              ServiceName.parse("jboss.clustering.singleton.server.default") };       // WF10
 
-    private static final String[] CHANNEL_FACTORY_CLASS_NAMES =
-            { "org.jboss.as.clustering.jgroups.ChannelFactory",  // WF8
-              "org.wildfly.clustering.jgroups.ChannelFactory" }; // WF9, WF10
-
-    public static JChannel lockableChannel(final String id) throws Exception {
-        Class channelInterface = null;
-        Exception failure = null;
-        for (String each : CHANNEL_FACTORY_CLASS_NAMES) {
-            try {
-                channelInterface = Class.forName(each);
-                if (channelInterface != null) {
-                    break;
-                }
-            } catch (ClassNotFoundException e) {
-                failure = e;
-            }
-        }
- 
-        if (channelInterface == null) {
-            throw new RuntimeException("Failed to find the ChannelFactory interface", failure);
-        }
-
-        final Method createChannel = channelInterface.getDeclaredMethod("createChannel", String.class);
-
-        final JChannel chan = (JChannel)createChannel.invoke(channelFactory(), id);
- 
-        //TODO: check the stack and see if it already contains a lock proto
-        // and we should doc that as the preferred way, since you can configure the number of backups?
-        final CENTRAL_LOCK l = new CENTRAL_LOCK();
-        l.setNumberOfBackups(1);
- 
-        chan.getProtocolStack().addProtocol(l);
- 
-        l.init();
- 
-        return chan;
-    }
+    private static final ServiceName SINGLETON_NAME = ServiceName.of("wunderboss", "singleton");
 
     private static final ServiceName[] JGROUPS_FACTORY_NAMES =
-            { ServiceName.parse("jboss.jgroups.stack"),                 // WF8
+            { ServiceName.parse("jboss.jgroups.stack"),                 // WF8, EAP
               ServiceName.parse("jboss.jgroups.factory.default-stack"), // WF9
               ServiceName.parse("jboss.jgroups.factory.default") };     // WF10
 
-    public static Object channelFactory() {
-        ServiceRegistry registry = (ServiceRegistry)WunderBoss.options().get("service-registry");
-        ServiceController<?> serviceController = null;
-        if (registry != null) {
-            for(ServiceName each : JGROUPS_FACTORY_NAMES) {
-                serviceController = registry.getService(each);
-                if (serviceController != null) {
-                    break;
+    public static boolean inCluster() {
+        if (inCluster == null) {
+            //look for a jgroups stack to see if we are clustered
+            ServiceRegistry registry = (ServiceRegistry) WunderBoss.options().get("service-registry");
+            if (registry != null) {
+                for (ServiceName each : JGROUPS_FACTORY_NAMES) {
+                    if (registry.getService(each) != null) {
+                        inCluster = true;
+                        break;
+                    }
                 }
+            }
+
+            if (inCluster == null) {
+                inCluster = false;
             }
         }
 
-        return serviceController == null ? null : serviceController.getValue();
+        return inCluster;
     }
+
+    //TODO: expose election policy, quorum?
+    public static void installSingleton(final ServiceRegistry registry,
+                                        final ServiceTarget target,
+                                        final Service service,
+                                        final String name) {
+        final String deploymentName = (String)WunderBoss.options().get("deployment-name");
+        final ServiceName serviceName = SINGLETON_NAME.append(deploymentName).append(name);
+        if (ASUtils.containerIsEAP()) {
+            installEAPSingleton(registry, target, service, serviceName);
+        } else {
+            installWildFlySingleton(registry, target, service, serviceName);
+        }
+    }
+
+    private static void installEAPSingleton(final ServiceRegistry registry,
+                                            final ServiceTarget target,
+                                            final Service service,
+                                            final ServiceName name) {
+        try {
+            Class clazz = ClusterUtils.class.getClassLoader()
+                    .loadClass("org.jboss.as.clustering.singleton.SingletonService");
+            Object singletonService = clazz.getDeclaredConstructor(Service.class, ServiceName.class)
+                    .newInstance(service, name);
+            ModuleUtils.lookupMethodByName(clazz, "setElectionPolicy").invoke(singletonService, electionPolicy());
+            ServiceBuilder builder = (ServiceBuilder)ModuleUtils.lookupMethod(clazz, "build", ServiceTarget.class)
+                    .invoke(singletonService, new DelegatingServiceContainer(target, registry));
+            builder.setInitialMode(ServiceController.Mode.ACTIVE).install();
+
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException e) {
+            throw new RuntimeException("Failed to install singleton service", e);
+        }
+    }
+
+
+
+    private static void installWildFlySingleton(final ServiceRegistry registry,
+                                                final ServiceTarget target,
+                                                final Service service,
+                                                final ServiceName name) {
+        SingletonServiceBuilderFactory factory = null;
+        for(ServiceName each : SINGLETON_FACTORY_NAMES) {
+            ServiceController factoryService = registry.getService(each);
+            if (factoryService != null) {
+                factory = (SingletonServiceBuilderFactory)factoryService.getValue();
+            }
+        }
+
+        if (factory == null) {
+            throw new RuntimeException("Failed to locate singleton builder");
+        }
+
+        final InjectedValue<ServerEnvironment> env = new InjectedValue<>();
+        factory.createSingletonServiceBuilder(name, service)
+                .electionPolicy((SingletonElectionPolicy)electionPolicy())
+                .requireQuorum(1)
+                .build(target)
+                .addDependency(ServerEnvironmentService.SERVICE_NAME, ServerEnvironment.class, env)
+                .setInitialMode(ServiceController.Mode.ACTIVE)
+                .install();
+    }
+
+    private static Object electionPolicy() {
+        String className;
+        if (ASUtils.containerIsEAP()) {
+            className = "org.jboss.as.clustering.singleton.election.SimpleSingletonElectionPolicy";
+        } else {
+            className = "org.projectodd.wunderboss.as.wildfly.RandomSingletonElectionPolicy";
+        }
+
+        try {
+            Class clazz = ClusterUtils.class.getClassLoader().loadClass(className);
+
+            return clazz.newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to load election policy", e);
+        }
+    }
+
+    private static Boolean inCluster = null;
 }

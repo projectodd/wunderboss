@@ -23,17 +23,12 @@ public class AlwaysMasterClusterParticipant implements ClusterParticipant {
     }
 
     @Override
-    public void setClusterChangeCallback(ClusterChangeCallback callback) {
+    public void whenMasterAcquired(Runnable r) {
 
     }
 
     @Override
-    public void connect() {
-
-    }
-
-    @Override
-    public void disconnect() {
+    public void whenMasterLost(Runnable r) {
 
     }
 

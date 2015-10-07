@@ -20,11 +20,8 @@ public class ImmediateContext extends ConcreteExecutionContext {
 
     public ImmediateContext(String name,ClusterParticipant participant, boolean singleton) {
         super(name, participant, singleton);
+        // we don't care about cluster changes, since we only want to check
+        // when run is invoked directly
+        this.clusterParticipant.whenMasterAcquired(null);
     }
-
-    @Override
-    public void clusterChanged(boolean wasMaster, boolean isMaster) {
-        //don't care
-    }
-
 }

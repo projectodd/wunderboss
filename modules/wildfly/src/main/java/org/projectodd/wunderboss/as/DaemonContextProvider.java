@@ -16,15 +16,33 @@
 
 package org.projectodd.wunderboss.as;
 
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceTarget;
 import org.projectodd.wunderboss.ec.AlwaysMasterClusterParticipant;
 import org.projectodd.wunderboss.ec.ClusterParticipant;
 
 public class DaemonContextProvider extends org.projectodd.wunderboss.ec.DaemonContextProvider {
+    public DaemonContextProvider(final ServiceRegistry registry, final ServiceTarget target) {
+        this.registry = registry;
+        this.target = target;
+    }
 
     @Override
-    protected ClusterParticipant clusterParticipant(final String name) {
-        return ClusterUtils.inCluster() ?
-                new SingletonClusterParticipant(name) :
-                AlwaysMasterClusterParticipant.INSTANCE;
+    protected ClusterParticipant clusterParticipant(final String name, final boolean singleton) {
+        ClusterParticipant participant;
+        if (singleton
+                && ClusterUtils.inCluster()) {
+            participant = new SingletonClusterParticipant();
+            ClusterUtils.installSingleton(this.registry, this.target, (Service)participant,
+                                          "daemon-" + name);
+        } else {
+            participant = AlwaysMasterClusterParticipant.INSTANCE;
+        }
+
+        return participant;
     }
+
+    private final ServiceRegistry registry;
+    private final ServiceTarget target;
 }

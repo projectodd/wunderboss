@@ -75,7 +75,7 @@ public class ModuleUtils {
         return loaders;
     }
 
-    protected static Method lookupMethod(Class clazz, String methodName, Class... argClasses) {
+    public static Method lookupMethod(Class clazz, String methodName, Class... argClasses) {
         Method method;
         try {
         method = clazz.getDeclaredMethod(methodName, argClasses);
@@ -85,6 +85,17 @@ public class ModuleUtils {
         }
 
         return method;
+    }
+
+    public static Method lookupMethodByName(Class clazz, String name) {
+        for(Method m : clazz.getMethods()) {
+            if (m.getName().equals(name)) {
+
+                return m;
+            }
+        }
+
+        return null;
     }
 
 }

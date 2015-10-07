@@ -8,8 +8,9 @@
       <module name="io.undertow.websocket" optional="true"/>
       <module name="org.jboss.modules"/>
       <module name="org.wildfly.extension.undertow" optional="true"/>
-      <module name="org.wildfly.clustering.jgroups.api" optional="true"/>
-      <module name="org.jboss.as.clustering.jgroups" optional="true"/>
+      <module name="org.wildfly.clustering.api" optional="true"/>
+      <module name="org.wildfly.clustering.singleton" optional="true"/>
+      <module name="org.jboss.as.clustering.singleton" optional="true"/>
       <module name="org.jgroups" optional="true"/>
       <module name="org.infinispan"/>
       <module name="org.infinispan.commons"  optional="true"/>
