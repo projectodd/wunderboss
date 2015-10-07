@@ -230,6 +230,7 @@ public abstract class JMSDestination extends WithCloseables implements Destinati
     @Override
     public void stop() throws Exception {
         if (!this.stopped) {
+            closeCloseables();
             this.broker.destroyDestination(this);
             this.stopped = true;
         }
