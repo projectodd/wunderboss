@@ -41,7 +41,7 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
             @Override
             public void run() {
                 if (!isRunning) {
-                    thread = new Thread(wrappedAction(action), "daemon-thread[" + name + "]");
+                    thread = new Thread(wrappedAction(action), "wunderboss-daemon-thread[" + name + "]");
                     thread.start();
                     isRunning = true;
                 }
@@ -64,7 +64,6 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
 
                 if (error != null) {
                     isStarted = false;
-                    clusterParticipant.disconnect();
                     errorCallback.notify(name, error);
                 }
             }
@@ -72,7 +71,7 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
     }
     
     /**
-     * This runnable will be called when the daemon context stops, but only if the daemon is actually running.
+     * This runnable will be called when the daemon context stops, but only if the daemon has ran.
      */
     @Override
     public void setStopCallback(StopCallback c) {
@@ -94,8 +93,7 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
 
     @Override
     public void start() {
-        if (!isStarted()) {
-            this.clusterParticipant.connect();
+        if (!isRunning()) {
             this.isStarted = true;
             run();
         }
@@ -118,7 +116,6 @@ public class ConcreteDaemonContext extends ConcreteExecutionContext implements D
                 }
             }
             
-            this.clusterParticipant.disconnect();
             this.isStarted = false;
         }
     }

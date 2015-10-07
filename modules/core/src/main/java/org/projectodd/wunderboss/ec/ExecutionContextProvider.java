@@ -17,7 +17,7 @@
 package org.projectodd.wunderboss.ec;
 
 public abstract class ExecutionContextProvider {
-    protected ClusterParticipant clusterParticipant(final String name) {
+    protected ClusterParticipant clusterParticipant(final String name, final boolean singleton) {
         return AlwaysMasterClusterParticipant.INSTANCE;
     }
 }

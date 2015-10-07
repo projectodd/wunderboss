@@ -23,9 +23,11 @@ public class DaemonContextProvider extends ExecutionContextProvider implements C
 
     @Override
     public DaemonContext create(final String name, final Options options) {
+        final boolean singleton = options.getBoolean(DaemonContext.CreateOption.SINGLETON);
+
         return new ConcreteDaemonContext(name,
-                                         clusterParticipant(name),
-                                         options.getBoolean(DaemonContext.CreateOption.SINGLETON),
+                                         clusterParticipant(name, singleton),
+                                         singleton,
                                          options.getLong(DaemonContext.CreateOption.STOP_TIMEOUT));
     }
 }

@@ -81,9 +81,13 @@ public class WildFlyService implements Service<WildFlyService> {
         } catch (LinkageError ignored) {
             // Ignore - perhaps the user isn't using our caching
         }
-        WunderBoss.registerComponentProvider(ImmediateContext.class, new ImmediateContextProvider());
-        WunderBoss.registerComponentProvider(DaemonContext.class, new DaemonContextProvider());
-        WunderBoss.registerComponentProvider(ChannelWrapper.class, new ChannelProvider());
+
+        WunderBoss.registerComponentProvider(ImmediateContext.class,
+                                             new ImmediateContextProvider(this.serviceRegistry,
+                                                                          this.serviceTarget));
+        WunderBoss.registerComponentProvider(DaemonContext.class,
+                                             new DaemonContextProvider(this.serviceRegistry,
+                                                                       this.serviceTarget));
     }
 
     @Override

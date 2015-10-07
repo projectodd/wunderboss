@@ -17,13 +17,10 @@
 package org.projectodd.wunderboss.ec;
 
 public interface ClusterParticipant {
-
     boolean isMaster();
 
-    void setClusterChangeCallback(ClusterChangeCallback callback);
+    void whenMasterAcquired(Runnable r);
 
-    void connect();
-
-    void disconnect();
+    void whenMasterLost(Runnable r);
 }
 

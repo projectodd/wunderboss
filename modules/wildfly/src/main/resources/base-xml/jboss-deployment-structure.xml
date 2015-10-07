@@ -7,16 +7,18 @@
       <module name="io.undertow.servlet"/>
       <module name="io.undertow.websocket"/>
       <module name="org.jboss.modules"/>
-      <module name="org.wildfly.extension.undertow"/>
-      <module name="org.wildfly.clustering.jgroups.api" optional="true"/>
-      <module name="org.jboss.as.clustering.jgroups" optional="true"/>
+      <module name="org.wildfly.extension.undertow" optional="true"/>
+      <module name="org.wildfly.clustering.api" optional="true"/>
+      <module name="org.wildfly.clustering.singleton" optional="true"/>
+      <module name="org.jboss.as.clustering.singleton" optional="true"/>
       <module name="org.jgroups" optional="true"/>
       <module name="org.infinispan"/>
       <module name="org.infinispan.commons"/>
       <module name="org.jboss.as.clustering.infinispan"/>
       <module name="org.jboss.xnio"/>
       <module name="org.jboss.as.messaging"/>
-
+      <module name="org.jboss.as.server" optional="true"/>
+      
       <system export="true">
         <paths>
           <!-- Recent versions of the nokogiri Ruby gem depends on some JVM

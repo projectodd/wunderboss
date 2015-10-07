@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package org.projectodd.wunderboss.ec;
+package org.projectodd.wunderboss.as.wildfly;
 
-import org.projectodd.wunderboss.ComponentProvider;
-import org.projectodd.wunderboss.Options;
+import org.wildfly.clustering.group.Node;
+import org.wildfly.clustering.singleton.SingletonElectionPolicy;
 
-public class ImmediateContextProvider extends ExecutionContextProvider implements ComponentProvider<ImmediateContext> {
+import java.util.List;
+import java.util.Random;
+
+/*
+ * WF 9+ provides a random impl, but we need our own to support WF8
+ */
+public class RandomSingletonElectionPolicy implements SingletonElectionPolicy {
+
+    private final Random random = new Random(System.currentTimeMillis());
+
     @Override
-    public ImmediateContext create(String name, Options options) {
-        final boolean singleton = options.getBoolean(DaemonContext.CreateOption.SINGLETON);
-
-        return new ImmediateContext(name,
-                                    clusterParticipant(name, singleton),
-                                    singleton);
+    public Node elect(List<Node> nodes) {
+        int size = nodes.size();
+        return (size > 0) ? nodes.get(this.random.nextInt(size)) : null;
     }
 }

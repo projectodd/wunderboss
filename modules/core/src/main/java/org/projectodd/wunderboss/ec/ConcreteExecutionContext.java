@@ -16,7 +16,7 @@
 
 package org.projectodd.wunderboss.ec;
 
-public abstract class ConcreteExecutionContext implements ExecutionContext, ClusterChangeCallback {
+public abstract class ConcreteExecutionContext implements ExecutionContext {
 
     public ConcreteExecutionContext(final String name,
                                     final ClusterParticipant clusterParticipant,
@@ -25,7 +25,25 @@ public abstract class ConcreteExecutionContext implements ExecutionContext, Clus
         this.clusterParticipant = clusterParticipant;
         this.singleton = singleton;
 
-        clusterParticipant.setClusterChangeCallback(this);
+        clusterParticipant.whenMasterAcquired(new Runnable() {
+            @Override
+            public void run() {
+                ConcreteExecutionContext.this.start();
+            }
+        });
+
+        clusterParticipant.whenMasterLost(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ConcreteExecutionContext.this.stop();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+
     }
 
     @Override
@@ -38,15 +56,6 @@ public abstract class ConcreteExecutionContext implements ExecutionContext, Clus
         if (!this.singleton ||
                 this.clusterParticipant.isMaster()) {
             this.action.run();
-        }
-    }
-
-    @Override
-    public void clusterChanged(boolean wasMaster, boolean isMaster) {
-        if (this.singleton &&
-                !wasMaster &&
-                isMaster) {
-            run();
         }
     }
 
