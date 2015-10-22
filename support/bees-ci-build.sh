@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is the bees CI build. Any changes to the build script should be
+# This is the bees CI build. Any changes to the build should be
 # here instead if in the bees config.
 
 set -e
@@ -33,7 +33,7 @@ mark "Building"
 mvn -B -s ${SETTINGS_FILE} install
 
 mark "Testing messaging against HornetQ 2.3"
-mvn -B -s ${SETTINGS_FILE} -f modules/messaging-hornetq/pom.xml -P hornetq-2.3 test
+mvn -B -s ${SETTINGS_FILE} -f messaging-hornetq/pom.xml -P hornetq-2.3 test
 
 mark "Deploying"
 mvn -B -s ${SETTINGS_FILE} -Pbees deploy
