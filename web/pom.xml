@@ -3,20 +3,20 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-messaging-hornetq</artifactId>
-  <name>WunderBoss HornetQ Messaging Module</name>
+  <artifactId>wunderboss-web</artifactId>
+  <name>WunderBoss Web Module</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.hornetq>2.4.5.Final</version.hornetq>
+    <version.javax-websocket>1.1.0.Final</version.javax-websocket>
+    <version.javax-servlet>1.0.0.Final</version.javax-servlet>
   </properties>
 
   <dependencies>
@@ -27,33 +27,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-messaging</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.jboss.spec.javax.websocket</groupId>
+      <artifactId>jboss-websocket-api_1.1_spec</artifactId>
+      <version>${version.javax-websocket}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.hornetq</groupId>
-      <artifactId>hornetq-server</artifactId>
-      <version>${version.hornetq}</version>
+      <groupId>org.jboss.spec.javax.servlet</groupId>
+      <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+      <version>${version.javax-servlet}</version>
     </dependency>
-
-    <dependency>
-      <groupId>org.hornetq</groupId>
-      <artifactId>hornetq-jms-server</artifactId>
-      <version>${version.hornetq}</version>
-    </dependency>
-
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>hornetq-2.3</id>
-      <properties>
-        <version.hornetq>2.3.25.Final</version.hornetq>
-      </properties>
-    </profile>
-  </profiles>
 
   <build>
     <plugins>

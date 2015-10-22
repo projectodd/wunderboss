@@ -3,41 +3,41 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-web</artifactId>
-  <name>WunderBoss Web Module</name>
+  <artifactId>wunderboss-caching-ispan5</artifactId>
+  <name>WunderBoss Caching Module for Infinispan 5.x</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.javax-websocket>1.1.0.Final</version.javax-websocket>
-    <version.javax-servlet>1.0.0.Final</version.javax-servlet>
+    <version.infinispan>5.2.11.Final</version.infinispan>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-core</artifactId>
+      <artifactId>wunderboss-caching-ispan6</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.infinispan</groupId>
+          <artifactId>infinispan-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.spec.javax.websocket</groupId>
-      <artifactId>jboss-websocket-api_1.1_spec</artifactId>
-      <version>${version.javax-websocket}</version>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-core</artifactId>
+      <version>${version.infinispan}</version>
+      <scope>provided</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.jboss.spec.javax.servlet</groupId>
-      <artifactId>jboss-servlet-api_3.1_spec</artifactId>
-      <version>${version.javax-servlet}</version>
-    </dependency>
   </dependencies>
 
   <build>

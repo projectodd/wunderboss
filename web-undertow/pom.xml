@@ -3,17 +3,20 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-messaging</artifactId>
-  <name>WunderBoss Messaging Module</name>
+  <artifactId>wunderboss-web-undertow</artifactId>
+  <name>WunderBoss Undertow Web Module</name>
 
   <packaging>jar</packaging>
+
+  <properties>
+    <version.undertow>1.3.0.Beta9</version.undertow>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -23,17 +26,28 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.spec.javax.jms</groupId>
-      <artifactId>jboss-jms-api_2.0_spec</artifactId>
-      <version>1.0.0.Final</version>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-web</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.spec.javax.transaction</groupId>
-      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
-      <version>1.0.0.Final</version>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-core</artifactId>
+      <version>${version.undertow}</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-servlet</artifactId>
+      <version>${version.undertow}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-websockets-jsr</artifactId>
+      <version>${version.undertow}</version>
+    </dependency>
   </dependencies>
 
   <build>

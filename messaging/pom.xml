@@ -3,21 +3,16 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-scheduling</artifactId>
-  <name>WunderBoss Scheduling Module</name>
+  <artifactId>wunderboss-messaging</artifactId>
+  <name>WunderBoss Messaging Module</name>
 
   <packaging>jar</packaging>
-
-  <properties>
-    <version.quartz-scheduler>2.2.1</version.quartz-scheduler>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -27,24 +22,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.quartz-scheduler</groupId>
-      <artifactId>quartz</artifactId>
-      <version>${version.quartz-scheduler}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.transaction</groupId>
-          <artifactId>jta</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>c3p0</groupId>
-          <artifactId>c3p0</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.jboss.spec.javax.jms</groupId>
+      <artifactId>jboss-jms-api_2.0_spec</artifactId>
+      <version>1.0.0.Final</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.jboss.spec.javax.transaction</groupId>
+      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
+      <version>1.0.0.Final</version>
+    </dependency>
+
   </dependencies>
 
   <build>

@@ -3,43 +3,56 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-caching-ispan5</artifactId>
-  <name>WunderBoss Caching Module for Infinispan 5.x</name>
+  <artifactId>wunderboss-messaging-hornetq</artifactId>
+  <name>WunderBoss HornetQ Messaging Module</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.infinispan>5.2.11.Final</version.infinispan>
+    <version.hornetq>2.4.5.Final</version.hornetq>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-caching-ispan6</artifactId>
+      <artifactId>wunderboss-core</artifactId>
       <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.infinispan</groupId>
-          <artifactId>infinispan-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-core</artifactId>
-      <version>${version.infinispan}</version>
-      <scope>provided</scope>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-messaging</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-server</artifactId>
+      <version>${version.hornetq}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hornetq</groupId>
+      <artifactId>hornetq-jms-server</artifactId>
+      <version>${version.hornetq}</version>
     </dependency>
 
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>hornetq-2.3</id>
+      <properties>
+        <version.hornetq>2.3.25.Final</version.hornetq>
+      </properties>
+    </profile>
+  </profiles>
 
   <build>
     <plugins>

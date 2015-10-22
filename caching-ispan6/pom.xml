@@ -3,20 +3,19 @@
 
   <parent>
     <groupId>org.projectodd.wunderboss</groupId>
-    <artifactId>wunderboss-modules</artifactId>
+    <artifactId>wunderboss</artifactId>
     <version>0.9.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-caching-ispan8</artifactId>
-  <name>WunderBoss Caching Module for Infinispan 8.x</name>
+  <artifactId>wunderboss-caching-ispan6</artifactId>
+  <name>WunderBoss Caching Module for Infinispan 6.x</name>
 
   <packaging>jar</packaging>
 
   <properties>
-    <version.infinispan>8.0.0.CR1</version.infinispan>
+    <version.infinispan>6.0.2.Final</version.infinispan>
   </properties>
 
   <dependencies>
@@ -43,7 +42,6 @@
 
   <build>
     <plugins>
-
       <plugin>
         <groupId>com.theoryinpractise</groupId>
         <artifactId>clojure-maven-plugin</artifactId>
@@ -57,17 +55,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-
     </plugins>
   </build>
 
