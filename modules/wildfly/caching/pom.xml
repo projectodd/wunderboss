@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>org.projectodd.wunderboss</groupId>
+    <artifactId>wunderboss-wildfly-parent</artifactId>
+    <version>0.9.1-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.projectodd.wunderboss</groupId>
+  <artifactId>wunderboss-wildfly-caching</artifactId>
+  <name>WunderBoss WildFly/EAP Caching Module</name>
+
+  <packaging>jar</packaging>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-core</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching-ispan5</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.projectodd.wunderboss</groupId>
+          <artifactId>wunderboss-caching</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-caching-ispan8</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.projectodd.wunderboss</groupId>
+          <artifactId>wunderboss-caching</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.infinispan</groupId>
+          <artifactId>infinispan-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+</project>

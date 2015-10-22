@@ -9,19 +9,26 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.projectodd.wunderboss</groupId>
-  <artifactId>wunderboss-wildfly</artifactId>
-  <name>WunderBoss WildFly/EAP Module</name>
+  <artifactId>wunderboss-wildfly-parent</artifactId>
+  <name>WunderBoss WildFly/EAP Parent Module</name>
 
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <properties>
     <version.jboss.modules>1.3.6.Final</version.jboss.modules>
     <version.wildfly>8.2.0.Final</version.wildfly>
-    <version.jgroups>3.2.13.Final</version.jgroups>    <!-- the version used by EAP 6.4 -->
     <version.jboss-msc>1.1.5.Final</version.jboss-msc> <!-- the version used by EAP 6.4 -->
   </properties>
 
+  <modules>
+    <module>core</module>
+    <module>caching</module>
+    <module>messaging</module>
+    <module>singletons</module>
+    <module>transactions</module>
+    <module>wildfly</module>
+  </modules>
+  
   <dependencies>
     <dependency>
       <groupId>org.jboss.msc</groupId>
@@ -33,74 +40,6 @@
       <groupId>org.jboss.modules</groupId>
       <artifactId>jboss-modules</artifactId>
       <version>${version.jboss.modules}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.wildfly</groupId>
-      <artifactId>wildfly-messaging</artifactId>
-      <version>${version.wildfly}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.wildfly</groupId>
-      <artifactId>wildfly-clustering-singleton</artifactId>
-      <version>${version.wildfly}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-core</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-messaging-hornetq</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-web</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-caching</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-caching-ispan5</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.projectodd.wunderboss</groupId>
-          <artifactId>wunderboss-caching</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-caching-ispan8</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.projectodd.wunderboss</groupId>
-          <artifactId>wunderboss-caching</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.infinispan</groupId>
-          <artifactId>infinispan-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.projectodd.wunderboss</groupId>
-      <artifactId>wunderboss-transactions</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

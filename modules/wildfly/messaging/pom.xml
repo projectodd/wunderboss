@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>org.projectodd.wunderboss</groupId>
+    <artifactId>wunderboss-wildfly-parent</artifactId>
+    <version>0.9.1-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.projectodd.wunderboss</groupId>
+  <artifactId>wunderboss-wildfly-messaging</artifactId>
+  <name>WunderBoss WildFly/EAP Messaging Module</name>
+
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-core</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wildfly</groupId>
+      <artifactId>wildfly-messaging</artifactId>
+      <version>${version.wildfly}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-messaging-hornetq</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+</project>

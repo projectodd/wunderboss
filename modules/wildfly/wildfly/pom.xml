@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <parent>
+    <groupId>org.projectodd.wunderboss</groupId>
+    <artifactId>wunderboss-wildfly-parent</artifactId>
+    <version>0.9.1-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>wunderboss-wildfly</artifactId>
+  <name>WunderBoss WildFly/EAP Module</name>
+
+  <!-- should be pom, but lein assumes everything has a jar -->
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+        <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-caching</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-messaging</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-singletons</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectodd.wunderboss</groupId>
+      <artifactId>wunderboss-wildfly-transactions</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+</project>
