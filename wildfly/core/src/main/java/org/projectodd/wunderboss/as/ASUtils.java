@@ -236,49 +236,59 @@ public class ASUtils {
     }
 
     static {
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        String version = null;
-        String productName = null;
-        try {
-            ObjectName name = new ObjectName("jboss.as:management-root=server");
+        final String swarmVersion = System.getProperty("wildfly.swarm.version");
+        if (swarmVersion != null) {
+            CONTAINER_TYPE = ContainerType.WILDFLY;
+            CONTAINER_IS_WILDFLY_9 = false;
+            CONTAINER_IS_WILDFLY_10 = true;
+            CONTAINER_VERSION = "unknown";
+        } else {
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            String version = null;
+            String productName = null;
+            try {
+                ObjectName name = new ObjectName("jboss.as:management-root=server");
 
-            // EAP & 9.x stores it under "productVersion"
-            version = (String)mbs.getAttribute(name, "productVersion");
-            if (version == null) {
-                // 8.x stores it under "releaseVersion"
-                version = (String)mbs.getAttribute(name, "releaseVersion");
+                // EAP & 9.x stores it under "productVersion"
+                version = (String) mbs.getAttribute(name, "productVersion");
+                if (version == null) {
+                    // 8.x stores it under "releaseVersion"
+                    version = (String) mbs.getAttribute(name, "releaseVersion");
+                }
+
+                productName = (String) mbs.getAttribute(name, "productName");
+
+            } catch (OperationsException |
+                    MBeanException |
+                    ReflectionException ignored) {
             }
 
-            productName = (String) mbs.getAttribute(name, "productName");
+            CONTAINER_VERSION = version;
 
-        } catch (OperationsException |
-                MBeanException |
-                ReflectionException ignored) {}
+            // WF 8 doesn't set the productName, so we can't identify solely based on it
 
-        CONTAINER_VERSION = version;
+            ContainerType type = ContainerType.UNKNOWN;
+            if ("EAP".equals(productName)) {
+                type = ContainerType.EAP;
+            } else if (version != null &&
+                    version.startsWith("8.")) {
+                type = ContainerType.WILDFLY;
+            } else if (productName != null &&
+                    productName.startsWith("WildFly")) {
+                // WF 9 (and up) actually set the productName
+                type = ContainerType.WILDFLY;
+            }
 
-        // WF 8 doesn't set the productName, so we can't identify solely based on it
-
-        ContainerType type = ContainerType.UNKNOWN;
-        if ("EAP".equals(productName)) {
-            type = ContainerType.EAP;
-        } else if (version != null &&
-                version.startsWith("8.")) {
-            type = ContainerType.WILDFLY;
-        } else if (productName != null &&
-                productName.startsWith("WildFly")) {
-            // WF 9 (and up) actually set the productName
-            type = ContainerType.WILDFLY;
+            CONTAINER_TYPE = type;
+            CONTAINER_IS_WILDFLY_9 = type == ContainerType.WILDFLY &&
+                    version != null &&
+                    version.startsWith("9.");
+            CONTAINER_IS_WILDFLY_10 = type == ContainerType.WILDFLY &&
+                    version != null &&
+                    version.startsWith("10.");
         }
-
-        CONTAINER_TYPE = type;
-        CONTAINER_IS_WILDFLY_9 = type == ContainerType.WILDFLY &&
-                version != null &&
-                version.startsWith("9.");
-        CONTAINER_IS_WILDFLY_10 = type == ContainerType.WILDFLY &&
-                version != null &&
-                version.startsWith("10.");
     }
+
     private static final String CONTAINER_VERSION;
     private static final ContainerType CONTAINER_TYPE;
     private static final boolean CONTAINER_IS_WILDFLY_9;
