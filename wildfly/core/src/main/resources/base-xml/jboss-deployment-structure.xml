@@ -3,22 +3,29 @@
   <deployment>
 
     <dependencies>
+      <module name="org.jboss.modules"/>
+      
+      <module name="org.jboss.as.server" optional="true"/>
+
       <module name="io.undertow.core" optional="true"/>
       <module name="io.undertow.servlet" optional="true"/>
       <module name="io.undertow.websocket" optional="true"/>
-      <module name="org.jboss.modules"/>
       <module name="org.wildfly.extension.undertow" optional="true"/>
+      <module name="org.jboss.xnio" optional="true"/>
+            
       <module name="org.wildfly.clustering.api" optional="true"/>
       <module name="org.wildfly.clustering.singleton" optional="true"/>
       <module name="org.jboss.as.clustering.singleton" optional="true"/>
       <module name="org.jgroups" optional="true"/>
-      <module name="org.infinispan"/>
+      
+      <module name="org.infinispan" optional="true"/>
       <module name="org.infinispan.commons"  optional="true"/>
-      <module name="org.jboss.as.clustering.infinispan"/>
-      <module name="org.jboss.xnio"/>
-      <module name="org.jboss.as.messaging"/>
-      <module name="org.jboss.as.server" optional="true"/>
-
+      <module name="org.jboss.as.clustering.infinispan" optional="true"/>
+      
+      <module name="org.jboss.as.messaging" optional="true"/>
+      <!-- only needed/exists in WF10/swarm -->
+      <module name="org.wildfly.extension.messaging-activemq" optional="true"/>
+      
       <system export="true">
         <paths>
           <!-- Recent versions of the nokogiri Ruby gem depends on some JVM
