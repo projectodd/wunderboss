@@ -82,7 +82,8 @@ public class JMSQueue extends JMSDestination implements Queue {
         routerOpts.put(ListenOption.SELECTOR,
                        JMSMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
                                JMSMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
-        if (context != null) {
+        if (context != null &&
+                context.isRemote()) {
             routerOpts.put(ListenOption.CONTEXT, context);
         }
 
