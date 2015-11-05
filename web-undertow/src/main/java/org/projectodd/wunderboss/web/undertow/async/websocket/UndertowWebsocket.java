@@ -19,6 +19,7 @@ package org.projectodd.wunderboss.web.undertow.async.websocket;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.websockets.WebSocketConnectionCallback;
@@ -38,14 +39,15 @@ import java.nio.ByteBuffer;
 
 
 public class UndertowWebsocket {
+    private static final AttachmentKey<DelegatingUndertowEndpoint> ENDPOINT_ATTACHMENT_KEY =
+            AttachmentKey.create(DelegatingUndertowEndpoint.class);
 
-    public static HttpHandler createHandler(final ThreadLocal<HttpServerExchange> requestTL,
-                                            final WebsocketInitHandler checker,
+    public static HttpHandler createHandler(final WebsocketInitHandler checker,
                                             final HttpHandler next) {
         WebSocketConnectionCallback callback = new WebSocketConnectionCallback() {
             public void onConnect (WebSocketHttpExchange exchange, WebSocketChannel channel) {
-                final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
-                if (checker.shouldConnect(exchange, endpoint)) {
+                final DelegatingUndertowEndpoint endpoint = exchange.getAttachment(ENDPOINT_ATTACHMENT_KEY);
+                if (endpoint != null) {
                     endpoint.onOpen(channel, exchange);
                     channel.addCloseTask(new ChannelListener<WebSocketChannel>() {
                         @Override
@@ -93,12 +95,11 @@ public class UndertowWebsocket {
             public void handleRequest(HttpServerExchange exchange) throws Exception {
                 HeaderValues upgrade = exchange.getRequestHeaders().get(Headers.UPGRADE);
                 if (upgrade != null && "websocket".equalsIgnoreCase(upgrade.peek())) {
-                    requestTL.set(exchange);
-                    try {
-                        wsHandler.handleRequest(exchange);
-                    } finally {
-                        requestTL.remove();
+                    final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
+                    if (checker.shouldConnect(exchange, endpoint)) {
+                        exchange.putAttachment(ENDPOINT_ATTACHMENT_KEY, endpoint);
                     }
+                    wsHandler.handleRequest(exchange);
                 } else {
                     downstream.handleRequest(exchange);
                 }

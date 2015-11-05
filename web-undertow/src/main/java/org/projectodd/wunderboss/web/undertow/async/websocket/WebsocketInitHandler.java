@@ -16,12 +16,12 @@
 
 package org.projectodd.wunderboss.web.undertow.async.websocket;
 
-import io.undertow.websockets.spi.WebSocketHttpExchange;
+import io.undertow.server.HttpServerExchange;
 
 public interface WebsocketInitHandler {
     /**
      *
      * @return true if the ws request is valid
      */
-    boolean shouldConnect(WebSocketHttpExchange exchange, DelegatingUndertowEndpoint endpoint);
+    boolean shouldConnect(HttpServerExchange exchange, DelegatingUndertowEndpoint endpoint);
 }
