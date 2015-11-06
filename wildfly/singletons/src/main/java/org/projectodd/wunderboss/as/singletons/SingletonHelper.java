@@ -111,8 +111,14 @@ public class SingletonHelper {
         String className;
         if (ASUtils.containerIsEAP()) {
             className = "org.jboss.as.clustering.singleton.election.SimpleSingletonElectionPolicy";
+        } else if (ASUtils.containerIsWildFly10()) {
+            className = "org.wildfly.clustering.singleton.election.RandomSingletonElectionPolicy";
         } else {
-            className = "org.projectodd.wunderboss.as.singletons.RandomSingletonElectionPolicy";
+            // non-deterministic election policies (in WF versions < 10) can cause multiple or no
+            // singletons to start in the cluster, since each node determines the master individually
+            // so we use the simple policy (which is deterministic) if we're not in WF10.
+            // see https://issues.jboss.org/browse/WFLY-5108
+            className = "org.wildfly.clustering.singleton.election.SimpleSingletonElectionPolicy";
         }
 
         try {
