@@ -79,6 +79,7 @@ public class JMSQueue extends JMSDestination implements Queue {
         final String nodeId = context != null ? context.id() : JMSMessagingSkeleton.BROKER_ID;
         final ConcreteResponse response = new ConcreteResponse();
         Options<ListenOption> routerOpts = new Options<>();
+        routerOpts.put(ListenOption.CONCURRENCY, 1);
         routerOpts.put(ListenOption.SELECTOR,
                        JMSMessage.REQUEST_NODE_ID_PROPERTY + " = '" + nodeId + "' AND " +
                                JMSMessage.SYNC_RESPONSE_PROPERTY + " = TRUE");
