@@ -150,7 +150,13 @@ public class HQMessaging extends JMSMessagingSkeleton {
         jndiNames.add(DestinationUtil.jmsName(name, JMSDestination.Type.TOPIC));
         jndiNames.add(DestinationUtil.jndiName(name, JMSDestination.Type.TOPIC));
 
-        return (javax.jms.Topic)lookupJNDI(jndiNames);
+        final Object value = lookupJNDI(jndiNames);
+        if (value != null &&
+                value instanceof javax.jms.Topic) {
+            return (javax.jms.Topic) value;
+        } else {
+            return null;
+        }
     }
 
     protected javax.jms.Queue lookupQueue(String name) {
@@ -163,7 +169,13 @@ public class HQMessaging extends JMSMessagingSkeleton {
         jndiNames.add(DestinationUtil.jmsName(name, JMSDestination.Type.QUEUE));
         jndiNames.add(DestinationUtil.jndiName(name, JMSDestination.Type.QUEUE));
 
-        return (javax.jms.Queue)lookupJNDI(jndiNames);
+        final Object value = lookupJNDI(jndiNames);
+        if (value != null &&
+                value instanceof javax.jms.Queue) {
+            return (javax.jms.Queue) value;
+        } else {
+            return null;
+        }
     }
 
     protected void destroyQueue(String name) throws Exception {
