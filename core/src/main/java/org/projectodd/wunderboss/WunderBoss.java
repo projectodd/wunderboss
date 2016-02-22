@@ -135,7 +135,21 @@ public class WunderBoss {
         shutdownWorkerPool();
     }
 
-    public static void addShutdownAction(Runnable action) {
+    public synchronized static void addShutdownAction(Runnable action) {
+        if (!shutdownHook) {
+            if (!inContainer()) {
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                        public void run() {
+                            try {
+                                shutdownAndReset();
+                            } catch (Throwable t) {
+                                log.warn("Error in WunderBoss shutdown hook", t);
+                            }
+                        }
+                    }));
+            }
+            shutdownHook = true;
+        }
         shutdownActions.add(action);
     }
 
@@ -259,5 +273,5 @@ public class WunderBoss {
     private static DynamicClassLoader classLoader;
     private static ExecutorService workerExecutor;
     private static final Logger log = logger(WunderBoss.class);
-
+    private static boolean shutdownHook = false;
 }
