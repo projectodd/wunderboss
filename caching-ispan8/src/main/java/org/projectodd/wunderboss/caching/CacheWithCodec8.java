@@ -27,7 +27,8 @@ import org.infinispan.container.entries.ImmortalCacheEntry;
 import org.infinispan.distribution.DistributionManager;
 import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.stream.impl.local.ValueCacheCollection;
-import org.infinispan.stream.impl.local.LocalEntryCacheStream;
+import org.infinispan.stream.impl.local.EntryStreamSupplier;
+import org.infinispan.stream.impl.local.LocalCacheStream;
 import org.projectodd.wunderboss.codecs.Codec;
 import java.util.AbstractCollection;
 import java.util.function.Function;
@@ -73,16 +74,19 @@ public class CacheWithCodec8 extends CacheWithCodec {
 
         @Override
         public CacheStream stream() {
-            return new LocalEntryCacheStream(cache, false, getConsistentHash(cache),
-                                             () -> delegate.stream().map(mapper),
-                                             cache.getAdvancedCache().getComponentRegistry());
+            return new LocalCacheStream(new EntryStreamSupplier(cache, getConsistentHash(cache),
+                                                                () -> delegate.stream().map(mapper)),
+                                        false,
+                                        cache.getAdvancedCache().getComponentRegistry());
+
         }
 
         @Override
         public CacheStream parallelStream() {
-            return new LocalEntryCacheStream(cache, true, getConsistentHash(cache),
-                                             () -> delegate.stream().map(mapper),
-                                             cache.getAdvancedCache().getComponentRegistry());
+            return new LocalCacheStream(new EntryStreamSupplier(cache, getConsistentHash(cache),
+                                                                () -> delegate.stream().map(mapper)),
+                                        true,
+                                        cache.getAdvancedCache().getComponentRegistry());
         }
 
         @Override
