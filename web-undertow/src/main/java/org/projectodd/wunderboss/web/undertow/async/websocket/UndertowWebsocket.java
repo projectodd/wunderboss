@@ -30,6 +30,7 @@ import io.undertow.websockets.core.BufferedTextMessage;
 import io.undertow.websockets.core.CloseMessage;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
+import org.projectodd.wunderboss.web.undertow.AttachableHttpHandler;
 import org.xnio.Buffers;
 import org.xnio.ChannelListener;
 import org.xnio.Pooled;
@@ -39,6 +40,9 @@ import java.nio.ByteBuffer;
 
 
 public class UndertowWebsocket {
+    public static final AttachmentKey<WebSocketProtocolHandshakeHandler> HANDSHAKE_ATTACHMENT_KEY =
+            AttachmentKey.create(WebSocketProtocolHandshakeHandler.class);
+
     private static final AttachmentKey<DelegatingUndertowEndpoint> ENDPOINT_ATTACHMENT_KEY =
             AttachmentKey.create(DelegatingUndertowEndpoint.class);
 
@@ -87,10 +91,9 @@ public class UndertowWebsocket {
         };
 
         final HttpHandler downstream = next==null ? ResponseCodeHandler.HANDLE_404 : next;
-        final HttpHandler wsHandler = new WebSocketProtocolHandshakeHandler(callback, downstream);
-
-
-        return new HttpHandler() {
+        final WebSocketProtocolHandshakeHandler wsHandler =
+                new WebSocketProtocolHandshakeHandler(callback, downstream);
+        final AttachableHttpHandler handler = new AttachableHttpHandler() {
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
                 HeaderValues upgrade = exchange.getRequestHeaders().get(Headers.UPGRADE);
@@ -106,7 +109,9 @@ public class UndertowWebsocket {
             }
         };
 
+        handler.putAttachment(HANDSHAKE_ATTACHMENT_KEY, wsHandler);
 
+        return handler;
     }
 
     // Lifted from Undertow's FrameHandler.java
