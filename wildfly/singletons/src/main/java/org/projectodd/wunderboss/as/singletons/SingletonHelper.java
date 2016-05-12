@@ -49,7 +49,7 @@ public class SingletonHelper {
                                         final String name) {
         final String deploymentName = (String)WunderBoss.options().get("deployment-name");
         final ServiceName serviceName = SINGLETON_NAME.append(deploymentName).append(name);
-        if (ASUtils.containerIsEAP()) {
+        if (ASUtils.containerIsEAP6()) {
             installEAPSingleton(registry, target, service, serviceName);
         } else {
             installWildFlySingleton(registry, target, service, serviceName);
@@ -109,7 +109,7 @@ public class SingletonHelper {
 
     private static Object electionPolicy() {
         String className;
-        if (ASUtils.containerIsEAP()) {
+        if (ASUtils.containerIsEAP6()) {
             className = "org.jboss.as.clustering.singleton.election.SimpleSingletonElectionPolicy";
         } else if (ASUtils.containerIsWildFly10()) {
             className = "org.wildfly.clustering.singleton.election.RandomSingletonElectionPolicy";

@@ -45,14 +45,14 @@ public class ASCaching extends InfinispanCaching {
         } else if (!ASUtils.containerIsWildFly9()) {
             this.encoder = new Encoder6();
         }
-        if (ASUtils.containerIsEAP()) {
+        if (ASUtils.containerIsEAP6()) {
             Config.className = "org.projectodd.wunderboss.caching.Config5";
         }
     }
 
     @Override
     public Cache withCodec(Cache cache, Codec codec) {
-        Cache c = ASUtils.containerIsEAP() ? new KeyEquivalenceCache(cache) : cache;
+        Cache c = ASUtils.containerIsEAP6() ? new KeyEquivalenceCache(cache) : cache;
         return super.withCodec(c, codec);
     }
 

@@ -32,7 +32,7 @@ public class ASMessagingProvider implements ComponentProvider<Messaging> {
         final WunderBossService service = (WunderBossService)WunderBoss.options().get(WunderBossService.KEY);
         ASDestinationManager destManager;
 
-        if (ASUtils.containerType() == ASUtils.ContainerType.EAP) {
+        if (ASUtils.containerIsEAP6()) {
             destManager = new EAPDestinationManager(service.serviceTarget(),
                                                     ASUtils.messagingServiceName(),
                                                     service.namingContext());

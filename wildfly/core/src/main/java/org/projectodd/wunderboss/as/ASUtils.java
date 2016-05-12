@@ -36,7 +36,7 @@ import java.lang.reflect.Method;
 public class ASUtils {
 
     private static final ServiceName[] JGROUPS_FACTORY_NAMES =
-            { ServiceName.parse("jboss.jgroups.stack"),                 // WF8, EAP
+            { ServiceName.parse("jboss.jgroups.stack"),                 // WF8, EAP6
               ServiceName.parse("jboss.jgroups.factory.default-stack"), // WF9
               ServiceName.parse("jboss.jgroups.factory.default") };     // WF10
     private static Boolean inCluster = null;
@@ -63,7 +63,7 @@ public class ASUtils {
     }
 
     public enum ContainerType {
-        EAP("EAP"), WILDFLY("WildFly"), UNKNOWN("unknown");
+        EAP6("EAP6"), WILDFLY("WildFly"), UNKNOWN("unknown");
 
         public String name;
 
@@ -80,8 +80,8 @@ public class ASUtils {
         return CONTAINER_IS_WILDFLY_10;
     }
 
-    public static boolean containerIsEAP() {
-        return containerType() == ContainerType.EAP;
+    public static boolean containerIsEAP6() {
+        return containerType() == ContainerType.EAP6;
     }
 
     public static ContainerType containerType() {
@@ -98,7 +98,7 @@ public class ASUtils {
 
     public static boolean isAsyncStreamingSupported() {
         if (asyncSupported == null) {
-            asyncSupported = containerType() == ContainerType.EAP ||
+            asyncSupported = containerType() == ContainerType.EAP6 ||
                     containerIsWildFly9() ||
                     containerIsWildFly10();
 
@@ -235,6 +235,8 @@ public class ASUtils {
         return removed;
     }
 
+    private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.as");
+
     static {
         final String swarmVersion = System.getProperty("wildfly.swarm.version");
         if (swarmVersion != null) {
@@ -249,7 +251,7 @@ public class ASUtils {
             try {
                 ObjectName name = new ObjectName("jboss.as:management-root=server");
 
-                // EAP & 9.x stores it under "productVersion"
+                // EAP6 & 9.x stores it under "productVersion"
                 version = (String) mbs.getAttribute(name, "productVersion");
                 if (version == null) {
                     // 8.x stores it under "releaseVersion"
@@ -262,30 +264,31 @@ public class ASUtils {
                     MBeanException |
                     ReflectionException ignored) {
             }
-
             CONTAINER_VERSION = version;
+
+            if (version==null) version = "";
+            if (productName==null) productName = "";
+            log.info("Container version="+version+", productName="+productName);
 
             // WF 8 doesn't set the productName, so we can't identify solely based on it
 
             ContainerType type = ContainerType.UNKNOWN;
             if ("EAP".equals(productName)) {
-                type = ContainerType.EAP;
-            } else if (version != null &&
-                    version.startsWith("8.")) {
+                type = ContainerType.EAP6;
+            } else if (version.startsWith("8.")) {
                 type = ContainerType.WILDFLY;
-            } else if (productName != null &&
-                    productName.startsWith("WildFly")) {
+            } else if (productName.startsWith("WildFly")) {
                 // WF 9 (and up) actually set the productName
                 type = ContainerType.WILDFLY;
             }
 
             CONTAINER_TYPE = type;
-            CONTAINER_IS_WILDFLY_9 = type == ContainerType.WILDFLY &&
-                    version != null &&
-                    version.startsWith("9.");
-            CONTAINER_IS_WILDFLY_10 = type == ContainerType.WILDFLY &&
-                    version != null &&
-                    version.startsWith("10.");
+            CONTAINER_IS_WILDFLY_9 =
+                type == ContainerType.WILDFLY && version.startsWith("9.");
+            CONTAINER_IS_WILDFLY_10 =
+                "JBoss EAP".equals(productName)
+                ||
+                (type == ContainerType.WILDFLY && version.startsWith("10."));
         }
     }
 
@@ -293,7 +296,6 @@ public class ASUtils {
     private static final ContainerType CONTAINER_TYPE;
     private static final boolean CONTAINER_IS_WILDFLY_9;
     private static final boolean CONTAINER_IS_WILDFLY_10;
-    private static final Logger log = Logger.getLogger("org.projectodd.wunderboss.as");
     private static Boolean asyncSupported;
 
 }
