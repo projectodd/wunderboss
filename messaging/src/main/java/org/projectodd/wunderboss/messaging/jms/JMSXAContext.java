@@ -90,7 +90,7 @@ public class JMSXAContext extends JMSContext implements Synchronization {
 
     @Override
     public JMSSpecificContext createChildContext(Mode mode) {
-        throw new IllegalStateException("You can't create a child context from an XA context.");
+        return this.asNonCloseable();
     }
 
     @Override
