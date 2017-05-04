@@ -18,6 +18,7 @@ package org.projectodd.wunderboss.web.undertow.async;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ServerConnection;
+import io.undertow.util.Methods;
 import org.projectodd.wunderboss.web.async.OutputStreamHttpChannel;
 import org.xnio.XnioExecutor;
 
@@ -30,7 +31,7 @@ public class UndertowHttpChannel extends OutputStreamHttpChannel {
                                final OnOpen onOpen,
                                final OnError onError,
                                final OnClose onClose) {
-        super(onOpen, onError, onClose);
+        super(Methods.HEAD.equals(exchange.getRequestMethod()), onOpen, onError, onClose);
         this.exchange = exchange.setPersistent(true).dispatch();
         this.exchange.getConnection().addCloseListener(new ServerConnection.CloseListener() {
             @Override

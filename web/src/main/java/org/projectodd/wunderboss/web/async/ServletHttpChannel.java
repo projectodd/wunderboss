@@ -34,7 +34,7 @@ public class ServletHttpChannel extends OutputStreamHttpChannel {
                               final OnError onError,
                               final OnClose onClose,
                               final boolean asyncSupported){
-        super(onOpen, onError, onClose);
+        super("HEAD".equals(request.getMethod()), onOpen, onError, onClose);
         this.request = request;
         this.response = response;
         this.asyncSupported = asyncSupported;

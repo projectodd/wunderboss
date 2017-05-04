@@ -26,8 +26,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class OutputStreamHttpChannel implements HttpChannel {
 
-    public OutputStreamHttpChannel(final OnOpen onOpen, final OnError onError,
+    public OutputStreamHttpChannel(final boolean headRequest,
+                                   final OnOpen onOpen,
+                                   final OnError onError,
                                    final OnClose onClose) {
+        this.headRequest = headRequest;
         this.onOpen = onOpen;
         this.onError = onError;
         this.onClose = onClose;
@@ -186,6 +189,11 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
         }
 
         WebsocketUtil.notifyComplete(this, onComplete, ex);
+        
+        // close after the first send on HEAD requests - see IMMUTANT-630
+        if (this.headRequest) {
+            this.closer.run();
+        }
     }
 
     @Override
@@ -221,6 +229,7 @@ public abstract class OutputStreamHttpChannel implements HttpChannel {
     private boolean headersSent = false;
     private boolean closeNotified = false;
     private OutputStream stream;
+    private final boolean headRequest;
     private final OnOpen onOpen;
     private final OnError onError;
     private final OnClose onClose;
