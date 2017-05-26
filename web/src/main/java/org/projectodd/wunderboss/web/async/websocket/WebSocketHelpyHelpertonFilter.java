@@ -24,7 +24,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * This filter is used to force the JsrWebSocketFilter in
@@ -40,6 +42,9 @@ import java.io.IOException;
  *
  * It also grabs the original ServletRequest in a ThreadLocal for the
  * downstream handshake to use.
+ *
+ * It also also handles the case where the websocket connection is aborted
+ * by the user by returning an async response.
  */
 public class WebSocketHelpyHelpertonFilter implements Filter {
 
@@ -57,6 +62,17 @@ public class WebSocketHelpyHelpertonFilter implements Filter {
             requestTL.set((HttpServletRequest)request);
             try {
                 chain.doFilter(new PathMungingRequestJacket((HttpServletRequest) request), response);
+            } catch (WebsocketConnectionAbortException abort) {
+                HttpServletResponse httpResponse = (HttpServletResponse)response;
+                httpResponse.setStatus(abort.status());
+                // clear the headers already set by the websockets handler
+                for(String header : httpResponse.getHeaderNames()) {
+                    httpResponse.setHeader(header, null);
+                }
+                for(Map.Entry<String, String> header : abort.headers().entrySet()) {
+                    httpResponse.setHeader(header.getKey(), header.getValue());
+                }
+                httpResponse.getOutputStream().print(abort.body());
             } finally {
                 requestTL.remove();
             }

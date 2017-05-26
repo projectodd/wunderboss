@@ -101,8 +101,10 @@ public class UndertowWebsocket {
                     final DelegatingUndertowEndpoint endpoint = new DelegatingUndertowEndpoint();
                     if (checker.shouldConnect(exchange, endpoint)) {
                         exchange.putAttachment(ENDPOINT_ATTACHMENT_KEY, endpoint);
+                        wsHandler.handleRequest(exchange);
+                    } else {
+                        downstream.handleRequest(exchange);
                     }
-                    wsHandler.handleRequest(exchange);
                 } else {
                     downstream.handleRequest(exchange);
                 }
