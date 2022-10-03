@@ -18,10 +18,7 @@ package org.projectodd.wunderboss;
 
 import org.slf4j.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -125,7 +122,10 @@ public class ApplicationRunner {
             if (!match) {
                 continue;
             }
-            File file = new File(extractRoot + "/" + name);
+            File file = new File(extractRoot, name);
+            if (!file.toPath().normalize().startsWith(extractRoot)) {
+                throw new IOException("Bad zip entry");
+            }
             if (zipEntry.isDirectory()) {
                 file.mkdirs();
             } else {
